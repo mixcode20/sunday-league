@@ -1,36 +1,61 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# WhatsApp Footy
 
-## Getting Started
+Minimal web app for a weekly 7-a-side WhatsApp group. No user accounts. Players join a gameweek by picking their name from a dropdown. Organiser actions are protected by a PIN prompt and enforced server-side.
 
-First, run the development server:
+## Setup
+
+1) Install dependencies
+```bash
+npm install
+```
+
+2) Create a Supabase project and open the SQL editor
+
+Paste the contents of `supabase/schema.sql` to create tables, constraints, and indexes.
+
+3) Insert your players
+
+Example:
+```sql
+insert into players (first_name, last_name)
+values
+  ('Sam', 'Nguyen'),
+  ('Alex', 'Smith'),
+  ('Jamie', 'Lee');
+```
+
+4) Add environment variables
+
+Create `.env.local` with:
+```
+SUPABASE_URL=your-supabase-url
+SUPABASE_SECRET_KEY=your-service-role-key
+ORGANISER_PIN=your-pin
+```
+
+## Run locally
 
 ```bash
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open http://localhost:3000
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Deploy
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+1) Deploy the Next.js app to your host (Vercel, Netlify, Render, etc.)
+2) Add the same environment variables in your host’s settings:
+   - `SUPABASE_URL`
+   - `SUPABASE_SECRET_KEY`
+   - `ORGANISER_PIN`
+3) Build and start:
+```bash
+npm run build
+npm run start
+```
 
-## Learn More
+## Notes
 
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+- Only one open gameweek is allowed at a time (enforced by DB index).
+- Organiser writes always go through server route handlers with PIN validation.
+- The Supabase service role key never touches the client.
