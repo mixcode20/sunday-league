@@ -1,7 +1,7 @@
 import TeamsClient from "@/components/TeamsClient";
 import TeamsReadOnly from "@/components/TeamsReadOnly";
 import { supabaseServer } from "@/lib/supabase";
-import { formatDate } from "@/lib/utils";
+import { formatDate, normalizePlayerJoin } from "@/lib/utils";
 
 export default async function TeamsPage() {
   const supabase = supabaseServer();
@@ -35,11 +35,13 @@ export default async function TeamsPage() {
   const { data: entries } = await supabase
     .from("gameweek_players")
     .select(
-      "id, player_id, team, position, players(id, first_name, last_name)"
+      "id, gameweek_id, player_id, team, position, players(id, first_name, last_name)"
     )
     .eq("gameweek_id", gameweek.id)
     .order("team", { ascending: true })
     .order("position", { ascending: true });
+
+  const normalizedEntries = (entries ?? []).map(normalizePlayerJoin);
 
   return (
     <div className="space-y-6">
@@ -58,9 +60,9 @@ export default async function TeamsPage() {
       </section>
 
       {gameweek.status === "open" ? (
-        <TeamsClient gameweek={gameweek} entries={entries ?? []} />
+        <TeamsClient gameweek={gameweek} entries={normalizedEntries} />
       ) : (
-        <TeamsReadOnly entries={entries ?? []} />
+        <TeamsReadOnly entries={normalizedEntries} />
       )}
     </div>
   );

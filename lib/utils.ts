@@ -16,3 +16,8 @@ export const getNextSundayISO = () => {
   nextSunday.setDate(today.getDate() + daysUntilSunday);
   return nextSunday.toISOString().slice(0, 10);
 };
+
+export const normalizePlayerJoin = <T extends { players: any }>(entry: T) => {
+  const player = Array.isArray(entry.players) ? entry.players[0] : entry.players;
+  return { ...entry, players: player };
+};

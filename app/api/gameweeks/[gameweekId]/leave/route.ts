@@ -1,10 +1,11 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { supabaseServer } from "@/lib/supabase";
 
 export async function POST(
-  request: Request,
-  { params }: { params: { gameweekId: string } }
+  request: NextRequest,
+  context: { params: Promise<{ gameweekId: string }> }
 ) {
+  const { gameweekId } = await context.params;
   const { playerId } = await request.json();
 
   if (!playerId) {
@@ -16,7 +17,7 @@ export async function POST(
   const { data: gameweek, error: gameweekError } = await supabase
     .from("gameweeks")
     .select("status")
-    .eq("id", params.gameweekId)
+    .eq("id", gameweekId)
     .single();
 
   if (gameweekError || !gameweek) {
@@ -33,7 +34,7 @@ export async function POST(
   const { error } = await supabase
     .from("gameweek_players")
     .delete()
-    .eq("gameweek_id", params.gameweekId)
+    .eq("gameweek_id", gameweekId)
     .eq("player_id", playerId);
 
   if (error) {

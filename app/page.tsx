@@ -1,7 +1,7 @@
 import CreateGameweek from "@/components/CreateGameweek";
 import JoinForm from "@/components/JoinForm";
 import { supabaseServer } from "@/lib/supabase";
-import { formatDate } from "@/lib/utils";
+import { formatDate, normalizePlayerJoin } from "@/lib/utils";
 
 export default async function Home() {
   const supabase = supabaseServer();
@@ -19,10 +19,14 @@ export default async function Home() {
   const { data: entries } = gameweek
     ? await supabase
         .from("gameweek_players")
-        .select("player_id, players(id, first_name, last_name)")
+        .select(
+          "id, gameweek_id, player_id, team, position, players(id, first_name, last_name)"
+        )
         .eq("gameweek_id", gameweek.id)
         .order("created_at", { ascending: true })
     : { data: [] };
+
+  const normalizedEntries = (entries ?? []).map(normalizePlayerJoin);
 
   return (
     <div className="space-y-6">
@@ -59,8 +63,8 @@ export default async function Home() {
           Players who have joined the open gameweek.
         </p>
         <div className="mt-4 grid gap-2 md:grid-cols-2">
-          {entries && entries.length > 0 ? (
-            entries.map((entry) => (
+          {normalizedEntries.length > 0 ? (
+            normalizedEntries.map((entry) => (
               <div
                 key={entry.player_id}
                 className="rounded-xl border border-slate-100 bg-slate-50 px-3 py-2 text-sm"

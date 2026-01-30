@@ -1,11 +1,12 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { supabaseServer } from "@/lib/supabase";
 import { isOrganiserPinConfigured, verifyOrganiserPin } from "@/lib/organiser";
 
 export async function POST(
-  request: Request,
-  { params }: { params: { gameweekId: string } }
+  request: NextRequest,
+  context: { params: Promise<{ gameweekId: string }> }
 ) {
+  const { gameweekId } = await context.params;
   const { darksScore, whitesScore, pin } = await request.json();
 
   if (!isOrganiserPinConfigured()) {
@@ -31,7 +32,7 @@ export async function POST(
   const { data: gameweek, error: gameweekError } = await supabase
     .from("gameweeks")
     .select("status")
-    .eq("id", params.gameweekId)
+    .eq("id", gameweekId)
     .single();
 
   if (gameweekError || !gameweek) {
@@ -53,7 +54,7 @@ export async function POST(
       whites_score: whitesScore,
       locked_at: new Date().toISOString(),
     })
-    .eq("id", params.gameweekId);
+    .eq("id", gameweekId);
 
   if (error) {
     return NextResponse.json(
