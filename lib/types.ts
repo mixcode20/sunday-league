@@ -10,6 +10,8 @@ export type Player = {
 export type Gameweek = {
   id: string;
   game_date: string;
+  game_time: string | null;
+  location: string | null;
   status: GameweekStatus;
   darks_score: number | null;
   whites_score: number | null;

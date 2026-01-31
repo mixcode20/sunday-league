@@ -144,7 +144,7 @@ export default function AdminPlayersClient({ players }: AdminPlayersClientProps)
               Create, edit, or remove players.
             </p>
           </div>
-          <SettingsButton onClick={openSettings} label="Unlock" />
+          <SettingsButton onClick={openSettings} label="Enter PIN" />
         </div>
       </section>
 
@@ -248,31 +248,22 @@ export default function AdminPlayersClient({ players }: AdminPlayersClientProps)
         )}
       </section>
 
-      <Modal
-        isOpen={settingsOpen}
-        title="Organiser access"
-        onClose={() => setSettingsOpen(false)}
-      >
-        <label className="text-sm font-medium text-slate-600">
-          Enter organiser PIN
-        </label>
+      <Modal isOpen={settingsOpen} title="Enter PIN" onClose={() => setSettingsOpen(false)}>
+        <label className="text-sm font-medium text-slate-600">PIN</label>
         <input
           type="password"
           value={pinInput}
           onChange={(event) => setPinInput(event.target.value)}
           className="mt-2 w-full rounded-xl border border-slate-200 px-3 py-2 text-base"
-          placeholder="PIN"
+          placeholder="****"
         />
         <button
           type="button"
           onClick={verifyPin}
           className="mt-3 w-full rounded-xl bg-slate-900 px-4 py-2 text-sm font-semibold text-white"
         >
-          Unlock tools
+          Submit
         </button>
-        <p className="mt-2 text-xs text-slate-500">
-          PIN is required every time settings are opened.
-        </p>
       </Modal>
     </div>
   );

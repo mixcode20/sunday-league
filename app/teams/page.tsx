@@ -55,7 +55,7 @@ export default async function TeamsPage() {
         </h2>
         <p className="mt-1 text-sm text-slate-500">
           {gameweek.status === "open"
-            ? "Drag players to organise teams and subs."
+            ? "Pick teams and subs for this week."
             : "This gameweek is locked."}
         </p>
       </section>

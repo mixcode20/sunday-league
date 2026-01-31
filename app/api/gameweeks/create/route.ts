@@ -3,7 +3,7 @@ import { supabaseServer } from "@/lib/supabase";
 import { isOrganiserPinConfigured, verifyOrganiserPin } from "@/lib/organiser";
 
 export async function POST(request: Request) {
-  const { date, pin } = await request.json();
+  const { date, time, location, pin } = await request.json();
 
   if (!isOrganiserPinConfigured()) {
     return NextResponse.json(
@@ -43,7 +43,12 @@ export async function POST(request: Request) {
 
   const { data, error } = await supabase
     .from("gameweeks")
-    .insert({ game_date: date, status: "open" })
+    .insert({
+      game_date: date,
+      game_time: time || null,
+      location: location || null,
+      status: "open",
+    })
     .select("id")
     .single();
 

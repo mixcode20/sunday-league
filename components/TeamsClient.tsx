@@ -17,33 +17,50 @@ const TEAM_LIMITS: Record<Team, number> = {
   subs: 4,
 };
 
+type DragInfo = {
+  playerId: string;
+  team: Team;
+  position: number;
+};
+
 export default function TeamsClient({ gameweek, entries }: TeamsClientProps) {
   const router = useRouter();
-  const [draggedPlayerId, setDraggedPlayerId] = useState<string | null>(null);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [pinInput, setPinInput] = useState("");
   const [organiserPin, setOrganiserPin] = useState("");
   const [statusMessage, setStatusMessage] = useState("");
-  const [lockingScore, setLockingScore] = useState({ darks: "", whites: "" });
+  const [dragged, setDragged] = useState<DragInfo | null>(null);
 
   const isLocked = gameweek.status === "locked";
 
-  const teams = useMemo(() => {
-    const grouped: Record<Team, GameweekPlayer[]> = {
+  const grouped = useMemo(() => {
+    const base: Record<Team, GameweekPlayer[]> = {
       darks: [],
       whites: [],
       subs: [],
     };
     entries.forEach((entry) => {
-      grouped[entry.team].push(entry);
+      base[entry.team].push(entry);
     });
-    return grouped;
+    (Object.keys(base) as Team[]).forEach((team) => {
+      base[team] = [...base[team]].sort((a, b) => a.position - b.position);
+    });
+    return base;
   }, [entries]);
+
+  const playersThisWeek = useMemo(
+    () =>
+      [...entries].sort((a, b) =>
+        `${a.players.first_name} ${a.players.last_name}`.localeCompare(
+          `${b.players.first_name} ${b.players.last_name}`
+        )
+      ),
+    [entries]
+  );
 
   const openSettings = () => {
     setSettingsOpen(true);
     setPinInput("");
-    setOrganiserPin("");
     setStatusMessage("");
   };
 
@@ -63,123 +80,123 @@ export default function TeamsClient({ gameweek, entries }: TeamsClientProps) {
     setSettingsOpen(false);
   };
 
-  const handleAssign = async (team: Team) => {
-    if (!draggedPlayerId || !organiserPin) return;
-    if (teams[team].length >= TEAM_LIMITS[team]) {
-      setStatusMessage(`Team ${team} is full.`);
-      return;
-    }
-    setStatusMessage("");
-    await fetch(`/api/gameweeks/${gameweek.id}/assign`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        playerId: draggedPlayerId,
-        team,
-        position: teams[team].length,
-        pin: organiserPin,
-      }),
-    });
-    setDraggedPlayerId(null);
-    router.refresh();
-  };
-
-  const handleKick = async (playerId: string) => {
+  const assignPlayer = async (playerId: string, team: Team, position: number) => {
     if (!organiserPin) return;
-    await fetch(`/api/gameweeks/${gameweek.id}/kick`, {
+    const response = await fetch(`/api/gameweeks/${gameweek.id}/assign`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ playerId, pin: organiserPin }),
-    });
-    router.refresh();
-  };
-
-  const handleLock = async () => {
-    if (!organiserPin) return;
-    const darksScore = Number(lockingScore.darks);
-    const whitesScore = Number(lockingScore.whites);
-    if (Number.isNaN(darksScore) || Number.isNaN(whitesScore)) {
-      setStatusMessage("Scores must be numbers.");
-      return;
-    }
-    const response = await fetch(`/api/gameweeks/${gameweek.id}/lock`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ darksScore, whitesScore, pin: organiserPin }),
+      body: JSON.stringify({ playerId, team, position, pin: organiserPin }),
     });
     if (!response.ok) {
       const data = await response.json();
-      setStatusMessage(data.error ?? "Failed to lock gameweek.");
+      setStatusMessage(data.error ?? "Failed to update player.");
       return;
     }
     router.refresh();
   };
 
-  const renderList = (team: Team, title: string, accent: string) => (
-    <div
-      className={`flex-1 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm ${accent}`}
-      onDragOver={(event) => {
-        if (!organiserPin || isLocked) return;
-        event.preventDefault();
-      }}
-      onDrop={(event) => {
-        event.preventDefault();
-        if (!organiserPin || isLocked) return;
-        handleAssign(team);
-      }}
-    >
-      <div className="flex items-center justify-between">
-        <h3 className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">
-          {title}
-        </h3>
-        <span className="text-xs text-slate-400">
-          {teams[team].length}/{TEAM_LIMITS[team]}
-        </span>
-      </div>
-      <div className="mt-3 space-y-3">
-        {teams[team].map((entry) => (
-          <div
-            key={entry.player_id}
-            draggable={Boolean(organiserPin) && !isLocked}
-            onDragStart={() => setDraggedPlayerId(entry.player_id)}
-            className="flex min-h-[48px] items-center justify-between rounded-xl border border-slate-100 bg-white px-4 py-3 text-sm font-medium text-slate-900 shadow-sm"
+  const handleDrop = async (team: Team, position: number, occupied?: DragInfo) => {
+    if (!dragged || !organiserPin) return;
+    await assignPlayer(dragged.playerId, team, position);
+    if (occupied && (occupied.team !== dragged.team || occupied.position !== dragged.position)) {
+      await assignPlayer(occupied.playerId, dragged.team, dragged.position);
+    }
+    setDragged(null);
+  };
+
+  const renderTeamSlots = (
+    team: Team,
+    title: string,
+    accent: string,
+    isDark?: boolean
+  ) => {
+    const slots = Array.from({ length: TEAM_LIMITS[team] }, (_, index) => ({
+      entry: grouped[team][index] ?? null,
+      position: index,
+    }));
+
+    return (
+      <div className={`rounded-2xl border border-slate-200 p-4 shadow-sm ${accent}`}>
+        <div className="flex items-center justify-between">
+          <h3
+            className={`text-xs font-semibold uppercase tracking-[0.2em] ${
+              isDark ? "text-slate-200" : "text-slate-500"
+            }`}
           >
-            <span>
-              {entry.players.first_name} {entry.players.last_name}
-            </span>
-            {organiserPin && !isLocked ? (
-              <button
-                type="button"
-                onClick={() => handleKick(entry.player_id)}
-                className="text-xs font-semibold text-rose-500"
+            {title}
+          </h3>
+          <span className="text-xs text-slate-400">
+            {grouped[team].length}/{TEAM_LIMITS[team]}
+          </span>
+        </div>
+        <div className="mt-3 space-y-3">
+          {slots.map(({ entry, position }) => {
+            const occupiedInfo = entry
+              ? { playerId: entry.player_id, team, position: entry.position }
+              : undefined;
+            return (
+              <div
+                key={`${team}-${position}`}
+                onDragOver={(event) => {
+                  if (!organiserPin || isLocked) return;
+                  event.preventDefault();
+                }}
+                onDrop={() => handleDrop(team, position, occupiedInfo)}
+                className="flex min-h-[52px] items-center justify-between rounded-xl border border-dashed border-slate-200 bg-white px-3 py-2 text-sm"
               >
-                Kick
-              </button>
-            ) : null}
-          </div>
-        ))}
-        {teams[team].length === 0 ? (
-          <div className="rounded-xl border border-dashed border-slate-200 px-3 py-6 text-center text-xs text-slate-400">
-            Drag players here
-          </div>
-        ) : null}
+                {entry ? (
+                  <div
+                    draggable={Boolean(organiserPin) && !isLocked}
+                    onDragStart={() =>
+                      setDragged({
+                        playerId: entry.player_id,
+                        team,
+                        position: entry.position,
+                      })
+                    }
+                    className="w-full rounded-lg bg-white px-2 py-2 font-medium text-slate-900"
+                  >
+                    {entry.players.first_name} {entry.players.last_name}
+                  </div>
+                ) : organiserPin && !isLocked ? (
+                  <select
+                    className="w-full rounded-lg border border-slate-200 px-2 py-2 text-sm"
+                    defaultValue=""
+                    onChange={(event) =>
+                      event.target.value
+                        ? assignPlayer(event.target.value, team, position)
+                        : null
+                    }
+                  >
+                    <option value="">Select player</option>
+                    {playersThisWeek.map((player) => (
+                      <option key={player.player_id} value={player.player_id}>
+                        {player.players.first_name} {player.players.last_name}
+                      </option>
+                    ))}
+                  </select>
+                ) : (
+                  <span className="text-xs text-slate-400">Empty slot</span>
+                )}
+              </div>
+            );
+          })}
+        </div>
       </div>
-    </div>
-  );
+    );
+  };
 
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <div>
-          <p className="text-xs uppercase tracking-wide text-slate-400">
-            Gameweek status
-          </p>
+          <p className="text-xs uppercase tracking-wide text-slate-400">Gameweek</p>
           <p className="text-base font-semibold text-slate-800">
             {isLocked ? "Locked" : "Open"}
           </p>
         </div>
         {!isLocked ? (
-          <SettingsButton onClick={openSettings} label="Organiser" />
+          <SettingsButton onClick={openSettings} label="Enter PIN" />
         ) : null}
       </div>
 
@@ -189,147 +206,122 @@ export default function TeamsClient({ gameweek, entries }: TeamsClientProps) {
         </p>
       ) : null}
 
-      <div className="space-y-4">
-        <div className="grid gap-4 md:grid-cols-2">
-          {renderList(
-            "darks",
-            "Darks",
-            "bg-slate-900 text-white [&_h3]:text-white [&_span]:text-slate-300"
-          )}
-          {renderList(
-            "whites",
-            "Whites",
-            "bg-white text-slate-900 border-slate-300"
-          )}
+      {organiserPin && !isLocked ? (
+        <div className="rounded-2xl border border-slate-200 bg-white p-4 text-sm text-slate-600 shadow-sm">
+          <p className="text-xs uppercase tracking-wide text-slate-400">
+            Organiser controls
+          </p>
+          <p className="mt-2">
+            Fill empty slots from the dropdowns or drag players to swap teams.
+          </p>
         </div>
-        <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
-          <div className="flex items-center justify-between">
-            <h3 className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">
-              Subs
-            </h3>
-            <span className="text-xs text-slate-400">
-              {teams.subs.length}/{TEAM_LIMITS.subs}
-            </span>
-          </div>
-          <div className="mt-3 space-y-3">
-            {teams.subs.map((entry) => (
+      ) : null}
+
+      <div className="grid gap-4 md:grid-cols-2">
+        {renderTeamSlots("darks", "Darks", "bg-slate-900 text-white", true)}
+        {renderTeamSlots("whites", "Whites", "bg-white border-slate-300")}
+      </div>
+
+      <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+        <h3 className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">
+          Subs
+        </h3>
+        <div className="mt-3 space-y-3">
+          {Array.from({ length: TEAM_LIMITS.subs }, (_, index) => ({
+            entry: grouped.subs[index] ?? null,
+            position: index,
+          })).map(({ entry, position }) => {
+            const occupiedInfo = entry
+              ? { playerId: entry.player_id, team: "subs" as Team, position: entry.position }
+              : undefined;
+            return (
               <div
-                key={entry.player_id}
-                draggable={Boolean(organiserPin) && !isLocked}
-                onDragStart={() => setDraggedPlayerId(entry.player_id)}
-                className="flex min-h-[48px] items-center justify-between rounded-xl border border-slate-100 bg-white px-4 py-3 text-sm font-medium text-slate-900 shadow-sm"
+                key={`subs-${position}`}
+                onDragOver={(event) => {
+                  if (!organiserPin || isLocked) return;
+                  event.preventDefault();
+                }}
+                onDrop={() => handleDrop("subs", position, occupiedInfo)}
+                className="flex min-h-[52px] items-center justify-between rounded-xl border border-dashed border-slate-200 bg-white px-3 py-2 text-sm"
               >
-                <span>
-                  {entry.players.first_name} {entry.players.last_name}
-                </span>
-                {organiserPin && !isLocked ? (
-                  <button
-                    type="button"
-                    onClick={() => handleKick(entry.player_id)}
-                    className="text-xs font-semibold text-rose-500"
+                {entry ? (
+                  <div
+                    draggable={Boolean(organiserPin) && !isLocked}
+                    onDragStart={() =>
+                      setDragged({
+                        playerId: entry.player_id,
+                        team: "subs",
+                        position: entry.position,
+                      })
+                    }
+                    className="w-full rounded-lg bg-white px-2 py-2 font-medium text-slate-900"
                   >
-                    Kick
-                  </button>
-                ) : null}
+                    {entry.players.first_name} {entry.players.last_name}
+                  </div>
+                ) : organiserPin && !isLocked ? (
+                  <select
+                    className="w-full rounded-lg border border-slate-200 px-2 py-2 text-sm"
+                    defaultValue=""
+                    onChange={(event) =>
+                      event.target.value
+                        ? assignPlayer(event.target.value, "subs", position)
+                        : null
+                    }
+                  >
+                    <option value="">Select player</option>
+                    {playersThisWeek.map((player) => (
+                      <option key={player.player_id} value={player.player_id}>
+                        {player.players.first_name} {player.players.last_name}
+                      </option>
+                    ))}
+                  </select>
+                ) : (
+                  <span className="text-xs text-slate-400">Empty slot</span>
+                )}
               </div>
-            ))}
-            {teams.subs.length === 0 ? (
-              <div className="rounded-xl border border-dashed border-slate-200 px-3 py-6 text-center text-xs text-slate-400">
-                Drag players here
-              </div>
-            ) : null}
-          </div>
+            );
+          })}
         </div>
       </div>
 
-      {!isLocked && organiserPin ? (
-        <section className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
-          <div className="text-xs uppercase tracking-wide text-slate-400">
-            Organiser menu
-          </div>
-          <div className="mt-3 grid gap-3 md:grid-cols-2">
-            <div className="rounded-xl border border-slate-200 bg-slate-50 p-3">
-              <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-                Teams
-              </p>
-              <p className="mt-2 text-sm text-slate-600">
-                Drag players between columns. Use Kick to remove.
-              </p>
-            </div>
-            <div className="rounded-xl border border-slate-200 bg-white p-3">
-              <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-                Result
-              </p>
-              <div className="mt-3 flex items-center gap-2">
-                <input
-                  type="number"
-                  min="0"
-                  className="w-20 rounded-lg border border-slate-200 px-2 py-1 text-sm"
-                  value={lockingScore.darks}
-                  onChange={(event) =>
-                    setLockingScore((prev) => ({
-                      ...prev,
-                      darks: event.target.value,
-                    }))
-                  }
-                  placeholder="Darks"
-                />
-                <span className="text-slate-500">-</span>
-                <input
-                  type="number"
-                  min="0"
-                  className="w-20 rounded-lg border border-slate-200 px-2 py-1 text-sm"
-                  value={lockingScore.whites}
-                  onChange={(event) =>
-                    setLockingScore((prev) => ({
-                      ...prev,
-                      whites: event.target.value,
-                    }))
-                  }
-                  placeholder="Whites"
-                />
-                <button
-                  type="button"
-                  className="ml-auto rounded-lg bg-slate-900 px-3 py-2 text-xs font-semibold text-white"
-                  onClick={handleLock}
-                >
-                  Save & Lock
-                </button>
-              </div>
-            </div>
-          </div>
-        </section>
-      ) : (
-        <p className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-500">
-          Unlock organiser tools to manage teams and lock the gameweek.
+      <section className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+        <p className="text-xs uppercase tracking-wide text-slate-400">
+          Players in this week
         </p>
-      )}
+        <div className="mt-3 grid gap-2 md:grid-cols-2">
+          {playersThisWeek.length > 0 ? (
+            playersThisWeek.map((entry) => (
+              <div
+                key={entry.player_id}
+                className="rounded-xl border border-slate-100 bg-slate-50 px-3 py-2 text-sm"
+              >
+                {entry.players.first_name} {entry.players.last_name}
+              </div>
+            ))
+          ) : (
+            <div className="rounded-xl border border-dashed border-slate-200 px-3 py-4 text-sm text-slate-400">
+              No players yet.
+            </div>
+          )}
+        </div>
+      </section>
 
-      <Modal
-        isOpen={settingsOpen}
-        title="Organiser access"
-        onClose={() => setSettingsOpen(false)}
-      >
-        <label className="text-sm font-medium text-slate-600">
-          Enter organiser PIN
-        </label>
+      <Modal isOpen={settingsOpen} title="Enter PIN" onClose={() => setSettingsOpen(false)}>
+        <label className="text-sm font-medium text-slate-600">PIN</label>
         <input
           type="password"
           value={pinInput}
           onChange={(event) => setPinInput(event.target.value)}
           className="mt-2 w-full rounded-xl border border-slate-200 px-3 py-2 text-base"
-          placeholder="PIN"
+          placeholder="****"
         />
         <button
           type="button"
           onClick={verifyPin}
           className="mt-3 w-full rounded-xl bg-slate-900 px-4 py-2 text-sm font-semibold text-white"
         >
-          Unlock tools
+          Submit
         </button>
-        <p className="mt-2 text-xs text-slate-500">
-          PIN is required every time settings are opened.
-        </p>
       </Modal>
     </div>
   );

@@ -13,6 +13,8 @@ create unique index if not exists players_full_name_unique_idx
 create table if not exists gameweeks (
   id uuid primary key default gen_random_uuid(),
   game_date date not null,
+  game_time text,
+  location text,
   status text not null check (status in ('open', 'locked')),
   darks_score integer check (darks_score >= 0),
   whites_score integer check (whites_score >= 0),
