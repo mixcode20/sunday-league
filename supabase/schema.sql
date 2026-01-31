@@ -44,6 +44,9 @@ create table if not exists gameweek_players (
   unique (gameweek_id, player_id)
 );
 
+create unique index if not exists gameweek_players_slot_unique_idx
+  on gameweek_players (gameweek_id, position);
+
 create index if not exists gameweek_players_gameweek_team_idx
   on gameweek_players (gameweek_id, team, position);
 

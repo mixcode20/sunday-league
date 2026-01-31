@@ -1,7 +1,8 @@
 import TeamsClient from "@/components/TeamsClient";
 import TeamsReadOnly from "@/components/TeamsReadOnly";
+import GameweekInfoStrip from "@/components/GameweekInfoStrip";
 import { supabaseServer } from "@/lib/supabase";
-import { formatDate, normalizePlayerJoin } from "@/lib/utils";
+import { normalizePlayerJoin } from "@/lib/utils";
 
 export default async function TeamsPage() {
   const supabase = supabaseServer();
@@ -23,12 +24,11 @@ export default async function TeamsPage() {
 
   if (!gameweek) {
     return (
-      <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
-        <h2 className="text-xl font-semibold text-slate-800">No gameweeks</h2>
-        <p className="text-sm text-slate-500">
-          No open gameweek yet. Organisers can create one from the settings
-          button.
-        </p>
+      <div className="space-y-4">
+        <GameweekInfoStrip />
+        <div className="rounded-2xl border border-slate-200 bg-white p-4 text-sm text-slate-500">
+          No open gameweek yet. Organisers can create one from the settings button.
+        </div>
       </div>
     );
   }
@@ -44,16 +44,25 @@ export default async function TeamsPage() {
 
   const normalizedEntries = (entries ?? []).map(normalizePlayerJoin);
 
+  const mainCount = Math.min(normalizedEntries.length, 14);
+  const subsCount = Math.max(normalizedEntries.length - 14, 0);
+
   return (
-    <div className="space-y-6">
-      <section className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
+    <div className="space-y-4">
+      <GameweekInfoStrip
+        gameweekId={gameweek.status === "open" ? gameweek.id : null}
+        gameDate={gameweek.game_date}
+        time={gameweek.game_time ?? null}
+        location={gameweek.location ?? null}
+        mainCount={mainCount}
+        subsCount={subsCount}
+      />
+
+      <section className="flex items-start justify-between">
         <p className="text-xs uppercase tracking-wide text-slate-400">
           {gameweek.status === "open" ? "Current teams" : "Latest teams"}
         </p>
-        <h2 className="text-2xl font-semibold text-slate-900">
-          {formatDate(gameweek.game_date)}
-        </h2>
-        <p className="mt-1 text-sm text-slate-500">
+        <p className="text-xs text-slate-400">
           {gameweek.status === "open"
             ? "Pick teams and subs for this week."
             : "This gameweek is locked."}

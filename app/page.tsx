@@ -1,7 +1,8 @@
 import CreateGameweek from "@/components/CreateGameweek";
 import JoinSlots from "@/components/JoinSlots";
+import GameweekInfoStrip from "@/components/GameweekInfoStrip";
 import { supabaseServer } from "@/lib/supabase";
-import { formatGameweekDate, normalizePlayerJoin } from "@/lib/utils";
+import { normalizePlayerJoin } from "@/lib/utils";
 
 export default async function Home() {
   const supabase = supabaseServer();
@@ -38,35 +39,27 @@ export default async function Home() {
 
   const normalizedEntries = (entries ?? []).map(normalizePlayerJoin);
 
+  const mainCount = Math.min(normalizedEntries.length, 14);
+  const subsCount = Math.max(normalizedEntries.length - 14, 0);
+
   return (
-    <div className="space-y-6">
-      <section className="flex flex-col gap-4 rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
+    <div className="space-y-4">
+      <GameweekInfoStrip
+        gameweekId={openGameweek?.id ?? null}
+        gameDate={gameweek?.game_date ?? null}
+        time={gameweek?.game_time ?? null}
+        location={gameweek?.location ?? null}
+        mainCount={mainCount}
+        subsCount={subsCount}
+      />
+
+      <section className="flex flex-col gap-4">
         <div className="flex items-start justify-between">
-          <div>
-            <p className="text-xs uppercase tracking-wide text-slate-400">
-              {openGameweek ? "Open gameweek" : "Latest result"}
-            </p>
-            <h2 className="text-2xl font-semibold text-slate-900">
-              {gameweek
-                ? formatGameweekDate(gameweek.game_date)
-                : "No gameweeks yet"}
-            </h2>
-          </div>
+          <p className="text-xs uppercase tracking-wide text-slate-400">
+            {openGameweek ? "Open gameweek" : "Latest result"}
+          </p>
           <CreateGameweek />
         </div>
-
-        {gameweek ? (
-          <div className="flex flex-wrap items-center gap-4 text-sm text-slate-500">
-            <span>{gameweek.game_time ?? "9:15am"}</span>
-            <span>{gameweek.location ?? "MH"}</span>
-            <span>
-              {Math.min(normalizedEntries.length, 14)}/14
-            </span>
-            <span>
-              {Math.min(Math.max(normalizedEntries.length - 14, 0), 4)}/4 subs
-            </span>
-          </div>
-        ) : null}
 
         {gameweek && players ? (
           <JoinSlots

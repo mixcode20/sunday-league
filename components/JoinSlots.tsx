@@ -31,6 +31,10 @@ export default function JoinSlots({
   const [liveEntries, setLiveEntries] = useState<GameweekPlayer[]>(entries);
   const [openSlot, setOpenSlot] = useState<number | null>(null);
   const [pendingSlot, setPendingSlot] = useState<number | null>(null);
+  const [pendingPositions, setPendingPositions] = useState<Record<number, boolean>>({});
+  const [optimisticByPosition, setOptimisticByPosition] = useState<
+    Record<number, GameweekPlayer>
+  >({});
   const dropdownRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
@@ -70,50 +74,100 @@ export default function JoinSlots({
   }, [openSlot]);
 
   const orderedEntries = useMemo(() => {
-    return [...liveEntries].sort((a, b) => a.position - b.position);
-  }, [liveEntries]);
+    const merged = [...liveEntries].reduce<Record<number, GameweekPlayer>>(
+      (acc, entry) => {
+        acc[entry.position] = entry;
+        return acc;
+      },
+      {}
+    );
+
+    Object.values(optimisticByPosition).forEach((entry) => {
+      if (!merged[entry.position]) {
+        merged[entry.position] = entry;
+      }
+    });
+
+    return Object.values(merged).sort((a, b) => a.position - b.position);
+  }, [liveEntries, optimisticByPosition]);
 
 
   const slotEntries = useMemo(() => {
+    const entryMap = orderedEntries.reduce<Record<number, GameweekPlayer>>(
+      (acc, entry) => {
+        acc[entry.position] = entry;
+        return acc;
+      },
+      {}
+    );
     const mainSlots = Array.from(
       { length: MAIN_CAPACITY },
-      (_, index) => orderedEntries[index] ?? null
+      (_, index) => entryMap[index + 1] ?? null
     );
     const subsSlots = Array.from(
       { length: SUB_CAPACITY },
-      (_, index) => orderedEntries[MAIN_CAPACITY + index] ?? null
+      (_, index) => entryMap[15 + index] ?? null
     );
     return { mainSlots, subsSlots };
   }, [orderedEntries]);
 
-  const joinPlayer = async (playerId: string, slotIndex?: number) => {
+  const joinPlayer = async (
+    playerId: string,
+    position?: number,
+    slotType?: "main" | "sub"
+  ) => {
     if (!gameweekId) return;
     setMessage("");
     const player = players.find((item) => item.id === playerId);
-    if (player && typeof slotIndex === "number") {
-      setLiveEntries((prev) => [
+    if (player && typeof position === "number" && slotType) {
+      setPendingPositions((prev) => ({ ...prev, [position]: true }));
+      setOptimisticByPosition((prev) => ({
         ...prev,
-        {
-          id: `optimistic-${playerId}-${slotIndex}`,
+        [position]: {
+          id: `optimistic-${playerId}-${position}`,
           gameweek_id: gameweekId,
           player_id: playerId,
           team: "subs",
-          position: slotIndex,
+          position,
           remove_requested: false,
           players: player,
         },
-      ]);
+      }));
     }
-    const response = await fetch(`/api/gameweeks/${gameweekId}/join`, {
+    const response = await fetch(`/api/gameweeks/${gameweekId}/slots/claim`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ playerId, slotIndex }),
+      body: JSON.stringify({ playerId, position, slotType }),
     });
     const data = await response.json();
     if (!response.ok) {
       setMessage(data.error ?? "Could not join.");
+      if (typeof position === "number") {
+        setOptimisticByPosition((prev) => {
+          const next = { ...prev };
+          delete next[position];
+          return next;
+        });
+        setPendingPositions((prev) => {
+          const next = { ...prev };
+          delete next[position];
+          return next;
+        });
+      }
       router.refresh();
       return;
+    }
+    if (typeof position === "number") {
+      setOptimisticByPosition((prev) => {
+        const next = { ...prev };
+        delete next[position];
+        return next;
+      });
+      setPendingPositions((prev) => {
+        const next = { ...prev };
+        delete next[position];
+        return next;
+      });
     }
     router.refresh();
   };
@@ -175,8 +229,9 @@ export default function JoinSlots({
     setCreating(false);
     setNewFirst("");
     setNewLast("");
-    if (data.player?.id) {
-      await joinPlayer(data.player.id, pendingSlot ?? undefined);
+    if (data.player?.id && typeof pendingSlot === "number") {
+      const slotType = pendingSlot <= 14 ? "main" : "sub";
+      await joinPlayer(data.player.id, pendingSlot, slotType);
     } else {
       router.refresh();
     }
@@ -193,8 +248,9 @@ export default function JoinSlots({
 
   const selectPlayer = async (playerId: string) => {
     if (openSlot === null) return;
+    const slotType = openSlot <= 14 ? "main" : "sub";
     setOpenSlot(null);
-    await joinPlayer(playerId, openSlot);
+    await joinPlayer(playerId, openSlot, slotType);
   };
 
   const handleAddNew = () => {
@@ -272,10 +328,11 @@ export default function JoinSlots({
                 ) : (
                   <button
                     type="button"
-                    onClick={() => openDropdown(index)}
+                    onClick={() => openDropdown(index + 1)}
                     className="flex w-full items-center justify-between gap-3 text-left text-slate-400"
                     data-slot-trigger
                     aria-label="Add player"
+                    disabled={Boolean(pendingPositions[index + 1])}
                   >
                     <span className="inline-flex items-center gap-2">
                       <span className="text-xs text-slate-400">
@@ -312,7 +369,7 @@ export default function JoinSlots({
                 </button>
               )}
 
-              {openSlot === index ? (
+              {openSlot === index + 1 ? (
                 <div
                   className="absolute left-0 right-0 top-full z-10 mt-2 rounded-xl border border-slate-200 bg-white p-2 shadow-lg"
                   data-slot-dropdown
@@ -428,10 +485,11 @@ export default function JoinSlots({
                 ) : (
                   <button
                     type="button"
-                    onClick={() => openDropdown(MAIN_CAPACITY + index)}
+                    onClick={() => openDropdown(15 + index)}
                     className="flex w-full items-center justify-between gap-3 text-left text-slate-400"
                     data-slot-trigger
                     aria-label="Add player"
+                    disabled={Boolean(pendingPositions[15 + index])}
                   >
                     <span className="inline-flex items-center gap-2">
                       <span className="text-xs text-slate-400">
@@ -468,7 +526,7 @@ export default function JoinSlots({
                   </button>
                 )}
 
-              {openSlot === MAIN_CAPACITY + index ? (
+                {openSlot === 15 + index ? (
                   <div
                     className="absolute left-0 right-0 top-full z-10 mt-2 rounded-xl border border-slate-200 bg-white p-2 shadow-lg"
                     data-slot-dropdown
