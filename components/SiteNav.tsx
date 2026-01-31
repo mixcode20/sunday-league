@@ -5,8 +5,8 @@ export default function SiteNav() {
         <div className="flex items-center gap-3">
           <a href="/" aria-label="Game">
             <img
-              src="/Synbol.svg"
-              alt="Synbol logo"
+              src="/Symbol.svg"
+              alt="Symbol logo"
               className="h-7 w-7"
             />
           </a>
