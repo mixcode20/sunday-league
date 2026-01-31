@@ -8,6 +8,30 @@ export const formatDate = (dateString: string) => {
   });
 };
 
+export const getOrdinalSuffix = (day: number) => {
+  if (day % 100 >= 11 && day % 100 <= 13) {
+    return "th";
+  }
+  switch (day % 10) {
+    case 1:
+      return "st";
+    case 2:
+      return "nd";
+    case 3:
+      return "rd";
+    default:
+      return "th";
+  }
+};
+
+export const formatGameweekDate = (dateString: string) => {
+  const date = new Date(dateString);
+  const weekday = date.toLocaleDateString("en-US", { weekday: "long" });
+  const month = date.toLocaleDateString("en-US", { month: "short" });
+  const day = date.getDate();
+  return `${weekday}, ${month} ${day}${getOrdinalSuffix(day)}`;
+};
+
 export const getNextSundayISO = () => {
   const today = new Date();
   const day = today.getDay();

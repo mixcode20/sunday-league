@@ -1,5 +1,5 @@
 import { supabaseServer } from "@/lib/supabase";
-import { formatDate, normalizePlayerJoin } from "@/lib/utils";
+import { formatGameweekDate, normalizePlayerJoin } from "@/lib/utils";
 
 type SearchParams = {
   gameweekId?: string;
@@ -73,7 +73,7 @@ export default async function ResultsPage({
               Results
             </p>
             <h2 className="text-2xl font-semibold text-slate-900">
-              {formatDate(currentGameweek.game_date)}
+              {formatGameweekDate(currentGameweek.game_date)}
             </h2>
           </div>
           <div className="flex items-center gap-2">

@@ -9,7 +9,7 @@ export default function SiteNav() {
         </div>
         <nav className="flex flex-wrap items-center gap-3 text-sm text-slate-600">
           <a href="/" className="font-medium text-slate-900">
-            Home
+            Game
           </a>
           <a href="/teams">Teams</a>
           <a href="/history">Results</a>

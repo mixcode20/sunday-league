@@ -58,6 +58,8 @@ export default function TeamsClient({ gameweek, entries }: TeamsClientProps) {
     [entries]
   );
 
+  const teamsSelected = grouped.darks.length + grouped.whites.length > 0;
+
   const openSettings = () => {
     setSettingsOpen(true);
     setPinInput("");
@@ -203,6 +205,12 @@ export default function TeamsClient({ gameweek, entries }: TeamsClientProps) {
       {statusMessage ? (
         <p className="rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-700">
           {statusMessage}
+        </p>
+      ) : null}
+
+      {!teamsSelected ? (
+        <p className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-500">
+          Teams have not yet been selected for this gameweek.
         </p>
       ) : null}
 

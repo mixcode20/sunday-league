@@ -48,11 +48,11 @@ export default function LeagueTableClient({ rows }: { rows: Row[] }) {
   };
 
   return (
-    <div className="overflow-x-auto rounded-2xl border border-slate-200 bg-white shadow-sm">
-      <table className="w-full min-w-[520px] text-left text-sm">
-        <thead className="bg-slate-100 text-xs uppercase tracking-wide text-slate-500">
+    <div className="rounded-2xl border border-slate-200 bg-white shadow-sm">
+      <table className="w-full table-fixed text-left text-xs">
+        <thead className="bg-slate-100 text-[11px] uppercase tracking-wide text-slate-500">
           <tr>
-            <th className="px-4 py-3">Player</th>
+            <th className="px-3 py-2">Player</th>
             {(
               [
                 ["gp", "GP"],
@@ -64,7 +64,7 @@ export default function LeagueTableClient({ rows }: { rows: Row[] }) {
             ).map(([key, label]) => (
               <th
                 key={key}
-                className="cursor-pointer px-4 py-3"
+                className="cursor-pointer px-2 py-2"
                 onClick={() => toggleSort(key)}
               >
                 <div className="flex items-center gap-1">
@@ -83,14 +83,14 @@ export default function LeagueTableClient({ rows }: { rows: Row[] }) {
           {sorted.length > 0 ? (
             sorted.map((row) => (
               <tr key={row.id} className="border-t border-slate-100">
-                <td className="px-4 py-3 font-medium text-slate-800">
+                <td className="px-3 py-2 font-medium text-slate-800">
                   {row.name}
                 </td>
-                <td className="px-4 py-3 text-slate-600">{row.gp}</td>
-                <td className="px-4 py-3 text-slate-600">{row.w}</td>
-                <td className="px-4 py-3 text-slate-600">{row.d}</td>
-                <td className="px-4 py-3 text-slate-600">{row.l}</td>
-                <td className="px-4 py-3 text-slate-600">
+                <td className="px-2 py-2 text-slate-600">{row.gp}</td>
+                <td className="px-2 py-2 text-slate-600">{row.w}</td>
+                <td className="px-2 py-2 text-slate-600">{row.d}</td>
+                <td className="px-2 py-2 text-slate-600">{row.l}</td>
+                <td className="px-2 py-2 text-slate-600">
                   {row.winPct.toFixed(0)}%
                 </td>
               </tr>

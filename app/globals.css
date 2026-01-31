@@ -1,5 +1,6 @@
+@import url("https://fonts.googleapis.com/css2?family=Muli:wght@300;400;600;700&display=swap");
 @import "tailwindcss";
 
 body {
-  font-family: var(--font-geist-sans), system-ui, sans-serif;
+  font-family: "Muli", system-ui, sans-serif;
 }

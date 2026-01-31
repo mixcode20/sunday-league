@@ -1,7 +1,7 @@
 import CreateGameweek from "@/components/CreateGameweek";
 import JoinSlots from "@/components/JoinSlots";
 import { supabaseServer } from "@/lib/supabase";
-import { formatDate, normalizePlayerJoin } from "@/lib/utils";
+import { formatGameweekDate, normalizePlayerJoin } from "@/lib/utils";
 
 export default async function Home() {
   const supabase = supabaseServer();
@@ -47,11 +47,13 @@ export default async function Home() {
               {openGameweek ? "Open gameweek" : "Latest result"}
             </p>
             <h2 className="text-2xl font-semibold text-slate-900">
-              {gameweek ? formatDate(gameweek.game_date) : "No gameweeks yet"}
+              {gameweek
+                ? formatGameweekDate(gameweek.game_date)
+                : "No gameweeks yet"}
             </h2>
             <p className="mt-2 text-sm text-slate-500">
-              {gameweek?.game_time ? gameweek.game_time : "Time TBC"} ·{" "}
-              {gameweek?.location ? gameweek.location : "Location TBC"}
+              {gameweek?.game_time ? gameweek.game_time : "9:15am"} ·{" "}
+              {gameweek?.location ? gameweek.location : "MH"}
             </p>
           </div>
           <CreateGameweek />

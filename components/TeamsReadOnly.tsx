@@ -21,6 +21,8 @@ export default function TeamsReadOnly({ entries }: { entries: GameweekPlayer[] }
     grouped[team] = [...grouped[team]].sort((a, b) => a.position - b.position);
   });
 
+  const teamsSelected = grouped.darks.length + grouped.whites.length > 0;
+
   const renderSlots = (team: Team, title: string, accent: string, isDark?: boolean) => (
     <div className={`rounded-2xl border border-slate-200 p-4 shadow-sm ${accent}`}>
       <div className="flex items-center justify-between">
@@ -59,6 +61,11 @@ export default function TeamsReadOnly({ entries }: { entries: GameweekPlayer[] }
 
   return (
     <div className="space-y-4">
+      {!teamsSelected ? (
+        <p className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-500">
+          Teams have not yet been selected for this gameweek.
+        </p>
+      ) : null}
       <div className="grid gap-4 md:grid-cols-2">
         {renderSlots("darks", "Darks", "bg-slate-900 text-white", true)}
         {renderSlots("whites", "Whites", "bg-white border-slate-300")}

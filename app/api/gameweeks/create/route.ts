@@ -45,8 +45,8 @@ export async function POST(request: Request) {
     .from("gameweeks")
     .insert({
       game_date: date,
-      game_time: time || null,
-      location: location || null,
+      game_time: time || "9:15am",
+      location: location || "MH",
       status: "open",
     })
     .select("id")

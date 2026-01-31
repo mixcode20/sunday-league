@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import type { GameweekPlayer, Player } from "@/lib/types";
 import Modal from "@/components/Modal";
@@ -27,19 +27,41 @@ export default function JoinSlots({
   const [creating, setCreating] = useState(false);
   const [newFirst, setNewFirst] = useState("");
   const [newLast, setNewLast] = useState("");
+  const [liveEntries, setLiveEntries] = useState<GameweekPlayer[]>(entries);
 
-  const totalCount = entries.length;
-  const mainCount = Math.min(entries.length, MAIN_CAPACITY);
-  const subsCount = Math.max(entries.length - MAIN_CAPACITY, 0);
+  useEffect(() => {
+    setLiveEntries(entries);
+  }, [entries]);
+
+  useEffect(() => {
+    if (!gameweekId) return;
+    const interval = setInterval(async () => {
+      const response = await fetch(`/api/gameweeks/${gameweekId}/entries`);
+      if (!response.ok) return;
+      const data = await response.json();
+      if (Array.isArray(data.entries)) {
+        setLiveEntries(data.entries);
+      }
+    }, 8000);
+
+    return () => clearInterval(interval);
+  }, [gameweekId]);
+
+  const totalCount = liveEntries.length;
+  const mainCount = Math.min(liveEntries.length, MAIN_CAPACITY);
+  const subsCount = Math.max(liveEntries.length - MAIN_CAPACITY, 0);
 
   const slotEntries = useMemo(() => {
-    const mainSlots = Array.from({ length: MAIN_CAPACITY }, (_, index) => entries[index] ?? null);
+    const mainSlots = Array.from(
+      { length: MAIN_CAPACITY },
+      (_, index) => liveEntries[index] ?? null
+    );
     const subsSlots = Array.from(
       { length: SUB_CAPACITY },
-      (_, index) => entries[MAIN_CAPACITY + index] ?? null
+      (_, index) => liveEntries[MAIN_CAPACITY + index] ?? null
     );
     return { mainSlots, subsSlots };
-  }, [entries]);
+  }, [liveEntries]);
 
   const joinPlayer = async (playerId: string) => {
     if (!gameweekId) return;
@@ -109,14 +131,17 @@ export default function JoinSlots({
       <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
         <div>
           <p className="text-xs uppercase tracking-[0.2em] text-slate-400">Capacity</p>
-          <p className="text-sm font-semibold text-slate-800">
+          <p className="text-sm text-slate-500">
             {mainCount}/{MAIN_CAPACITY} main · {Math.min(subsCount, SUB_CAPACITY)}/{SUB_CAPACITY} subs
           </p>
         </div>
         {isOpen ? (
           <div className="min-w-[220px]">
+            <label className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+              Add player
+            </label>
             <select
-              className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm"
+              className="mt-2 w-full rounded-xl border border-slate-200 px-3 py-2 text-sm"
               value={selectedPlayer}
               onChange={(event) => handleSelect(event.target.value)}
               disabled={totalCount >= MAIN_CAPACITY + SUB_CAPACITY}
@@ -135,7 +160,7 @@ export default function JoinSlots({
                 onClick={() => joinPlayer(selectedPlayer)}
                 className="mt-2 w-full rounded-xl bg-slate-900 px-3 py-2 text-sm font-semibold text-white"
               >
-                Join gameweek
+                Add player
               </button>
             ) : null}
           </div>
@@ -155,7 +180,7 @@ export default function JoinSlots({
       ) : null}
 
       <div className="space-y-3">
-        <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
+        <div className="grid grid-cols-1 gap-3">
           {slotEntries.mainSlots.map((entry, index) => (
             <div
               key={`main-${index}`}
@@ -177,7 +202,7 @@ export default function JoinSlots({
                   ) : null}
                 </>
               ) : (
-                <span className="text-slate-400">Empty slot</span>
+                <span className="text-slate-400">Free space</span>
               )}
             </div>
           ))}
@@ -185,7 +210,7 @@ export default function JoinSlots({
 
         <div>
           <p className="text-xs uppercase tracking-[0.2em] text-slate-400">Subs</p>
-          <div className="mt-2 grid grid-cols-2 gap-3 md:grid-cols-4">
+          <div className="mt-2 grid grid-cols-1 gap-3">
             {slotEntries.subsSlots.map((entry, index) => (
               <div
                 key={`sub-${index}`}
@@ -204,15 +229,15 @@ export default function JoinSlots({
                       >
                         Remove
                       </button>
-                    ) : null}
-                  </>
-                ) : (
-                  <span className="text-slate-400">Empty sub</span>
-                )}
-              </div>
-            ))}
-          </div>
+                  ) : null}
+                </>
+              ) : (
+                <span className="text-slate-400">Free space</span>
+              )}
+            </div>
+          ))}
         </div>
+      </div>
       </div>
 
       <Modal isOpen={creating} title="Add player" onClose={() => setCreating(false)}>

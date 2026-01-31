@@ -12,16 +12,16 @@ export default function CreateGameweek() {
   const [pin, setPin] = useState("");
   const [organiserPin, setOrganiserPin] = useState("");
   const [date, setDate] = useState(getNextSundayISO());
-  const [time, setTime] = useState("");
-  const [location, setLocation] = useState("");
+  const [time, setTime] = useState("9:15am");
+  const [location, setLocation] = useState("MH");
   const [message, setMessage] = useState("");
 
   const openModal = () => {
     setModalOpen(true);
     setPin("");
     setDate(getNextSundayISO());
-    setTime("");
-    setLocation("");
+    setTime("9:15am");
+    setLocation("MH");
     setMessage("");
   };
 
@@ -111,7 +111,7 @@ export default function CreateGameweek() {
                 value={time}
                 onChange={(event) => setTime(event.target.value)}
                 className="mt-2 w-full rounded-xl border border-slate-200 px-3 py-2 text-sm"
-                placeholder="Time TBC"
+                placeholder="9:15am"
               />
             </div>
             <div>
@@ -121,9 +121,9 @@ export default function CreateGameweek() {
               <input
                 type="text"
                 value={location}
-                onChange={(event) => setLocation(event.target.value)}
                 className="mt-2 w-full rounded-xl border border-slate-200 px-3 py-2 text-sm"
-                placeholder="Location TBC"
+                placeholder="MH"
+                readOnly
               />
             </div>
           </div>
