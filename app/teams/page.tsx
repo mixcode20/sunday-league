@@ -27,7 +27,7 @@ export default async function TeamsPage() {
       <div className="space-y-4">
         <GameweekInfoStrip />
         <div className="rounded-2xl border border-slate-200 bg-white p-4 text-sm text-slate-500">
-          No open gameweek yet. Organisers can create one from the settings button.
+          No open gameweek yet. Unlock organiser mode to create one.
         </div>
       </div>
     );

@@ -16,7 +16,7 @@ type Draft = {
 
 export default function AdminPlayersClient({ players }: AdminPlayersClientProps) {
   const router = useRouter();
-  const { isOrganiser, organiserPin } = useOrganiserMode();
+  const { isUnlocked, organiserPin } = useOrganiserMode();
   const [message, setMessage] = useState("");
   const [newFirstName, setNewFirstName] = useState("");
   const [newLastName, setNewLastName] = useState("");
@@ -127,7 +127,7 @@ export default function AdminPlayersClient({ players }: AdminPlayersClientProps)
         </p>
       ) : null}
 
-      {isOrganiser ? (
+      {isUnlocked ? (
         <div className="rounded-2xl border border-slate-200 bg-white p-4 text-sm text-slate-600 shadow-sm">
           <p className="text-xs uppercase tracking-wide text-slate-400">
             Organiser menu
@@ -141,85 +141,108 @@ export default function AdminPlayersClient({ players }: AdminPlayersClientProps)
           Unlock organiser tools to edit players.
         </p>
       )}
-
-      <section className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
-        <h3 className="text-sm font-semibold text-slate-700">Add player</h3>
-        <div className="mt-3 grid gap-2 md:grid-cols-3">
-          <input
-            className="rounded-xl border border-slate-200 px-3 py-2 text-sm"
-            placeholder="First name"
-            value={newFirstName}
-            onChange={(event) => setNewFirstName(event.target.value)}
-          />
-          <input
-            className="rounded-xl border border-slate-200 px-3 py-2 text-sm"
-            placeholder="Last name"
-            value={newLastName}
-            onChange={(event) => setNewLastName(event.target.value)}
-          />
-          <button
-            type="button"
-            onClick={handleCreate}
-            className="rounded-xl bg-slate-900 px-3 py-2 text-sm font-semibold text-white"
-          >
-            Create
-          </button>
-        </div>
-      </section>
-
-      <section className="space-y-2">
-        {sortedPlayers.length === 0 ? (
-          <div className="rounded-2xl border border-dashed border-slate-200 bg-white p-4 text-sm text-slate-400">
-            No players yet. Add the first player above.
-          </div>
-        ) : (
-          sortedPlayers.map((player) => {
-            const draft = drafts[player.id] ?? {
-              first_name: player.first_name,
-              last_name: player.last_name,
-            };
-            return (
-              <div
-                key={player.id}
-                className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm"
+      {isUnlocked ? (
+        <>
+          <section className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+            <h3 className="text-sm font-semibold text-slate-700">Add player</h3>
+            <div className="mt-3 grid gap-2 md:grid-cols-3">
+              <input
+                className="rounded-xl border border-slate-200 px-3 py-2 text-sm"
+                placeholder="First name"
+                value={newFirstName}
+                onChange={(event) => setNewFirstName(event.target.value)}
+              />
+              <input
+                className="rounded-xl border border-slate-200 px-3 py-2 text-sm"
+                placeholder="Last name"
+                value={newLastName}
+                onChange={(event) => setNewLastName(event.target.value)}
+              />
+              <button
+                type="button"
+                onClick={handleCreate}
+                className="rounded-xl bg-slate-900 px-3 py-2 text-sm font-semibold text-white"
               >
-                <div className="grid gap-2 md:grid-cols-3">
-                  <input
-                    className="rounded-xl border border-slate-200 px-3 py-2 text-sm"
-                    value={draft.first_name}
-                    onChange={(event) =>
-                      updateDraft(player.id, "first_name", event.target.value)
-                    }
-                  />
-                  <input
-                    className="rounded-xl border border-slate-200 px-3 py-2 text-sm"
-                    value={draft.last_name}
-                    onChange={(event) =>
-                      updateDraft(player.id, "last_name", event.target.value)
-                    }
-                  />
-                  <div className="flex gap-2">
-                    <button
-                      type="button"
-                      onClick={() => handleUpdate(player.id)}
-                      className="flex-1 rounded-xl border border-slate-200 px-3 py-2 text-sm text-slate-700"
-                    >
-                      Save
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => handleDelete(player.id)}
-                      className="flex-1 rounded-xl border border-rose-200 px-3 py-2 text-sm text-rose-600"
-                    >
-                      Delete
-                    </button>
-                  </div>
-                </div>
+                Create
+              </button>
+            </div>
+          </section>
+
+          <section className="space-y-2">
+            {sortedPlayers.length === 0 ? (
+              <div className="rounded-2xl border border-dashed border-slate-200 bg-white p-4 text-sm text-slate-400">
+                No players yet. Add the first player above.
               </div>
-            );
-          })
-        )}
-      </section>
+            ) : (
+              sortedPlayers.map((player) => {
+                const draft = drafts[player.id] ?? {
+                  first_name: player.first_name,
+                  last_name: player.last_name,
+                };
+                return (
+                  <div
+                    key={player.id}
+                    className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm"
+                  >
+                    <div className="grid gap-2 md:grid-cols-3">
+                      <input
+                        className="rounded-xl border border-slate-200 px-3 py-2 text-sm"
+                        value={draft.first_name}
+                        onChange={(event) =>
+                          updateDraft(player.id, "first_name", event.target.value)
+                        }
+                      />
+                      <input
+                        className="rounded-xl border border-slate-200 px-3 py-2 text-sm"
+                        value={draft.last_name}
+                        onChange={(event) =>
+                          updateDraft(player.id, "last_name", event.target.value)
+                        }
+                      />
+                      <div className="flex gap-2">
+                        <button
+                          type="button"
+                          onClick={() => handleUpdate(player.id)}
+                          className="flex-1 rounded-xl border border-slate-200 px-3 py-2 text-sm text-slate-700"
+                        >
+                          Save
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleDelete(player.id)}
+                          className="flex-1 rounded-xl border border-rose-200 px-3 py-2 text-sm text-rose-600"
+                        >
+                          Delete
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })
+            )}
+          </section>
+        </>
+      ) : (
+        <section className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+          <h3 className="text-sm font-semibold text-slate-700">Players</h3>
+          <div className="mt-3 grid gap-2 md:grid-cols-2">
+            {sortedPlayers.length === 0 ? (
+              <div className="rounded-xl border border-dashed border-slate-200 px-3 py-4 text-sm text-slate-400">
+                No players yet.
+              </div>
+            ) : (
+              sortedPlayers.map((player) => (
+                <div
+                  key={player.id}
+                  className="rounded-xl border border-slate-100 bg-slate-50 px-3 py-2 text-sm text-slate-700"
+                >
+                  {player.first_name} {player.last_name}
+                </div>
+              ))
+            )}
+          </div>
+        </section>
+      )}
 
     </div>
   );

@@ -6,7 +6,7 @@ import { useOrganiserMode } from "@/components/OrganiserModeProvider";
 
 export default function SiteNav() {
   const pathname = usePathname();
-  const { isOrganiser, requestEnable, disable } = useOrganiserMode();
+  const { isUnlocked, requestUnlock, lock } = useOrganiserMode();
 
   const navItems = [
     { href: "/", label: "Game" },
@@ -15,11 +15,11 @@ export default function SiteNav() {
     { href: "/league", label: "League" },
   ];
 
-  const handleCogClick = () => {
-    if (isOrganiser) {
-      disable();
+  const handleLockClick = () => {
+    if (isUnlocked) {
+      lock();
     } else {
-      requestEnable();
+      requestUnlock();
     }
   };
 
@@ -53,7 +53,7 @@ export default function SiteNav() {
               );
             })}
           </nav>
-          <SettingsButton onClick={handleCogClick} label="Organiser mode" />
+          <SettingsButton onClick={handleLockClick} isUnlocked={isUnlocked} />
         </div>
       </div>
     </header>

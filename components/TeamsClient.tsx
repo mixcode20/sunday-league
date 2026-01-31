@@ -24,7 +24,7 @@ type DragInfo = {
 
 export default function TeamsClient({ gameweek, entries }: TeamsClientProps) {
   const router = useRouter();
-  const { isOrganiser, organiserPin } = useOrganiserMode();
+  const { isUnlocked, organiserPin } = useOrganiserMode();
   const [statusMessage, setStatusMessage] = useState("");
   const [dragged, setDragged] = useState<DragInfo | null>(null);
 
@@ -115,7 +115,7 @@ export default function TeamsClient({ gameweek, entries }: TeamsClientProps) {
               <div
                 key={`${team}-${position}`}
                 onDragOver={(event) => {
-                  if (!isOrganiser || isLocked) return;
+                  if (!isUnlocked || isLocked) return;
                   event.preventDefault();
                 }}
                 onDrop={() => handleDrop(team, position, occupiedInfo)}
@@ -127,7 +127,7 @@ export default function TeamsClient({ gameweek, entries }: TeamsClientProps) {
               >
                 {entry ? (
                   <div
-                    draggable={Boolean(isOrganiser) && !isLocked}
+                    draggable={Boolean(isUnlocked) && !isLocked}
                     onDragStart={() =>
                       setDragged({
                         playerId: entry.player_id,
@@ -143,7 +143,7 @@ export default function TeamsClient({ gameweek, entries }: TeamsClientProps) {
                   >
                     {entry.players.first_name} {entry.players.last_name}
                   </div>
-                ) : isOrganiser && !isLocked ? (
+                ) : isUnlocked && !isLocked ? (
                   <select
                     className="w-full rounded-lg border border-slate-200 px-2 py-2 text-sm"
                     defaultValue=""
@@ -200,7 +200,7 @@ export default function TeamsClient({ gameweek, entries }: TeamsClientProps) {
         </p>
       ) : null}
 
-      {isOrganiser && !isLocked ? (
+      {isUnlocked && !isLocked ? (
         <div className="rounded-2xl border border-slate-200 bg-white p-4 text-sm text-slate-600 shadow-sm">
           <p className="text-xs uppercase tracking-wide text-slate-400">
             Organiser controls
@@ -232,7 +232,7 @@ export default function TeamsClient({ gameweek, entries }: TeamsClientProps) {
               <div
                 key={`subs-${position}`}
                 onDragOver={(event) => {
-                  if (!isOrganiser || isLocked) return;
+                  if (!isUnlocked || isLocked) return;
                   event.preventDefault();
                 }}
                 onDrop={() => handleDrop("subs", position, occupiedInfo)}
@@ -240,7 +240,7 @@ export default function TeamsClient({ gameweek, entries }: TeamsClientProps) {
               >
                 {entry ? (
                   <div
-                    draggable={Boolean(isOrganiser) && !isLocked}
+                    draggable={Boolean(isUnlocked) && !isLocked}
                     onDragStart={() =>
                       setDragged({
                         playerId: entry.player_id,
@@ -252,7 +252,7 @@ export default function TeamsClient({ gameweek, entries }: TeamsClientProps) {
                   >
                     {entry.players.first_name} {entry.players.last_name}
                   </div>
-                ) : isOrganiser && !isLocked ? (
+                ) : isUnlocked && !isLocked ? (
                   <select
                     className="w-full rounded-lg border border-slate-200 px-2 py-2 text-sm"
                     defaultValue=""

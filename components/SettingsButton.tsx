@@ -2,21 +2,24 @@
 
 type SettingsButtonProps = {
   onClick: () => void;
-  label?: string;
+  isUnlocked: boolean;
 };
 
-export default function SettingsButton({ onClick, label }: SettingsButtonProps) {
+export default function SettingsButton({ onClick, isUnlocked }: SettingsButtonProps) {
+  const label = isUnlocked ? "Lock organiser mode" : "Unlock organiser mode";
+  const iconSrc = isUnlocked ? "/unlock.svg" : "/lock.svg";
   return (
     <button
       type="button"
       onClick={onClick}
-      className="inline-flex min-h-[44px] items-center justify-center rounded-full bg-transparent p-3 text-slate-700"
-      aria-label={label ?? "Open settings"}
+      className="inline-flex h-11 w-11 items-center justify-center rounded-full bg-transparent text-slate-700 hover:bg-slate-100"
+      aria-label={label}
+      title={label}
     >
       <img
-        src="/settings-cog.svg"
+        src={iconSrc}
         alt=""
-        className="h-6.5 w-6.5"
+        className="h-5 w-5"
         aria-hidden="true"
       />
     </button>

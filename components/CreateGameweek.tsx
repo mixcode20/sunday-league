@@ -4,16 +4,24 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { getNextSundayISO } from "@/lib/utils";
 import { useOrganiserMode } from "@/components/OrganiserModeProvider";
+import Modal from "@/components/Modal";
 
 export default function CreateGameweek() {
   const router = useRouter();
-  const { isOrganiser, organiserPin } = useOrganiserMode();
+  const { isUnlocked, organiserPin } = useOrganiserMode();
   const [date, setDate] = useState(getNextSundayISO());
   const [time, setTime] = useState("9:15am");
-  const [location, setLocation] = useState("MH");
+  const [location] = useState("MH");
   const [message, setMessage] = useState("");
+  const [isOpen, setIsOpen] = useState(false);
+
+  const openModal = () => {
+    setMessage("");
+    setIsOpen(true);
+  };
 
   const createGameweek = async () => {
+    if (!organiserPin) return;
     setMessage("");
     const response = await fetch("/api/gameweeks/create", {
       method: "POST",
@@ -30,65 +38,65 @@ export default function CreateGameweek() {
       setMessage(data.error ?? "Failed to create gameweek.");
       return;
     }
+    setIsOpen(false);
     router.refresh();
   };
 
+  if (!isUnlocked) return null;
+
   return (
     <>
-      {isOrganiser ? (
-        <div className="mt-4 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
-          <div className="text-xs uppercase tracking-wide text-slate-400">
-            Organiser controls
-          </div>
-          <div className="mt-3 grid gap-3 md:grid-cols-3">
-            <div>
-              <label className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-                Date
-              </label>
-              <input
-                type="date"
-                value={date}
-                onChange={(event) => setDate(event.target.value)}
-                className="mt-2 w-full rounded-xl border border-slate-200 px-3 py-2 text-sm"
-              />
-            </div>
-            <div>
-              <label className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-                Time
-              </label>
-              <input
-                type="text"
-                value={time}
-                onChange={(event) => setTime(event.target.value)}
-                className="mt-2 w-full rounded-xl border border-slate-200 px-3 py-2 text-sm"
-                placeholder="9:15am"
-              />
-            </div>
-            <div>
-              <label className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-                Location
-              </label>
-              <input
-                type="text"
-                value={location}
-                className="mt-2 w-full rounded-xl border border-slate-200 px-3 py-2 text-sm"
-                placeholder="MH"
-                readOnly
-              />
-            </div>
-          </div>
-          <button
-            type="button"
-            onClick={createGameweek}
-            className="mt-4 w-full rounded-xl bg-slate-900 px-4 py-2 text-sm font-semibold text-white"
-          >
-            Create gameweek
-          </button>
-          {message ? (
-            <p className="mt-2 text-sm text-rose-500">{message}</p>
-          ) : null}
-        </div>
-      ) : null}
+      <div className="w-full">
+        <button
+          type="button"
+          onClick={openModal}
+          className="w-full rounded-2xl bg-slate-900 px-4 py-3 text-sm font-semibold text-white shadow-sm"
+        >
+          Create new game
+        </button>
+      </div>
+      <Modal
+        isOpen={isOpen}
+        title="Create new game"
+        onClose={() => setIsOpen(false)}
+        position="top"
+      >
+        <label className="text-sm font-medium text-slate-600">Date</label>
+        <input
+          type="date"
+          value={date}
+          onChange={(event) => setDate(event.target.value)}
+          className="mt-2 w-full rounded-xl border border-slate-200 px-3 py-2 text-base"
+        />
+        <label className="mt-3 text-sm font-medium text-slate-600">Time</label>
+        <input
+          type="text"
+          value={time}
+          onChange={(event) => setTime(event.target.value)}
+          className="mt-2 w-full rounded-xl border border-slate-200 px-3 py-2 text-base"
+          placeholder="9:15am"
+        />
+        <label className="mt-3 text-sm font-medium text-slate-600">
+          Location
+        </label>
+        <input
+          type="text"
+          value={location}
+          className="mt-2 w-full rounded-xl border border-slate-200 px-3 py-2 text-base text-slate-700"
+          placeholder="MH"
+          readOnly
+        />
+        <button
+          type="button"
+          onClick={createGameweek}
+          className="mt-4 w-full rounded-xl bg-slate-900 px-4 py-2 text-sm font-semibold text-white"
+        >
+          Create game
+        </button>
+        {message ? (
+          <p className="mt-2 text-sm text-rose-500">{message}</p>
+        ) : null}
+      </Modal>
     </>
   );
 }

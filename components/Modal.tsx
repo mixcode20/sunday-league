@@ -7,13 +7,27 @@ type ModalProps = {
   title: string;
   onClose: () => void;
   children: ReactNode;
+  position?: "top" | "center";
 };
 
-export default function Modal({ isOpen, title, onClose, children }: ModalProps) {
+export default function Modal({
+  isOpen,
+  title,
+  onClose,
+  children,
+  position = "top",
+}: ModalProps) {
   if (!isOpen) return null;
 
+  const positionClass =
+    position === "center"
+      ? "items-center py-8"
+      : "items-start pt-24 pb-6";
+
   return (
-    <div className="fixed inset-0 z-50 flex items-start justify-center bg-black/50 px-4 pb-6 pt-20">
+    <div
+      className={`fixed inset-0 z-50 flex justify-center bg-black/50 px-4 ${positionClass}`}
+    >
       <div className="w-full max-w-md rounded-2xl bg-white p-5 text-slate-900 shadow-xl">
         <div className="mb-4 flex items-center justify-between">
           <h2 className="text-lg font-semibold">{title}</h2>

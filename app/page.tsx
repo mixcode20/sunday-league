@@ -44,6 +44,7 @@ export default async function Home() {
 
   return (
     <div className="space-y-4">
+      <CreateGameweek />
       <GameweekInfoStrip
         gameweekId={openGameweek?.id ?? null}
         gameDate={gameweek?.game_date ?? null}
@@ -54,12 +55,9 @@ export default async function Home() {
       />
 
       <section className="flex flex-col gap-4">
-        <div className="flex items-start justify-between">
-          <p className="text-xs uppercase tracking-wide text-slate-400">
-            {openGameweek ? "Open gameweek" : "Latest result"}
-          </p>
-          <CreateGameweek />
-        </div>
+        <p className="text-xs uppercase tracking-wide text-slate-400">
+          {openGameweek ? "Open gameweek" : "Latest result"}
+        </p>
 
         {gameweek && players ? (
           <JoinSlots
@@ -70,7 +68,7 @@ export default async function Home() {
           />
         ) : (
           <div className="rounded-2xl border border-dashed border-slate-200 p-4 text-sm text-slate-500">
-            No open gameweek yet. Create one from the settings button.
+            No open gameweek yet. Unlock organiser mode to create one.
           </div>
         )}
       </section>

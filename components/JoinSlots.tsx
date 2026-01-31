@@ -23,7 +23,7 @@ export default function JoinSlots({
   entries,
 }: JoinSlotsProps) {
   const router = useRouter();
-  const { isOrganiser } = useOrganiserMode();
+  const { isUnlocked } = useOrganiserMode();
   const [message, setMessage] = useState("");
   const [creating, setCreating] = useState(false);
   const [newFirst, setNewFirst] = useState("");
@@ -305,7 +305,7 @@ export default function JoinSlots({
                     </span>
                   ) : null}
                   {isOpen ? (
-                    isOrganiser ? (
+                    isUnlocked ? (
                       <button
                         type="button"
                         onClick={() => leavePlayer(entry.player_id)}
@@ -462,7 +462,7 @@ export default function JoinSlots({
                       </span>
                     ) : null}
                     {isOpen ? (
-                      isOrganiser ? (
+                      isUnlocked ? (
                         <button
                           type="button"
                           onClick={() => leavePlayer(entry.player_id)}
