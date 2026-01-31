@@ -29,7 +29,7 @@ export const formatGameweekDate = (dateString: string) => {
   const weekday = date.toLocaleDateString("en-US", { weekday: "long" });
   const month = date.toLocaleDateString("en-US", { month: "short" });
   const day = date.getDate();
-  return `${weekday}, ${month} ${day}${getOrdinalSuffix(day)}`;
+  return `${weekday}, ${day}${getOrdinalSuffix(day)} ${month}`;
 };
 
 export const getNextSundayISO = () => {

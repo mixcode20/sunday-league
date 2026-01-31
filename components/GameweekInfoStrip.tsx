@@ -54,16 +54,23 @@ export default function GameweekInfoStrip({
     );
   }
 
+  const displayLocation =
+    location === "MH" || !location ? "Mill Hill" : location;
+
   return (
     <div className="border-b border-slate-200 bg-white">
-      <div className="mx-auto flex w-full max-w-5xl flex-wrap items-center gap-3 px-4 py-2 text-sm text-slate-600">
-        <span className="font-semibold text-slate-900">
+      <div className="mx-auto w-full max-w-5xl px-4 py-1 text-sm text-slate-600">
+        <div className="font-semibold text-slate-900">
           {formatGameweekDate(gameDate)}
-        </span>
-        <span>{time ?? "9:15am"} · {location ?? "MH"}</span>
-        <span>
-          {Math.min(counts.main, 14)}/14 · {Math.min(counts.subs, 4)}/4 subs
-        </span>
+        </div>
+        <div className="flex items-center justify-between">
+          <div>
+            {time ?? "9:15am"} · {displayLocation}
+          </div>
+          <div>
+            {Math.min(counts.main, 14)}/14 · {Math.min(counts.subs, 4)}/4 subs
+          </div>
+        </div>
       </div>
     </div>
   );
