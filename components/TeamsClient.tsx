@@ -119,7 +119,11 @@ export default function TeamsClient({ gameweek, entries }: TeamsClientProps) {
                   event.preventDefault();
                 }}
                 onDrop={() => handleDrop(team, position, occupiedInfo)}
-                className="flex min-h-[52px] items-center justify-between rounded-xl border border-dashed border-slate-200 bg-white px-3 py-2 text-sm"
+                className={`flex min-h-[52px] items-center justify-between rounded-xl border border-dashed px-3 py-2 text-sm ${
+                  team === "darks"
+                    ? "border-slate-700 bg-slate-950 text-slate-100"
+                    : "border-slate-200 bg-white text-slate-900"
+                }`}
               >
                 {entry ? (
                   <div
@@ -131,7 +135,11 @@ export default function TeamsClient({ gameweek, entries }: TeamsClientProps) {
                         position: entry.position,
                       })
                     }
-                    className="w-full rounded-lg bg-white px-2 py-2 font-medium text-slate-900"
+                    className={`w-full rounded-lg px-2 py-2 font-medium ${
+                      team === "darks"
+                        ? "bg-slate-900 text-slate-100"
+                        : "bg-white text-slate-900"
+                    }`}
                   >
                     {entry.players.first_name} {entry.players.last_name}
                   </div>
@@ -153,7 +161,13 @@ export default function TeamsClient({ gameweek, entries }: TeamsClientProps) {
                     ))}
                   </select>
                 ) : (
-                  <span className="text-xs text-slate-400">Empty slot</span>
+                  <span
+                    className={`text-xs ${
+                      team === "darks" ? "text-slate-400" : "text-slate-400"
+                    }`}
+                  >
+                    Pick
+                  </span>
                 )}
               </div>
             );
@@ -256,7 +270,7 @@ export default function TeamsClient({ gameweek, entries }: TeamsClientProps) {
                     ))}
                   </select>
                 ) : (
-                  <span className="text-xs text-slate-400">Empty slot</span>
+                  <span className="text-xs text-slate-400">Pick</span>
                 )}
               </div>
             );

@@ -27,6 +27,9 @@ export default function SiteNav() {
     <header className="border-b border-slate-200 bg-white">
       <div className="mx-auto flex w-full max-w-5xl flex-col gap-3 px-4 py-3 md:flex-row md:items-center md:justify-between">
         <div className="flex items-center gap-3">
+          <a href="/" aria-label="Game">
+            <img src="/Symbol.svg" alt="Symbol logo" className="h-7 w-7" />
+          </a>
           <p className="text-xs uppercase tracking-[0.3em] text-slate-500">
             Sunday Powerleague
           </p>

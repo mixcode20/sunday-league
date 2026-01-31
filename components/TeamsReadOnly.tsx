@@ -50,7 +50,7 @@ export default function TeamsReadOnly({ entries }: { entries: GameweekPlayer[] }
                   {entry.players.first_name} {entry.players.last_name}
                 </span>
               ) : (
-                <span className="text-xs text-slate-400">Empty slot</span>
+                <span className="text-xs text-slate-400">Pick</span>
               )}
             </div>
           );
@@ -87,7 +87,7 @@ export default function TeamsReadOnly({ entries }: { entries: GameweekPlayer[] }
                     {entry.players.first_name} {entry.players.last_name}
                   </span>
                 ) : (
-                  <span className="text-xs text-slate-400">Empty slot</span>
+                  <span className="text-xs text-slate-400">Pick</span>
                 )}
               </div>
             );

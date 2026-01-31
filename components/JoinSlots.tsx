@@ -226,18 +226,23 @@ export default function JoinSlots({
               className={`relative flex min-h-[56px] flex-col rounded-xl border p-3 text-xs shadow-sm ${
                 entry?.remove_requested
                   ? "border-rose-200 bg-rose-50 text-rose-600"
-                  : "border-slate-200 bg-white text-slate-600"
+                  : entry
+                    ? "border-emerald-200 bg-emerald-50 text-slate-700"
+                    : "border-slate-200 bg-white text-slate-600"
               } ${entry ? "justify-between" : "justify-center"}`}
             >
-              {entry ? (
-                <>
-                  <span
-                    className={`text-sm font-semibold ${
-                      entry.remove_requested ? "text-rose-600" : "text-slate-900"
-                    }`}
-                  >
-                    {entry.players.first_name} {entry.players.last_name}
-                  </span>
+                {entry ? (
+                  <>
+                    <span
+                      className={`text-sm font-semibold ${
+                        entry.remove_requested ? "text-rose-600" : "text-slate-900"
+                      }`}
+                    >
+                      <span className="mr-2 text-xs text-slate-400">
+                        {index + 1}.
+                      </span>
+                      {entry.players.first_name} {entry.players.last_name}
+                    </span>
                   {entry.remove_requested ? (
                     <span className="mt-2 text-[11px] font-semibold uppercase tracking-wide text-rose-500">
                       Removal requested
@@ -264,7 +269,7 @@ export default function JoinSlots({
                     )
                   ) : null}
                 </>
-              ) : (
+                ) : (
                   <button
                     type="button"
                     onClick={() => openDropdown(index)}
@@ -272,9 +277,12 @@ export default function JoinSlots({
                     data-slot-trigger
                     aria-label="Add player"
                   >
-                  <span className="inline-flex items-center gap-2">
-                    <svg
-                      xmlns="http://www.w3.org/2000/svg"
+                    <span className="inline-flex items-center gap-2">
+                      <span className="text-xs text-slate-400">
+                        {index + 1}.
+                      </span>
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
                       viewBox="0 0 24 24"
                       fill="none"
                       stroke="currentColor"
@@ -310,7 +318,8 @@ export default function JoinSlots({
                   data-slot-dropdown
                   ref={dropdownRef}
                 >
-                  <div className="flex items-center gap-2 px-3 py-1 text-[10px] uppercase tracking-wide text-slate-400">
+                  <div className="flex items-center justify-between px-3 py-1 text-[10px] uppercase tracking-wide text-slate-400">
+                    <span>Add player</span>
                     <button
                       type="button"
                       onClick={() => setOpenSlot(null)}
@@ -319,7 +328,6 @@ export default function JoinSlots({
                     >
                       ×
                     </button>
-                    Add player
                   </div>
                   <button
                     type="button"
@@ -374,7 +382,9 @@ export default function JoinSlots({
                 className={`relative flex min-h-[56px] flex-col rounded-xl border border-dashed p-3 text-xs shadow-sm ${
                   entry?.remove_requested
                     ? "border-rose-200 bg-rose-50 text-rose-600"
-                    : "border-slate-200 bg-white text-slate-600"
+                    : entry
+                      ? "border-emerald-200 bg-emerald-50 text-slate-700"
+                      : "border-slate-200 bg-white text-slate-600"
                 } ${entry ? "justify-between" : "justify-center"}`}
               >
                 {entry ? (
@@ -384,6 +394,9 @@ export default function JoinSlots({
                         entry.remove_requested ? "text-rose-600" : "text-slate-900"
                       }`}
                     >
+                      <span className="mr-2 text-xs text-slate-400">
+                        {MAIN_CAPACITY + index + 1}.
+                      </span>
                       {entry.players.first_name} {entry.players.last_name}
                     </span>
                     {entry.remove_requested ? (
@@ -421,6 +434,9 @@ export default function JoinSlots({
                     aria-label="Add player"
                   >
                     <span className="inline-flex items-center gap-2">
+                      <span className="text-xs text-slate-400">
+                        {MAIN_CAPACITY + index + 1}.
+                      </span>
                       <svg
                         xmlns="http://www.w3.org/2000/svg"
                         viewBox="0 0 24 24"
@@ -457,7 +473,8 @@ export default function JoinSlots({
                     className="absolute left-0 right-0 top-full z-10 mt-2 rounded-xl border border-slate-200 bg-white p-2 shadow-lg"
                     data-slot-dropdown
                   >
-                    <div className="flex items-center gap-2 px-3 py-1 text-[10px] uppercase tracking-wide text-slate-400">
+                    <div className="flex items-center justify-between px-3 py-1 text-[10px] uppercase tracking-wide text-slate-400">
+                      <span>Add player</span>
                       <button
                         type="button"
                         onClick={() => setOpenSlot(null)}
@@ -466,7 +483,6 @@ export default function JoinSlots({
                       >
                         ×
                       </button>
-                      Add player
                     </div>
                     <button
                       type="button"
