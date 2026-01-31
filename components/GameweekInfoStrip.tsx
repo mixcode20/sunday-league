@@ -46,8 +46,8 @@ export default function GameweekInfoStrip({
 
   if (!gameDate) {
     return (
-      <div className="border-b border-slate-200 bg-white">
-        <div className="mx-auto w-full max-w-5xl px-4 py-2 text-sm text-slate-500">
+      <div className="mt-[5px] w-full border-b border-slate-200 bg-white">
+        <div className="mx-auto w-full max-w-5xl px-4 py-[5px] text-sm text-slate-500">
           No gameweek scheduled yet.
         </div>
       </div>
@@ -58,8 +58,8 @@ export default function GameweekInfoStrip({
     location === "MH" || !location ? "Mill Hill" : location;
 
   return (
-    <div className="border-b border-slate-200 bg-white">
-      <div className="mx-auto w-full max-w-5xl px-4 py-1 text-sm text-slate-600">
+    <div className="mt-[5px] w-full border-b border-slate-200 bg-white">
+      <div className="mx-auto w-full max-w-5xl px-4 py-[5px] text-sm text-slate-600">
         <div className="font-semibold text-slate-900">
           {formatGameweekDate(gameDate)}
         </div>
