@@ -12,7 +12,7 @@ export async function GET(
   const { data: entries, error } = await supabase
     .from("gameweek_players")
     .select(
-      "id, gameweek_id, player_id, team, position, players(id, first_name, last_name)"
+      "id, gameweek_id, player_id, team, position, remove_requested, players(id, first_name, last_name)"
     )
     .eq("gameweek_id", gameweekId)
     .order("position", { ascending: true })

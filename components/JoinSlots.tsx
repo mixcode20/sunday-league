@@ -1,9 +1,10 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import type { GameweekPlayer, Player } from "@/lib/types";
 import Modal from "@/components/Modal";
+import { useOrganiserMode } from "@/components/OrganiserModeProvider";
 
 type JoinSlotsProps = {
   isOpen: boolean;
@@ -22,6 +23,7 @@ export default function JoinSlots({
   entries,
 }: JoinSlotsProps) {
   const router = useRouter();
+  const { isOrganiser } = useOrganiserMode();
   const [message, setMessage] = useState("");
   const [creating, setCreating] = useState(false);
   const [newFirst, setNewFirst] = useState("");
@@ -29,6 +31,7 @@ export default function JoinSlots({
   const [liveEntries, setLiveEntries] = useState<GameweekPlayer[]>(entries);
   const [openSlot, setOpenSlot] = useState<number | null>(null);
   const [pendingSlot, setPendingSlot] = useState<number | null>(null);
+  const dropdownRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
     setLiveEntries(entries);
@@ -43,10 +46,28 @@ export default function JoinSlots({
       if (Array.isArray(data.entries)) {
         setLiveEntries(data.entries);
       }
-    }, 5000);
+    }, 4000);
 
     return () => clearInterval(interval);
   }, [gameweekId]);
+
+  useEffect(() => {
+    const handleClick = (event: MouseEvent) => {
+      if (openSlot === null) return;
+      const target = event.target as HTMLElement | null;
+      if (!target) return;
+      if (
+        target.closest("[data-slot-trigger]") ||
+        target.closest("[data-slot-dropdown]")
+      ) {
+        return;
+      }
+      setOpenSlot(null);
+    };
+
+    document.addEventListener("click", handleClick);
+    return () => document.removeEventListener("click", handleClick);
+  }, [openSlot]);
 
   const orderedEntries = useMemo(() => {
     return [...liveEntries].sort((a, b) => a.position - b.position);
@@ -68,6 +89,21 @@ export default function JoinSlots({
   const joinPlayer = async (playerId: string, slotIndex?: number) => {
     if (!gameweekId) return;
     setMessage("");
+    const player = players.find((item) => item.id === playerId);
+    if (player && typeof slotIndex === "number") {
+      setLiveEntries((prev) => [
+        ...prev,
+        {
+          id: `optimistic-${playerId}-${slotIndex}`,
+          gameweek_id: gameweekId,
+          player_id: playerId,
+          team: "subs",
+          position: slotIndex,
+          remove_requested: false,
+          players: player,
+        },
+      ]);
+    }
     const response = await fetch(`/api/gameweeks/${gameweekId}/join`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -76,6 +112,7 @@ export default function JoinSlots({
     const data = await response.json();
     if (!response.ok) {
       setMessage(data.error ?? "Could not join.");
+      router.refresh();
       return;
     }
     router.refresh();
@@ -84,6 +121,7 @@ export default function JoinSlots({
   const leavePlayer = async (playerId: string) => {
     if (!gameweekId) return;
     setMessage("");
+    setLiveEntries((prev) => prev.filter((entry) => entry.player_id !== playerId));
     const response = await fetch(`/api/gameweeks/${gameweekId}/leave`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -92,9 +130,34 @@ export default function JoinSlots({
     const data = await response.json();
     if (!response.ok) {
       setMessage(data.error ?? "Could not remove.");
+      router.refresh();
       return;
     }
     router.refresh();
+  };
+
+  const requestRemoval = async (playerId: string) => {
+    if (!gameweekId) return;
+    setMessage("");
+    setLiveEntries((prev) =>
+      prev.map((entry) =>
+        entry.player_id === playerId
+          ? { ...entry, remove_requested: true }
+          : entry
+      )
+    );
+    const response = await fetch(
+      `/api/gameweeks/${gameweekId}/request-remove`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ playerId }),
+      }
+    );
+    if (!response.ok) {
+      setMessage("Could not request removal.");
+      router.refresh();
+    }
   };
 
   const createPlayer = async () => {
@@ -160,30 +223,55 @@ export default function JoinSlots({
           {slotEntries.mainSlots.map((entry, index) => (
             <div
               key={`main-${index}`}
-              className="relative flex min-h-[56px] flex-col justify-between rounded-xl border border-slate-200 bg-white p-3 text-xs text-slate-600 shadow-sm"
+              className={`relative flex min-h-[56px] flex-col rounded-xl border p-3 text-xs shadow-sm ${
+                entry?.remove_requested
+                  ? "border-rose-200 bg-rose-50 text-rose-600"
+                  : "border-slate-200 bg-white text-slate-600"
+              } ${entry ? "justify-between" : "justify-center"}`}
             >
               {entry ? (
                 <>
-                  <span className="text-sm font-semibold text-slate-900">
+                  <span
+                    className={`text-sm font-semibold ${
+                      entry.remove_requested ? "text-rose-600" : "text-slate-900"
+                    }`}
+                  >
                     {entry.players.first_name} {entry.players.last_name}
                   </span>
+                  {entry.remove_requested ? (
+                    <span className="mt-2 text-[11px] font-semibold uppercase tracking-wide text-rose-500">
+                      Removal requested
+                    </span>
+                  ) : null}
                   {isOpen ? (
-                    <button
-                      type="button"
-                      onClick={() => leavePlayer(entry.player_id)}
-                      className="mt-2 text-left text-xs font-semibold text-rose-500"
-                    >
-                      Remove
-                    </button>
+                    isOrganiser ? (
+                      <button
+                        type="button"
+                        onClick={() => leavePlayer(entry.player_id)}
+                        className="mt-2 inline-flex h-7 w-7 items-center justify-center rounded-full border border-rose-200 text-rose-500"
+                        aria-label="Remove player"
+                      >
+                        ×
+                      </button>
+                    ) : (
+                      <button
+                        type="button"
+                        onClick={() => requestRemoval(entry.player_id)}
+                        className="mt-2 text-left text-xs font-semibold text-rose-500"
+                      >
+                        Remove me
+                      </button>
+                    )
                   ) : null}
                 </>
               ) : (
-                <button
-                  type="button"
-                  onClick={() => openDropdown(index)}
-                  className="flex w-full items-center justify-between gap-3 text-left text-slate-400"
-                  aria-label="Add player"
-                >
+                  <button
+                    type="button"
+                    onClick={() => openDropdown(index)}
+                    className="flex w-full items-center justify-between gap-3 text-left text-slate-400"
+                    data-slot-trigger
+                    aria-label="Add player"
+                  >
                   <span className="inline-flex items-center gap-2">
                     <svg
                       xmlns="http://www.w3.org/2000/svg"
@@ -217,8 +305,20 @@ export default function JoinSlots({
               )}
 
               {openSlot === index ? (
-                <div className="absolute left-0 right-0 top-full z-10 mt-2 rounded-xl border border-slate-200 bg-white p-2 shadow-lg">
-                  <div className="px-3 py-1 text-[10px] uppercase tracking-wide text-slate-400">
+                <div
+                  className="absolute left-0 right-0 top-full z-10 mt-2 rounded-xl border border-slate-200 bg-white p-2 shadow-lg"
+                  data-slot-dropdown
+                  ref={dropdownRef}
+                >
+                  <div className="flex items-center gap-2 px-3 py-1 text-[10px] uppercase tracking-wide text-slate-400">
+                    <button
+                      type="button"
+                      onClick={() => setOpenSlot(null)}
+                      className="text-slate-400 hover:text-slate-600"
+                      aria-label="Close"
+                    >
+                      ×
+                    </button>
                     Add player
                   </div>
                   <button
@@ -271,21 +371,45 @@ export default function JoinSlots({
             {slotEntries.subsSlots.map((entry, index) => (
               <div
                 key={`sub-${index}`}
-                className="relative flex min-h-[56px] flex-col justify-between rounded-xl border border-dashed border-slate-200 bg-white p-3 text-xs text-slate-600 shadow-sm"
+                className={`relative flex min-h-[56px] flex-col rounded-xl border border-dashed p-3 text-xs shadow-sm ${
+                  entry?.remove_requested
+                    ? "border-rose-200 bg-rose-50 text-rose-600"
+                    : "border-slate-200 bg-white text-slate-600"
+                } ${entry ? "justify-between" : "justify-center"}`}
               >
                 {entry ? (
                   <>
-                    <span className="text-sm font-semibold text-slate-900">
+                    <span
+                      className={`text-sm font-semibold ${
+                        entry.remove_requested ? "text-rose-600" : "text-slate-900"
+                      }`}
+                    >
                       {entry.players.first_name} {entry.players.last_name}
                     </span>
+                    {entry.remove_requested ? (
+                      <span className="mt-2 text-[11px] font-semibold uppercase tracking-wide text-rose-500">
+                        Removal requested
+                      </span>
+                    ) : null}
                     {isOpen ? (
-                      <button
-                        type="button"
-                        onClick={() => leavePlayer(entry.player_id)}
-                        className="mt-2 text-left text-xs font-semibold text-rose-500"
-                      >
-                        Remove
-                      </button>
+                      isOrganiser ? (
+                        <button
+                          type="button"
+                          onClick={() => leavePlayer(entry.player_id)}
+                          className="mt-2 inline-flex h-7 w-7 items-center justify-center rounded-full border border-rose-200 text-rose-500"
+                          aria-label="Remove player"
+                        >
+                          ×
+                        </button>
+                      ) : (
+                        <button
+                          type="button"
+                          onClick={() => requestRemoval(entry.player_id)}
+                          className="mt-2 text-left text-xs font-semibold text-rose-500"
+                        >
+                          Remove me
+                        </button>
+                      )
                     ) : null}
                   </>
                 ) : (
@@ -293,6 +417,7 @@ export default function JoinSlots({
                     type="button"
                     onClick={() => openDropdown(MAIN_CAPACITY + index)}
                     className="flex w-full items-center justify-between gap-3 text-left text-slate-400"
+                    data-slot-trigger
                     aria-label="Add player"
                   >
                     <span className="inline-flex items-center gap-2">
@@ -327,9 +452,20 @@ export default function JoinSlots({
                   </button>
                 )}
 
-                {openSlot === MAIN_CAPACITY + index ? (
-                  <div className="absolute left-0 right-0 top-full z-10 mt-2 rounded-xl border border-slate-200 bg-white p-2 shadow-lg">
-                    <div className="px-3 py-1 text-[10px] uppercase tracking-wide text-slate-400">
+              {openSlot === MAIN_CAPACITY + index ? (
+                  <div
+                    className="absolute left-0 right-0 top-full z-10 mt-2 rounded-xl border border-slate-200 bg-white p-2 shadow-lg"
+                    data-slot-dropdown
+                  >
+                    <div className="flex items-center gap-2 px-3 py-1 text-[10px] uppercase tracking-wide text-slate-400">
+                      <button
+                        type="button"
+                        onClick={() => setOpenSlot(null)}
+                        className="text-slate-400 hover:text-slate-600"
+                        aria-label="Close"
+                      >
+                        ×
+                      </button>
                       Add player
                     </div>
                     <button

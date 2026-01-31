@@ -2,8 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import Modal from "@/components/Modal";
-import SettingsButton from "@/components/SettingsButton";
+import { useOrganiserMode } from "@/components/OrganiserModeProvider";
 import type { Gameweek, GameweekPlayer, Team } from "@/lib/types";
 
 type TeamsClientProps = {
@@ -25,9 +24,7 @@ type DragInfo = {
 
 export default function TeamsClient({ gameweek, entries }: TeamsClientProps) {
   const router = useRouter();
-  const [settingsOpen, setSettingsOpen] = useState(false);
-  const [pinInput, setPinInput] = useState("");
-  const [organiserPin, setOrganiserPin] = useState("");
+  const { isOrganiser, organiserPin } = useOrganiserMode();
   const [statusMessage, setStatusMessage] = useState("");
   const [dragged, setDragged] = useState<DragInfo | null>(null);
 
@@ -59,28 +56,6 @@ export default function TeamsClient({ gameweek, entries }: TeamsClientProps) {
   );
 
   const teamsSelected = grouped.darks.length + grouped.whites.length > 0;
-
-  const openSettings = () => {
-    setSettingsOpen(true);
-    setPinInput("");
-    setStatusMessage("");
-  };
-
-  const verifyPin = async () => {
-    setStatusMessage("");
-    const response = await fetch("/api/organiser/verify", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ pin: pinInput }),
-    });
-    const data = await response.json();
-    if (!response.ok || !data.ok) {
-      setStatusMessage("Incorrect PIN.");
-      return;
-    }
-    setOrganiserPin(pinInput);
-    setSettingsOpen(false);
-  };
 
   const assignPlayer = async (playerId: string, team: Team, position: number) => {
     if (!organiserPin) return;
@@ -140,7 +115,7 @@ export default function TeamsClient({ gameweek, entries }: TeamsClientProps) {
               <div
                 key={`${team}-${position}`}
                 onDragOver={(event) => {
-                  if (!organiserPin || isLocked) return;
+                  if (!isOrganiser || isLocked) return;
                   event.preventDefault();
                 }}
                 onDrop={() => handleDrop(team, position, occupiedInfo)}
@@ -148,7 +123,7 @@ export default function TeamsClient({ gameweek, entries }: TeamsClientProps) {
               >
                 {entry ? (
                   <div
-                    draggable={Boolean(organiserPin) && !isLocked}
+                    draggable={Boolean(isOrganiser) && !isLocked}
                     onDragStart={() =>
                       setDragged({
                         playerId: entry.player_id,
@@ -160,7 +135,7 @@ export default function TeamsClient({ gameweek, entries }: TeamsClientProps) {
                   >
                     {entry.players.first_name} {entry.players.last_name}
                   </div>
-                ) : organiserPin && !isLocked ? (
+                ) : isOrganiser && !isLocked ? (
                   <select
                     className="w-full rounded-lg border border-slate-200 px-2 py-2 text-sm"
                     defaultValue=""
@@ -197,9 +172,6 @@ export default function TeamsClient({ gameweek, entries }: TeamsClientProps) {
             {isLocked ? "Locked" : "Open"}
           </p>
         </div>
-        {!isLocked ? (
-          <SettingsButton onClick={openSettings} label="Enter PIN" />
-        ) : null}
       </div>
 
       {statusMessage ? (
@@ -214,7 +186,7 @@ export default function TeamsClient({ gameweek, entries }: TeamsClientProps) {
         </p>
       ) : null}
 
-      {organiserPin && !isLocked ? (
+      {isOrganiser && !isLocked ? (
         <div className="rounded-2xl border border-slate-200 bg-white p-4 text-sm text-slate-600 shadow-sm">
           <p className="text-xs uppercase tracking-wide text-slate-400">
             Organiser controls
@@ -225,7 +197,7 @@ export default function TeamsClient({ gameweek, entries }: TeamsClientProps) {
         </div>
       ) : null}
 
-      <div className="grid gap-4 md:grid-cols-2">
+      <div className="grid grid-cols-2 gap-4">
         {renderTeamSlots("darks", "Darks", "bg-slate-900 text-white", true)}
         {renderTeamSlots("whites", "Whites", "bg-white border-slate-300")}
       </div>
@@ -246,7 +218,7 @@ export default function TeamsClient({ gameweek, entries }: TeamsClientProps) {
               <div
                 key={`subs-${position}`}
                 onDragOver={(event) => {
-                  if (!organiserPin || isLocked) return;
+                  if (!isOrganiser || isLocked) return;
                   event.preventDefault();
                 }}
                 onDrop={() => handleDrop("subs", position, occupiedInfo)}
@@ -254,7 +226,7 @@ export default function TeamsClient({ gameweek, entries }: TeamsClientProps) {
               >
                 {entry ? (
                   <div
-                    draggable={Boolean(organiserPin) && !isLocked}
+                    draggable={Boolean(isOrganiser) && !isLocked}
                     onDragStart={() =>
                       setDragged({
                         playerId: entry.player_id,
@@ -266,7 +238,7 @@ export default function TeamsClient({ gameweek, entries }: TeamsClientProps) {
                   >
                     {entry.players.first_name} {entry.players.last_name}
                   </div>
-                ) : organiserPin && !isLocked ? (
+                ) : isOrganiser && !isLocked ? (
                   <select
                     className="w-full rounded-lg border border-slate-200 px-2 py-2 text-sm"
                     defaultValue=""
@@ -313,24 +285,6 @@ export default function TeamsClient({ gameweek, entries }: TeamsClientProps) {
           )}
         </div>
       </section>
-
-      <Modal isOpen={settingsOpen} title="Enter PIN" onClose={() => setSettingsOpen(false)}>
-        <label className="text-sm font-medium text-slate-600">PIN</label>
-        <input
-          type="password"
-          value={pinInput}
-          onChange={(event) => setPinInput(event.target.value)}
-          className="mt-2 w-full rounded-xl border border-slate-200 px-3 py-2 text-base"
-          placeholder="****"
-        />
-        <button
-          type="button"
-          onClick={verifyPin}
-          className="mt-3 w-full rounded-xl bg-slate-900 px-4 py-2 text-sm font-semibold text-white"
-        >
-          Submit
-        </button>
-      </Modal>
     </div>
   );
 }

@@ -66,7 +66,7 @@ export default function TeamsReadOnly({ entries }: { entries: GameweekPlayer[] }
           Teams have not yet been selected for this gameweek.
         </p>
       ) : null}
-      <div className="grid gap-4 md:grid-cols-2">
+      <div className="grid grid-cols-2 gap-4">
         {renderSlots("darks", "Darks", "bg-slate-900 text-white", true)}
         {renderSlots("whites", "Whites", "bg-white border-slate-300")}
       </div>

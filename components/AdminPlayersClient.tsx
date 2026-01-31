@@ -2,8 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import Modal from "@/components/Modal";
-import SettingsButton from "@/components/SettingsButton";
+import { useOrganiserMode } from "@/components/OrganiserModeProvider";
 import type { Player } from "@/lib/types";
 
 type AdminPlayersClientProps = {
@@ -17,9 +16,7 @@ type Draft = {
 
 export default function AdminPlayersClient({ players }: AdminPlayersClientProps) {
   const router = useRouter();
-  const [settingsOpen, setSettingsOpen] = useState(false);
-  const [pinInput, setPinInput] = useState("");
-  const [organiserPin, setOrganiserPin] = useState("");
+  const { isOrganiser, organiserPin } = useOrganiserMode();
   const [message, setMessage] = useState("");
   const [newFirstName, setNewFirstName] = useState("");
   const [newLastName, setNewLastName] = useState("");
@@ -34,29 +31,6 @@ export default function AdminPlayersClient({ players }: AdminPlayersClientProps)
       ),
     [players]
   );
-
-  const openSettings = () => {
-    setSettingsOpen(true);
-    setPinInput("");
-    setMessage("");
-    setOrganiserPin("");
-  };
-
-  const verifyPin = async () => {
-    setMessage("");
-    const response = await fetch("/api/organiser/verify", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ pin: pinInput }),
-    });
-    const data = await response.json();
-    if (!response.ok || !data.ok) {
-      setMessage("Incorrect PIN.");
-      return;
-    }
-    setOrganiserPin(pinInput);
-    setSettingsOpen(false);
-  };
 
   const handleCreate = async () => {
     if (!organiserPin) return;
@@ -144,7 +118,6 @@ export default function AdminPlayersClient({ players }: AdminPlayersClientProps)
               Create, edit, or remove players.
             </p>
           </div>
-          <SettingsButton onClick={openSettings} label="Enter PIN" />
         </div>
       </section>
 
@@ -154,7 +127,7 @@ export default function AdminPlayersClient({ players }: AdminPlayersClientProps)
         </p>
       ) : null}
 
-      {organiserPin ? (
+      {isOrganiser ? (
         <div className="rounded-2xl border border-slate-200 bg-white p-4 text-sm text-slate-600 shadow-sm">
           <p className="text-xs uppercase tracking-wide text-slate-400">
             Organiser menu
@@ -248,23 +221,6 @@ export default function AdminPlayersClient({ players }: AdminPlayersClientProps)
         )}
       </section>
 
-      <Modal isOpen={settingsOpen} title="Enter PIN" onClose={() => setSettingsOpen(false)}>
-        <label className="text-sm font-medium text-slate-600">PIN</label>
-        <input
-          type="password"
-          value={pinInput}
-          onChange={(event) => setPinInput(event.target.value)}
-          className="mt-2 w-full rounded-xl border border-slate-200 px-3 py-2 text-base"
-          placeholder="****"
-        />
-        <button
-          type="button"
-          onClick={verifyPin}
-          className="mt-3 w-full rounded-xl bg-slate-900 px-4 py-2 text-sm font-semibold text-white"
-        >
-          Submit
-        </button>
-      </Modal>
     </div>
   );
 }

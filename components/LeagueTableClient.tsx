@@ -50,6 +50,14 @@ export default function LeagueTableClient({ rows }: { rows: Row[] }) {
   return (
     <div className="rounded-2xl border border-slate-200 bg-white shadow-sm">
       <table className="w-full table-fixed text-left text-xs">
+        <colgroup>
+          <col style={{ width: "40%" }} />
+          <col style={{ width: "12%" }} />
+          <col style={{ width: "12%" }} />
+          <col style={{ width: "12%" }} />
+          <col style={{ width: "12%" }} />
+          <col style={{ width: "12%" }} />
+        </colgroup>
         <thead className="bg-slate-100 text-[11px] uppercase tracking-wide text-slate-500">
           <tr>
             <th className="px-3 py-2">Player</th>
@@ -59,7 +67,7 @@ export default function LeagueTableClient({ rows }: { rows: Row[] }) {
                 ["w", "W"],
                 ["d", "D"],
                 ["l", "L"],
-                ["winPct", "Win %"],
+                ["winPct", "W%"],
               ] as [SortKey, string][]
             ).map(([key, label]) => (
               <th
