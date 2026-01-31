@@ -29,15 +29,12 @@ export default function SiteNav() {
         <div className="flex items-center gap-3">
           <SettingsButton onClick={handleCogClick} label="Organiser mode" />
           <a href="/" aria-label="Game">
-<<<<<<< HEAD
             <img
               src="/Symbol.svg"
               alt="Symbol logo"
               className="h-7 w-7"
             />
-=======
             <img src="/Synbol.svg" alt="Synbol logo" className="h-7 w-7" />
->>>>>>> b228c7a (Navbar organiser mode + game slots + teams/league layout)
           </a>
           <p className="text-xs uppercase tracking-[0.3em] text-slate-500">
             Sunday Powerleague
