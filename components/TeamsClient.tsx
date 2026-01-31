@@ -166,7 +166,7 @@ export default function TeamsClient({ gameweek, entries }: TeamsClientProps) {
                       team === "darks" ? "text-slate-400" : "text-slate-400"
                     }`}
                   >
-                    Pick
+                    -
                   </span>
                 )}
               </div>
@@ -270,7 +270,7 @@ export default function TeamsClient({ gameweek, entries }: TeamsClientProps) {
                     ))}
                   </select>
                 ) : (
-                  <span className="text-xs text-slate-400">Pick</span>
+                  <span className="text-xs text-slate-400">-</span>
                 )}
               </div>
             );

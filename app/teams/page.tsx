@@ -58,16 +58,16 @@ export default async function TeamsPage() {
         subsCount={subsCount}
       />
 
-      <section className="flex items-start justify-between">
-        <p className="text-xs uppercase tracking-wide text-slate-400">
-          {gameweek.status === "open" ? "Current teams" : "Latest teams"}
-        </p>
-        <p className="text-xs text-slate-400">
-          {gameweek.status === "open"
-            ? "Pick teams and subs for this week."
-            : "This gameweek is locked."}
-        </p>
-      </section>
+      {gameweek.status === "open" ? (
+        <section className="flex items-start justify-between">
+          <p className="text-xs uppercase tracking-wide text-slate-400">
+            Current teams
+          </p>
+          <p className="text-xs text-slate-400">
+            Pick teams and subs for this week.
+          </p>
+        </section>
+      ) : null}
 
       {gameweek.status === "open" ? (
         <TeamsClient gameweek={gameweek} entries={normalizedEntries} />
