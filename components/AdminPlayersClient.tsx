@@ -154,11 +154,20 @@ export default function AdminPlayersClient({ players }: AdminPlayersClientProps)
         </p>
       ) : null}
 
-      {!organiserPin ? (
+      {organiserPin ? (
+        <div className="rounded-2xl border border-slate-200 bg-white p-4 text-sm text-slate-600 shadow-sm">
+          <p className="text-xs uppercase tracking-wide text-slate-400">
+            Organiser menu
+          </p>
+          <p className="mt-2">
+            Add new players above, edit or delete existing players below.
+          </p>
+        </div>
+      ) : (
         <p className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-500">
           Unlock organiser tools to edit players.
         </p>
-      ) : null}
+      )}
 
       <section className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
         <h3 className="text-sm font-semibold text-slate-700">Add player</h3>
@@ -188,7 +197,7 @@ export default function AdminPlayersClient({ players }: AdminPlayersClientProps)
       <section className="space-y-2">
         {sortedPlayers.length === 0 ? (
           <div className="rounded-2xl border border-dashed border-slate-200 bg-white p-4 text-sm text-slate-400">
-            No players yet.
+            No players yet. Add the first player above.
           </div>
         ) : (
           sortedPlayers.map((player) => {

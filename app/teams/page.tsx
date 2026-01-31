@@ -26,7 +26,8 @@ export default async function TeamsPage() {
       <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
         <h2 className="text-xl font-semibold text-slate-800">No gameweeks</h2>
         <p className="text-sm text-slate-500">
-          Ask the organiser to create the first gameweek.
+          No open gameweek yet. Organisers can create one from the settings
+          button.
         </p>
       </div>
     );

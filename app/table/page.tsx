@@ -94,6 +94,15 @@ export default async function TablePage() {
         <p className="text-sm text-slate-500">
           All-time record for locked games.
         </p>
+        {players && players.length === 0 ? (
+          <p className="mt-2 text-sm text-slate-500">
+            No players yet. Add them in{" "}
+            <a href="/admin/players" className="font-medium text-slate-900">
+              player settings
+            </a>
+            .
+          </p>
+        ) : null}
       </section>
 
       <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">

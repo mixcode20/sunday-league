@@ -48,11 +48,20 @@ export default async function Home() {
           <CreateGameweek />
         </div>
 
-        {gameweek && players ? (
+        {players && players.length === 0 ? (
+          <div className="rounded-2xl border border-dashed border-slate-200 p-4 text-sm text-slate-500">
+            No players yet. Ask the organiser to add them in{" "}
+            <a href="/admin/players" className="font-medium text-slate-900">
+              player settings
+            </a>
+            .
+          </div>
+        ) : gameweek && players ? (
           <JoinForm gameweekId={gameweek.id} players={players} />
         ) : (
           <div className="rounded-2xl border border-dashed border-slate-200 p-4 text-sm text-slate-500">
-            No open gameweek yet.
+            No open gameweek yet. Organisers can create one from the settings
+            button.
           </div>
         )}
       </section>

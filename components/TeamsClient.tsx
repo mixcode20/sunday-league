@@ -129,20 +129,20 @@ export default function TeamsClient({ gameweek, entries }: TeamsClientProps) {
       }}
     >
       <div className="flex items-center justify-between">
-        <h3 className="text-sm font-semibold uppercase tracking-wide text-slate-500">
+        <h3 className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">
           {title}
         </h3>
         <span className="text-xs text-slate-400">
           {teams[team].length}/{TEAM_LIMITS[team]}
         </span>
       </div>
-      <div className="mt-3 space-y-2">
+      <div className="mt-3 space-y-3">
         {teams[team].map((entry) => (
           <div
             key={entry.player_id}
             draggable={Boolean(organiserPin) && !isLocked}
             onDragStart={() => setDraggedPlayerId(entry.player_id)}
-            className="flex items-center justify-between rounded-xl border border-slate-100 bg-slate-50 px-3 py-2 text-sm"
+            className="flex min-h-[48px] items-center justify-between rounded-xl border border-slate-100 bg-white px-4 py-3 text-sm font-medium text-slate-900 shadow-sm"
           >
             <span>
               {entry.players.first_name} {entry.players.last_name}
@@ -159,7 +159,7 @@ export default function TeamsClient({ gameweek, entries }: TeamsClientProps) {
           </div>
         ))}
         {teams[team].length === 0 ? (
-          <div className="rounded-xl border border-dashed border-slate-200 px-3 py-4 text-center text-xs text-slate-400">
+          <div className="rounded-xl border border-dashed border-slate-200 px-3 py-6 text-center text-xs text-slate-400">
             Drag players here
           </div>
         ) : null}
@@ -189,61 +189,121 @@ export default function TeamsClient({ gameweek, entries }: TeamsClientProps) {
         </p>
       ) : null}
 
-      {!isLocked && !organiserPin ? (
-        <p className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-500">
-          Unlock organiser tools to drag players, kick, or lock the gameweek.
-        </p>
-      ) : null}
-
-      <div className="grid gap-4 md:grid-cols-3">
-        {renderList("darks", "Darks", "bg-slate-50")}
-        {renderList("whites", "Whites", "bg-slate-50")}
-        {renderList("subs", "Subs", "bg-slate-50")}
+      <div className="space-y-4">
+        <div className="grid gap-4 md:grid-cols-2">
+          {renderList(
+            "darks",
+            "Darks",
+            "bg-slate-900 text-white [&_h3]:text-white [&_span]:text-slate-300"
+          )}
+          {renderList(
+            "whites",
+            "Whites",
+            "bg-white text-slate-900 border-slate-300"
+          )}
+        </div>
+        <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+          <div className="flex items-center justify-between">
+            <h3 className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">
+              Subs
+            </h3>
+            <span className="text-xs text-slate-400">
+              {teams.subs.length}/{TEAM_LIMITS.subs}
+            </span>
+          </div>
+          <div className="mt-3 space-y-3">
+            {teams.subs.map((entry) => (
+              <div
+                key={entry.player_id}
+                draggable={Boolean(organiserPin) && !isLocked}
+                onDragStart={() => setDraggedPlayerId(entry.player_id)}
+                className="flex min-h-[48px] items-center justify-between rounded-xl border border-slate-100 bg-white px-4 py-3 text-sm font-medium text-slate-900 shadow-sm"
+              >
+                <span>
+                  {entry.players.first_name} {entry.players.last_name}
+                </span>
+                {organiserPin && !isLocked ? (
+                  <button
+                    type="button"
+                    onClick={() => handleKick(entry.player_id)}
+                    className="text-xs font-semibold text-rose-500"
+                  >
+                    Kick
+                  </button>
+                ) : null}
+              </div>
+            ))}
+            {teams.subs.length === 0 ? (
+              <div className="rounded-xl border border-dashed border-slate-200 px-3 py-6 text-center text-xs text-slate-400">
+                Drag players here
+              </div>
+            ) : null}
+          </div>
+        </div>
       </div>
 
       {!isLocked && organiserPin ? (
-        <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
-          <h3 className="text-sm font-semibold text-slate-700">
-            Lock gameweek with score
-          </h3>
-          <div className="mt-3 flex items-center gap-2">
-            <input
-              type="number"
-              min="0"
-              className="w-20 rounded-lg border border-slate-200 px-2 py-1 text-sm"
-              value={lockingScore.darks}
-              onChange={(event) =>
-                setLockingScore((prev) => ({
-                  ...prev,
-                  darks: event.target.value,
-                }))
-              }
-              placeholder="Darks"
-            />
-            <span className="text-slate-500">-</span>
-            <input
-              type="number"
-              min="0"
-              className="w-20 rounded-lg border border-slate-200 px-2 py-1 text-sm"
-              value={lockingScore.whites}
-              onChange={(event) =>
-                setLockingScore((prev) => ({
-                  ...prev,
-                  whites: event.target.value,
-                }))
-              }
-              placeholder="Whites"
-            />
-            <button
-              type="button"
-              className="ml-auto rounded-lg bg-slate-900 px-3 py-2 text-xs font-semibold text-white"
-              onClick={handleLock}
-            >
-              Save & Lock
-            </button>
+        <section className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+          <div className="text-xs uppercase tracking-wide text-slate-400">
+            Organiser menu
           </div>
-        </div>
-      ) : null}
+          <div className="mt-3 grid gap-3 md:grid-cols-2">
+            <div className="rounded-xl border border-slate-200 bg-slate-50 p-3">
+              <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                Teams
+              </p>
+              <p className="mt-2 text-sm text-slate-600">
+                Drag players between columns. Use Kick to remove.
+              </p>
+            </div>
+            <div className="rounded-xl border border-slate-200 bg-white p-3">
+              <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                Result
+              </p>
+              <div className="mt-3 flex items-center gap-2">
+                <input
+                  type="number"
+                  min="0"
+                  className="w-20 rounded-lg border border-slate-200 px-2 py-1 text-sm"
+                  value={lockingScore.darks}
+                  onChange={(event) =>
+                    setLockingScore((prev) => ({
+                      ...prev,
+                      darks: event.target.value,
+                    }))
+                  }
+                  placeholder="Darks"
+                />
+                <span className="text-slate-500">-</span>
+                <input
+                  type="number"
+                  min="0"
+                  className="w-20 rounded-lg border border-slate-200 px-2 py-1 text-sm"
+                  value={lockingScore.whites}
+                  onChange={(event) =>
+                    setLockingScore((prev) => ({
+                      ...prev,
+                      whites: event.target.value,
+                    }))
+                  }
+                  placeholder="Whites"
+                />
+                <button
+                  type="button"
+                  className="ml-auto rounded-lg bg-slate-900 px-3 py-2 text-xs font-semibold text-white"
+                  onClick={handleLock}
+                >
+                  Save & Lock
+                </button>
+              </div>
+            </div>
+          </div>
+        </section>
+      ) : (
+        <p className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-500">
+          Unlock organiser tools to manage teams and lock the gameweek.
+        </p>
+      )}
 
       <Modal
         isOpen={settingsOpen}
