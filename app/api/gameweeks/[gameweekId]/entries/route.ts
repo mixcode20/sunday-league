@@ -15,6 +15,7 @@ export async function GET(
       "id, gameweek_id, player_id, team, position, players(id, first_name, last_name)"
     )
     .eq("gameweek_id", gameweekId)
+    .order("position", { ascending: true })
     .order("created_at", { ascending: true });
 
   if (error) {

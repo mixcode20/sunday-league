@@ -6,7 +6,7 @@ export async function POST(
   context: { params: Promise<{ gameweekId: string }> }
 ) {
   const { gameweekId } = await context.params;
-  const { playerId } = await request.json();
+  const { playerId, slotIndex } = await request.json();
 
   if (!playerId) {
     return NextResponse.json({ error: "playerId is required." }, { status: 400 });
@@ -36,11 +36,30 @@ export async function POST(
     .select("id", { count: "exact", head: true })
     .eq("gameweek_id", gameweekId);
 
+  const desiredIndex =
+    typeof slotIndex === "number" ? Math.max(0, Math.min(slotIndex, 17)) : null;
+
+  if (desiredIndex !== null) {
+    const { data: occupied } = await supabase
+      .from("gameweek_players")
+      .select("id")
+      .eq("gameweek_id", gameweekId)
+      .eq("position", desiredIndex)
+      .maybeSingle();
+
+    if (occupied) {
+      return NextResponse.json(
+        { error: "That slot is already taken." },
+        { status: 409 }
+      );
+    }
+  }
+
   const { error } = await supabase.from("gameweek_players").insert({
     gameweek_id: gameweekId,
     player_id: playerId,
     team: "subs",
-    position: count ?? 0,
+    position: desiredIndex ?? count ?? 0,
   });
 
   if (error) {

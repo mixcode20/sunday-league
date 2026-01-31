@@ -51,13 +51,22 @@ export default async function Home() {
                 ? formatGameweekDate(gameweek.game_date)
                 : "No gameweeks yet"}
             </h2>
-            <p className="mt-2 text-sm text-slate-500">
-              {gameweek?.game_time ? gameweek.game_time : "9:15am"} ·{" "}
-              {gameweek?.location ? gameweek.location : "MH"}
-            </p>
           </div>
           <CreateGameweek />
         </div>
+
+        {gameweek ? (
+          <div className="flex flex-wrap items-center gap-4 text-sm text-slate-500">
+            <span>{gameweek.game_time ?? "9:15am"}</span>
+            <span>{gameweek.location ?? "MH"}</span>
+            <span>
+              {Math.min(normalizedEntries.length, 14)}/14
+            </span>
+            <span>
+              {Math.min(Math.max(normalizedEntries.length - 14, 0), 4)}/4 subs
+            </span>
+          </div>
+        ) : null}
 
         {gameweek && players ? (
           <JoinSlots
