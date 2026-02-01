@@ -35,7 +35,7 @@ export default async function Home() {
     ? await supabase
         .from("gameweek_players")
         .select(
-          "id, gameweek_id, player_id, team, position, remove_requested, players(id, first_name, last_name)"
+          "*, players(id, first_name, last_name)"
         )
         .eq("gameweek_id", gameweek.id)
         .order("position", { ascending: true })

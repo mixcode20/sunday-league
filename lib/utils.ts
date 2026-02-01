@@ -43,5 +43,9 @@ export const getNextSundayISO = () => {
 
 export const normalizePlayerJoin = <T extends { players: any }>(entry: T) => {
   const player = Array.isArray(entry.players) ? entry.players[0] : entry.players;
-  return { ...entry, players: player };
+  return {
+    ...entry,
+    players: player,
+    remove_requested: (entry as { remove_requested?: boolean }).remove_requested ?? false,
+  };
 };

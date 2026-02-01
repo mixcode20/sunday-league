@@ -85,7 +85,7 @@ export async function POST(
       position,
     })
     .select(
-      "id, gameweek_id, player_id, team, position, remove_requested, players(id, first_name, last_name)"
+      "*, players(id, first_name, last_name)"
     )
     .single();
 
@@ -167,7 +167,7 @@ export async function POST(
   const { data: entries, error: entriesError } = await supabase
     .from("gameweek_players")
     .select(
-      "id, gameweek_id, player_id, team, position, remove_requested, players(id, first_name, last_name)"
+      "*, players(id, first_name, last_name)"
     )
     .eq("gameweek_id", gameweekId)
     .order("position", { ascending: true })
