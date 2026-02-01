@@ -90,7 +90,7 @@ export default function JoinSlots({
       if (Array.isArray(data.entries)) {
         setLiveEntries(data.entries);
       }
-    }, 4000);
+    }, 10000);
 
     return () => clearInterval(interval);
   }, [gameweekId]);

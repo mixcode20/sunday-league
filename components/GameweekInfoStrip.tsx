@@ -44,7 +44,7 @@ export default function GameweekInfoStrip({
           subs,
         });
       }
-    }, 4000);
+    }, 10000);
 
     return () => clearInterval(interval);
   }, [gameweekId]);
