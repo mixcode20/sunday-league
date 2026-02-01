@@ -292,11 +292,19 @@ export default function JoinSlots({
       });
       const data = await response.json();
       if (!response.ok) {
+        const apiMessage =
+          typeof data?.message === "string"
+            ? data.message
+            : typeof data?.error === "string"
+              ? data.error
+              : "Could not join.";
+        const details = typeof data?.details === "string" ? data.details : "";
+        const hint = typeof data?.hint === "string" ? data.hint : "";
         const errorMessage =
           data?.code === "player_already_signed_up" &&
           typeof data?.existing_position === "number"
             ? `You are already in slot ${data.existing_position}.`
-            : data?.error ?? "Could not join.";
+            : [apiMessage, details, hint].filter(Boolean).join(" ");
         setSlotErrors((prev) => ({ ...prev, [position]: errorMessage }));
         if (
           data?.code === "player_already_signed_up" &&
@@ -495,6 +503,10 @@ export default function JoinSlots({
             );
             const isHighlighted = highlightedPosition === slotPosition;
             const slotError = slotErrors[slotPosition];
+            const isPending = isSlotPending(slotPosition);
+            const isOptimistic = Boolean(
+              entry && typeof entry.id === "string" && entry.id.startsWith("optimistic-")
+            );
             return (
               <div
                 key={`main-${index}`}
@@ -506,7 +518,7 @@ export default function JoinSlots({
                       : "border-slate-200 bg-white text-slate-600"
                 } ${entry ? "justify-between" : "justify-center"} ${
                   isHighlighted ? "ring-2 ring-amber-400" : ""
-                }`}
+                } ${isPending ? "opacity-80" : ""}`}
               >
                 {entry ? (
                   <>
@@ -520,6 +532,11 @@ export default function JoinSlots({
                       </span>
                       {entry.players.first_name} {entry.players.last_name}
                     </span>
+                    {isPending && isOptimistic ? (
+                      <span className="mt-2 text-[11px] font-semibold uppercase tracking-wide text-slate-400">
+                        Claiming...
+                      </span>
+                    ) : null}
                     {entry.remove_requested ? (
                       <span className="mt-2 text-[11px] font-semibold uppercase tracking-wide text-rose-500">
                         Removal requested
@@ -686,6 +703,10 @@ export default function JoinSlots({
               );
               const isHighlighted = highlightedPosition === slotPosition;
               const slotError = slotErrors[slotPosition];
+              const isPending = isSlotPending(slotPosition);
+              const isOptimistic = Boolean(
+                entry && typeof entry.id === "string" && entry.id.startsWith("optimistic-")
+              );
               return (
                 <div
                   key={`sub-${index}`}
@@ -697,7 +718,7 @@ export default function JoinSlots({
                         : "border-slate-200 bg-white text-slate-600"
                   } ${entry ? "justify-between" : "justify-center"} ${
                     isHighlighted ? "ring-2 ring-amber-400" : ""
-                  }`}
+                  } ${isPending ? "opacity-80" : ""}`}
                 >
                   {entry ? (
                     <>
@@ -711,6 +732,11 @@ export default function JoinSlots({
                         </span>
                         {entry.players.first_name} {entry.players.last_name}
                       </span>
+                      {isPending && isOptimistic ? (
+                        <span className="mt-2 text-[11px] font-semibold uppercase tracking-wide text-slate-400">
+                          Claiming...
+                        </span>
+                      ) : null}
                       {entry.remove_requested ? (
                         <span className="mt-2 text-[11px] font-semibold uppercase tracking-wide text-rose-500">
                           Removal requested

@@ -14,13 +14,28 @@ export async function POST(
 
   if (!playerId || typeof position !== "number") {
     return NextResponse.json(
-      { error: "player_id and position are required." },
+      {
+        ok: false,
+        code: "missing_params",
+        message: "player_id and position are required.",
+        details: null,
+        hint: null,
+      },
       { status: 400 }
     );
   }
 
   if (position < 1 || position > 18) {
-    return NextResponse.json({ error: "Invalid slot." }, { status: 400 });
+    return NextResponse.json(
+      {
+        ok: false,
+        code: "invalid_slot",
+        message: "Invalid slot.",
+        details: null,
+        hint: null,
+      },
+      { status: 400 }
+    );
   }
 
   const supabase = supabaseServer();
@@ -36,11 +51,29 @@ export async function POST(
     .single();
 
   if (gameweekError || !gameweek) {
-    return NextResponse.json({ error: "Gameweek not found." }, { status: 404 });
+    return NextResponse.json(
+      {
+        ok: false,
+        code: "gameweek_not_found",
+        message: "Gameweek not found.",
+        details: gameweekError?.details ?? null,
+        hint: gameweekError?.hint ?? null,
+      },
+      { status: 404 }
+    );
   }
 
   if (gameweek.status !== "open") {
-    return NextResponse.json({ error: "Gameweek is locked." }, { status: 403 });
+    return NextResponse.json(
+      {
+        ok: false,
+        code: "gameweek_locked",
+        message: "Gameweek is locked.",
+        details: null,
+        hint: null,
+      },
+      { status: 403 }
+    );
   }
 
   const { data: createdEntry, error } = await supabase
@@ -74,9 +107,12 @@ export async function POST(
         }
         return NextResponse.json(
           {
-            error: "Player already signed up.",
+            ok: false,
             code: "player_already_signed_up",
+            message: "Player already signed up.",
             existing_position: existingPlayer.position,
+            details: null,
+            hint: null,
           },
           { status: 409 }
         );
@@ -96,18 +132,36 @@ export async function POST(
       }
       return NextResponse.json(
         {
-          error: "Slot already taken.",
+          ok: false,
           code: "slot_taken",
+          message: "Slot already taken.",
           position,
           existing_player_id: existingSlot?.player_id ?? null,
+          details: null,
+          hint: null,
         },
         { status: 409 }
       );
     }
+    console.error("[join-flow] claim error", {
+      gameweekId,
+      playerId,
+      position,
+      error,
+    });
     if (debugJoinFlow) {
       console.info("[join-flow] claim error", { gameweekId, playerId, position, error });
     }
-    return NextResponse.json({ error: "Failed to claim slot." }, { status: 409 });
+    return NextResponse.json(
+      {
+        ok: false,
+        code: error.code ?? "claim_failed",
+        message: error.message ?? "Failed to claim slot.",
+        details: error.details ?? null,
+        hint: error.hint ?? null,
+      },
+      { status: 409 }
+    );
   }
 
   const { data: entries, error: entriesError } = await supabase

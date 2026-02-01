@@ -63,6 +63,30 @@ npm run start
   - `/` shows “No players yet. Use “+ New player” to add the first name.” when no players exist.
   - `/teams` shows “No open gameweek yet. Unlock organiser mode to create one.”
 
+## Slot claim verification checklist
+
+Issue reproduction
+
+1) Create a new gameweek (organiser mode).
+2) Player mode: click an empty slot, select a player, and save.
+3) Previously the name flashed then disappeared with “Failed to claim slot.”
+
+Check server logs
+
+- Watch the Next.js server console for `[join-flow] claim error` logs.
+
+Debug endpoint
+
+```bash
+curl "http://localhost:3000/api/debug/slot-claim-check?gameweekId=YOUR_GAMEWEEK_ID&playerId=YOUR_PLAYER_ID&position=1"
+```
+
+Expected success behavior
+
+- Selecting a player for a slot persists a row in `gameweek_players`.
+- The name remains visible for all users after refresh.
+- If an error occurs, the UI displays the specific API error message (not a generic failure).
+
 ## Notes
 
 - Only one open gameweek is allowed at a time (enforced by DB index).
