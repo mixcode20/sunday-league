@@ -34,6 +34,7 @@ export default async function Home() {
           "id, gameweek_id, player_id, team, position, remove_requested, players(id, first_name, last_name)"
         )
         .eq("gameweek_id", gameweek.id)
+        .order("position", { ascending: true })
         .order("created_at", { ascending: true })
     : { data: [] };
 
