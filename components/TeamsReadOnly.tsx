@@ -70,30 +70,6 @@ export default function TeamsReadOnly({ entries }: { entries: GameweekPlayer[] }
         {renderSlots("darks", "Darks", "bg-slate-900 text-white", true)}
         {renderSlots("whites", "Whites", "bg-white border-slate-300")}
       </div>
-      <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
-        <h3 className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">
-          Subs
-        </h3>
-        <div className="mt-3 space-y-3">
-          {Array.from({ length: TEAM_LIMITS.subs }, (_, index) => {
-            const entry = grouped.subs[index] ?? null;
-            return (
-              <div
-                key={`subs-${index}`}
-                className="flex min-h-[52px] items-center rounded-xl border border-dashed border-slate-200 bg-white px-3 py-2 text-sm"
-              >
-                {entry ? (
-                  <span className="font-medium text-slate-900">
-                    {entry.players.first_name} {entry.players.last_name}
-                  </span>
-                ) : (
-                  <span className="text-xs text-slate-400">Pick</span>
-                )}
-              </div>
-            );
-          })}
-        </div>
-      </div>
     </div>
   );
 }

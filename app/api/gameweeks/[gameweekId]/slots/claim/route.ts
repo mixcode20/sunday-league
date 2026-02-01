@@ -6,26 +6,19 @@ export async function POST(
   context: { params: Promise<{ gameweekId: string }> }
 ) {
   const { gameweekId } = await context.params;
-  const { playerId, position, slotType } = await request.json();
+  const body = await request.json();
+  const playerId = body?.player_id ?? body?.playerId;
+  const position = body?.position;
 
-  if (!playerId || typeof position !== "number" || !slotType) {
+  if (!playerId || typeof position !== "number") {
     return NextResponse.json(
-      { error: "playerId, position, and slotType are required." },
+      { error: "player_id and position are required." },
       { status: 400 }
     );
   }
 
-  const isMain = slotType === "main";
-  const isSub = slotType === "sub";
-  if (!isMain && !isSub) {
-    return NextResponse.json({ error: "Invalid slot type." }, { status: 400 });
-  }
-
-  if (isMain && (position < 1 || position > 14)) {
-    return NextResponse.json({ error: "Invalid main slot." }, { status: 400 });
-  }
-  if (isSub && (position < 15 || position > 18)) {
-    return NextResponse.json({ error: "Invalid sub slot." }, { status: 400 });
+  if (position < 1 || position > 18) {
+    return NextResponse.json({ error: "Invalid slot." }, { status: 400 });
   }
 
   const supabase = supabaseServer();
@@ -52,11 +45,23 @@ export async function POST(
   });
 
   if (error) {
-    const message =
-      error.code === "23505"
-        ? "Slot already taken or player already joined."
-        : "Failed to claim slot.";
-    return NextResponse.json({ error: message }, { status: 409 });
+    if (error.code === "23505") {
+      const { data: existingPlayer } = await supabase
+        .from("gameweek_players")
+        .select("id")
+        .eq("gameweek_id", gameweekId)
+        .eq("player_id", playerId)
+        .maybeSingle();
+      return NextResponse.json(
+        {
+          error: existingPlayer
+            ? "Player already signed up."
+            : "Slot already taken.",
+        },
+        { status: 409 }
+      );
+    }
+    return NextResponse.json({ error: "Failed to claim slot." }, { status: 409 });
   }
 
   return NextResponse.json({ ok: true });

@@ -39,8 +39,8 @@ export default async function Home() {
 
   const normalizedEntries = (entries ?? []).map(normalizePlayerJoin);
 
-  const mainCount = Math.min(normalizedEntries.length, 14);
-  const subsCount = Math.max(normalizedEntries.length - 14, 0);
+  const mainCount = normalizedEntries.filter((entry) => entry.position <= 14).length;
+  const subsCount = normalizedEntries.filter((entry) => entry.position > 14).length;
 
   return (
     <div className="space-y-4">

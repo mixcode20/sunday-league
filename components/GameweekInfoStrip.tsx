@@ -33,10 +33,15 @@ export default function GameweekInfoStrip({
       if (!response.ok) return;
       const data = await response.json();
       if (Array.isArray(data.entries)) {
-        const total = data.entries.length;
+        const main = data.entries.filter(
+          (entry: { position: number }) => entry.position <= 14
+        ).length;
+        const subs = data.entries.filter(
+          (entry: { position: number }) => entry.position > 14
+        ).length;
         setCounts({
-          main: Math.min(total, 14),
-          subs: Math.max(total - 14, 0),
+          main,
+          subs,
         });
       }
     }, 4000);

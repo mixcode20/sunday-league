@@ -15,6 +15,7 @@ type JoinSlotsProps = {
 
 const MAIN_CAPACITY = 14;
 const SUB_CAPACITY = 4;
+const UNDO_WINDOW_MS = 5 * 60 * 1000;
 
 export default function JoinSlots({
   isOpen,
@@ -35,11 +36,41 @@ export default function JoinSlots({
   const [optimisticByPosition, setOptimisticByPosition] = useState<
     Record<number, GameweekPlayer>
   >({});
+  const [sessionJoins, setSessionJoins] = useState<
+    Record<string, { position: number; joinedAt: number }>
+  >({});
+  const [isClaiming, setIsClaiming] = useState(false);
+  const [now, setNow] = useState(() => Date.now());
   const dropdownRef = useRef<HTMLDivElement | null>(null);
+  const claimInFlightRef = useRef(false);
 
   useEffect(() => {
     setLiveEntries(entries);
   }, [entries]);
+
+  useEffect(() => {
+    if (!gameweekId || typeof window === "undefined") return;
+    try {
+      const stored = sessionStorage.getItem(`joinSession:${gameweekId}`);
+      if (!stored) {
+        setSessionJoins({});
+        return;
+      }
+      const parsed = JSON.parse(stored) as Record<
+        string,
+        { position: number; joinedAt: number }
+      >;
+      setSessionJoins(parsed ?? {});
+    } catch {
+      setSessionJoins({});
+    }
+  }, [gameweekId]);
+
+  useEffect(() => {
+    if (Object.keys(sessionJoins).length === 0) return;
+    const interval = window.setInterval(() => setNow(Date.now()), 30000);
+    return () => window.clearInterval(interval);
+  }, [sessionJoins]);
 
   useEffect(() => {
     if (!gameweekId) return;
@@ -72,6 +103,74 @@ export default function JoinSlots({
     document.addEventListener("click", handleClick);
     return () => document.removeEventListener("click", handleClick);
   }, [openSlot]);
+
+  const persistSessionJoins = (
+    next: Record<string, { position: number; joinedAt: number }>
+  ) => {
+    setSessionJoins(next);
+    if (typeof window !== "undefined" && gameweekId) {
+      sessionStorage.setItem(`joinSession:${gameweekId}`, JSON.stringify(next));
+    }
+  };
+
+  const recordSessionJoin = (playerId: string, position: number) => {
+    setSessionJoins((prev) => {
+      const next = {
+        ...prev,
+        [playerId]: { position, joinedAt: Date.now() },
+      };
+      if (typeof window !== "undefined" && gameweekId) {
+        sessionStorage.setItem(`joinSession:${gameweekId}`, JSON.stringify(next));
+      }
+      return next;
+    });
+  };
+
+  const clearSessionJoin = (playerId: string) => {
+    setSessionJoins((prev) => {
+      if (!prev[playerId]) return prev;
+      const next = { ...prev };
+      delete next[playerId];
+      if (typeof window !== "undefined" && gameweekId) {
+        sessionStorage.setItem(`joinSession:${gameweekId}`, JSON.stringify(next));
+      }
+      return next;
+    });
+  };
+
+  useEffect(() => {
+    if (!gameweekId) return;
+    const liveIds = new Set(liveEntries.map((entry) => entry.player_id));
+    let changed = false;
+    const next: Record<string, { position: number; joinedAt: number }> = {};
+    Object.entries(sessionJoins).forEach(([playerId, info]) => {
+      if (liveIds.has(playerId)) {
+        next[playerId] = info;
+      } else {
+        changed = true;
+      }
+    });
+    if (changed) {
+      persistSessionJoins(next);
+    }
+  }, [gameweekId, liveEntries, sessionJoins]);
+
+  useEffect(() => {
+    if (Object.keys(optimisticByPosition).length === 0) return;
+    const livePositions = new Set(liveEntries.map((entry) => entry.position));
+    setOptimisticByPosition((prev) => {
+      let changed = false;
+      const next = { ...prev };
+      Object.keys(next).forEach((key) => {
+        const position = Number(key);
+        if (livePositions.has(position)) {
+          delete next[position];
+          changed = true;
+        }
+      });
+      return changed ? next : prev;
+    });
+  }, [liveEntries, optimisticByPosition]);
 
   const orderedEntries = useMemo(() => {
     const merged = [...liveEntries].reduce<Record<number, GameweekPlayer>>(
@@ -111,15 +210,26 @@ export default function JoinSlots({
     return { mainSlots, subsSlots };
   }, [orderedEntries]);
 
-  const joinPlayer = async (
-    playerId: string,
-    position?: number,
-    slotType?: "main" | "sub"
-  ) => {
+  const interactionsDisabled = isClaiming;
+
+  const refreshEntries = async () => {
     if (!gameweekId) return;
+    const response = await fetch(`/api/gameweeks/${gameweekId}/entries`);
+    if (!response.ok) return;
+    const data = await response.json();
+    if (Array.isArray(data.entries)) {
+      setLiveEntries(data.entries);
+    }
+  };
+
+  const joinPlayer = async (playerId: string, position?: number) => {
+    if (!gameweekId || typeof position !== "number") return;
+    if (claimInFlightRef.current || pendingPositions[position]) return;
+    claimInFlightRef.current = true;
+    setIsClaiming(true);
     setMessage("");
     const player = players.find((item) => item.id === playerId);
-    if (player && typeof position === "number" && slotType) {
+    if (player) {
       setPendingPositions((prev) => ({ ...prev, [position]: true }));
       setOptimisticByPosition((prev) => ({
         ...prev,
@@ -134,48 +244,50 @@ export default function JoinSlots({
         },
       }));
     }
-    const response = await fetch(`/api/gameweeks/${gameweekId}/slots/claim`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ playerId, position, slotType }),
-    });
-    const data = await response.json();
-    if (!response.ok) {
-      setMessage(data.error ?? "Could not join.");
-      if (typeof position === "number") {
+    try {
+      const response = await fetch(`/api/gameweeks/${gameweekId}/slots/claim`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ player_id: playerId, position }),
+      });
+      const data = await response.json();
+      if (!response.ok) {
+        setMessage(data.error ?? "Could not join.");
         setOptimisticByPosition((prev) => {
           const next = { ...prev };
           delete next[position];
           return next;
         });
-        setPendingPositions((prev) => {
-          const next = { ...prev };
-          delete next[position];
-          return next;
-        });
+        await refreshEntries();
+        return;
       }
+      recordSessionJoin(playerId, position);
+      await refreshEntries();
       router.refresh();
-      return;
-    }
-    if (typeof position === "number") {
+    } catch {
+      setMessage("Could not join.");
       setOptimisticByPosition((prev) => {
         const next = { ...prev };
         delete next[position];
         return next;
       });
+      await refreshEntries();
+    } finally {
       setPendingPositions((prev) => {
         const next = { ...prev };
         delete next[position];
         return next;
       });
+      setIsClaiming(false);
+      claimInFlightRef.current = false;
     }
-    router.refresh();
   };
 
   const leavePlayer = async (playerId: string) => {
     if (!gameweekId) return;
     setMessage("");
     setLiveEntries((prev) => prev.filter((entry) => entry.player_id !== playerId));
+    clearSessionJoin(playerId);
     const response = await fetch(`/api/gameweeks/${gameweekId}/leave`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -230,8 +342,7 @@ export default function JoinSlots({
     setNewFirst("");
     setNewLast("");
     if (data.player?.id && typeof pendingSlot === "number") {
-      const slotType = pendingSlot <= 14 ? "main" : "sub";
-      await joinPlayer(data.player.id, pendingSlot, slotType);
+      await joinPlayer(data.player.id, pendingSlot);
     } else {
       router.refresh();
     }
@@ -242,22 +353,32 @@ export default function JoinSlots({
   );
 
   const openDropdown = (slotIndex: number) => {
-    if (!isOpen) return;
+    if (!isOpen || interactionsDisabled) return;
     setOpenSlot(slotIndex);
   };
 
   const selectPlayer = async (playerId: string) => {
-    if (openSlot === null) return;
-    const slotType = openSlot <= 14 ? "main" : "sub";
+    if (openSlot === null || interactionsDisabled) return;
     setOpenSlot(null);
-    await joinPlayer(playerId, openSlot, slotType);
+    await joinPlayer(playerId, openSlot);
   };
 
   const handleAddNew = () => {
-    if (openSlot === null) return;
+    if (openSlot === null || interactionsDisabled) return;
     setPendingSlot(openSlot);
     setOpenSlot(null);
     setCreating(true);
+  };
+
+  const getSessionState = (entry: GameweekPlayer) => {
+    const sessionInfo = sessionJoins[entry.player_id];
+    if (!sessionInfo || sessionInfo.position !== entry.position) {
+      return { isOwner: false, withinUndo: false };
+    }
+    return {
+      isOwner: true,
+      withinUndo: now - sessionInfo.joinedAt <= UNDO_WINDOW_MS,
+    };
   };
 
   return (
@@ -276,167 +397,18 @@ export default function JoinSlots({
 
       <div className="space-y-3">
         <div className="grid grid-cols-1 gap-3">
-          {slotEntries.mainSlots.map((entry, index) => (
-            <div
-              key={`main-${index}`}
-              className={`relative flex min-h-[56px] flex-col rounded-xl border p-3 text-xs shadow-sm ${
-                entry?.remove_requested
-                  ? "border-rose-200 bg-rose-50 text-rose-600"
-                  : entry
-                    ? "border-emerald-200 bg-emerald-50 text-slate-700"
-                    : "border-slate-200 bg-white text-slate-600"
-              } ${entry ? "justify-between" : "justify-center"}`}
-            >
-                {entry ? (
-                  <>
-                    <span
-                      className={`text-sm font-semibold ${
-                        entry.remove_requested ? "text-rose-600" : "text-slate-900"
-                      }`}
-                    >
-                      <span className="mr-2 text-xs text-slate-400">
-                        {index + 1}.
-                      </span>
-                      {entry.players.first_name} {entry.players.last_name}
-                    </span>
-                  {entry.remove_requested ? (
-                    <span className="mt-2 text-[11px] font-semibold uppercase tracking-wide text-rose-500">
-                      Removal requested
-                    </span>
-                  ) : null}
-                  {isOpen ? (
-                    isUnlocked ? (
-                      <button
-                        type="button"
-                        onClick={() => leavePlayer(entry.player_id)}
-                        className="mt-2 inline-flex h-7 w-7 items-center justify-center rounded-full border border-rose-200 text-rose-500"
-                        aria-label="Remove player"
-                      >
-                        ×
-                      </button>
-                    ) : (
-                      <button
-                        type="button"
-                        onClick={() => requestRemoval(entry.player_id)}
-                        className="mt-2 text-left text-xs font-semibold text-rose-500"
-                      >
-                        Remove me
-                      </button>
-                    )
-                  ) : null}
-                </>
-                ) : (
-                  <button
-                    type="button"
-                    onClick={() => openDropdown(index + 1)}
-                    className="flex w-full items-center justify-between gap-3 text-left text-slate-400"
-                    data-slot-trigger
-                    aria-label="Add player"
-                    disabled={Boolean(pendingPositions[index + 1])}
-                  >
-                    <span className="inline-flex items-center gap-2">
-                      <span className="text-xs text-slate-400">
-                        {index + 1}.
-                      </span>
-                      <svg
-                        xmlns="http://www.w3.org/2000/svg"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth="1.6"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      className="h-4 w-4"
-                    >
-                      <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
-                      <circle cx="12" cy="7" r="3.5" />
-                    </svg>
-                    Free space
-                  </span>
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="2"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    className="h-4 w-4"
-                  >
-                    <path d="M12 5v14" />
-                    <path d="M5 12h14" />
-                  </svg>
-                </button>
-              )}
-
-              {openSlot === index + 1 ? (
-                <div
-                  className="absolute left-0 right-0 top-full z-10 mt-2 rounded-xl border border-slate-200 bg-white p-2 shadow-lg"
-                  data-slot-dropdown
-                  ref={dropdownRef}
-                >
-                  <div className="flex items-center justify-between px-3 py-1 text-[10px] uppercase tracking-wide text-slate-400">
-                    <span>Add player</span>
-                    <button
-                      type="button"
-                      onClick={() => setOpenSlot(null)}
-                      className="text-slate-400 hover:text-slate-600"
-                      aria-label="Close"
-                    >
-                      ×
-                    </button>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={handleAddNew}
-                    className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-sm font-semibold text-slate-900 hover:bg-slate-50"
-                  >
-                    + Add new player
-                  </button>
-                  <div className="max-h-52 overflow-y-auto">
-                    {availablePlayers.length > 0 ? (
-                      availablePlayers.map((player) => (
-                        <button
-                          key={player.id}
-                          type="button"
-                          onClick={() => selectPlayer(player.id)}
-                          className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-sm text-slate-700 hover:bg-slate-50"
-                        >
-                          <svg
-                            xmlns="http://www.w3.org/2000/svg"
-                            viewBox="0 0 24 24"
-                            fill="none"
-                            stroke="currentColor"
-                            strokeWidth="1.6"
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            className="h-4 w-4 text-slate-400"
-                          >
-                            <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
-                            <circle cx="12" cy="7" r="3.5" />
-                          </svg>
-                          {player.first_name} {player.last_name}
-                        </button>
-                      ))
-                    ) : (
-                      <div className="px-3 py-2 text-xs text-slate-400">
-                        No available players
-                      </div>
-                    )}
-                  </div>
-                </div>
-              ) : null}
-            </div>
-          ))}
-        </div>
-
-        <div>
-          <p className="text-xs uppercase tracking-[0.2em] text-slate-400">Subs</p>
-          <div className="mt-2 grid grid-cols-1 gap-3">
-            {slotEntries.subsSlots.map((entry, index) => (
+          {slotEntries.mainSlots.map((entry, index) => {
+            const sessionState = entry ? getSessionState(entry) : null;
+            const canUndo = Boolean(
+              sessionState?.isOwner && sessionState?.withinUndo && !entry?.remove_requested
+            );
+            const canRequestRemoval = Boolean(
+              sessionState?.isOwner && !sessionState?.withinUndo && !entry?.remove_requested
+            );
+            return (
               <div
-                key={`sub-${index}`}
-                className={`relative flex min-h-[56px] flex-col rounded-xl border border-dashed p-3 text-xs shadow-sm ${
+                key={`main-${index}`}
+                className={`relative flex min-h-[56px] flex-col rounded-xl border p-3 text-xs shadow-sm ${
                   entry?.remove_requested
                     ? "border-rose-200 bg-rose-50 text-rose-600"
                     : entry
@@ -452,7 +424,7 @@ export default function JoinSlots({
                       }`}
                     >
                       <span className="mr-2 text-xs text-slate-400">
-                        {MAIN_CAPACITY + index + 1}.
+                        {index + 1}.
                       </span>
                       {entry.players.first_name} {entry.players.last_name}
                     </span>
@@ -468,32 +440,43 @@ export default function JoinSlots({
                           onClick={() => leavePlayer(entry.player_id)}
                           className="mt-2 inline-flex h-7 w-7 items-center justify-center rounded-full border border-rose-200 text-rose-500"
                           aria-label="Remove player"
+                          disabled={interactionsDisabled}
                         >
                           ×
                         </button>
-                      ) : (
+                      ) : canUndo ? (
+                        <button
+                          type="button"
+                          onClick={() => leavePlayer(entry.player_id)}
+                          className="mt-2 text-left text-xs font-semibold text-slate-600"
+                          disabled={interactionsDisabled}
+                        >
+                          Undo
+                        </button>
+                      ) : canRequestRemoval ? (
                         <button
                           type="button"
                           onClick={() => requestRemoval(entry.player_id)}
                           className="mt-2 text-left text-xs font-semibold text-rose-500"
+                          disabled={interactionsDisabled}
                         >
                           Remove me
                         </button>
-                      )
+                      ) : null
                     ) : null}
                   </>
                 ) : (
                   <button
                     type="button"
-                    onClick={() => openDropdown(15 + index)}
+                    onClick={() => openDropdown(index + 1)}
                     className="flex w-full items-center justify-between gap-3 text-left text-slate-400"
                     data-slot-trigger
                     aria-label="Add player"
-                    disabled={Boolean(pendingPositions[15 + index])}
+                    disabled={interactionsDisabled || Boolean(pendingPositions[index + 1])}
                   >
                     <span className="inline-flex items-center gap-2">
                       <span className="text-xs text-slate-400">
-                        {MAIN_CAPACITY + index + 1}.
+                        {index + 1}.
                       </span>
                       <svg
                         xmlns="http://www.w3.org/2000/svg"
@@ -526,10 +509,11 @@ export default function JoinSlots({
                   </button>
                 )}
 
-                {openSlot === 15 + index ? (
+                {openSlot === index + 1 ? (
                   <div
                     className="absolute left-0 right-0 top-full z-10 mt-2 rounded-xl border border-slate-200 bg-white p-2 shadow-lg"
                     data-slot-dropdown
+                    ref={dropdownRef}
                   >
                     <div className="flex items-center justify-between px-3 py-1 text-[10px] uppercase tracking-wide text-slate-400">
                       <span>Add player</span>
@@ -538,6 +522,7 @@ export default function JoinSlots({
                         onClick={() => setOpenSlot(null)}
                         className="text-slate-400 hover:text-slate-600"
                         aria-label="Close"
+                        disabled={interactionsDisabled}
                       >
                         ×
                       </button>
@@ -546,6 +531,7 @@ export default function JoinSlots({
                       type="button"
                       onClick={handleAddNew}
                       className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-sm font-semibold text-slate-900 hover:bg-slate-50"
+                      disabled={interactionsDisabled}
                     >
                       + Add new player
                     </button>
@@ -557,6 +543,7 @@ export default function JoinSlots({
                             type="button"
                             onClick={() => selectPlayer(player.id)}
                             className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-sm text-slate-700 hover:bg-slate-50"
+                            disabled={interactionsDisabled}
                           >
                             <svg
                               xmlns="http://www.w3.org/2000/svg"
@@ -583,7 +570,187 @@ export default function JoinSlots({
                   </div>
                 ) : null}
               </div>
-            ))}
+            );
+          })}
+        </div>
+
+        <div>
+          <p className="text-xs uppercase tracking-[0.2em] text-slate-400">Subs</p>
+          <div className="mt-2 grid grid-cols-1 gap-3">
+            {slotEntries.subsSlots.map((entry, index) => {
+              const sessionState = entry ? getSessionState(entry) : null;
+              const canUndo = Boolean(
+                sessionState?.isOwner && sessionState?.withinUndo && !entry?.remove_requested
+              );
+              const canRequestRemoval = Boolean(
+                sessionState?.isOwner && !sessionState?.withinUndo && !entry?.remove_requested
+              );
+              return (
+                <div
+                  key={`sub-${index}`}
+                  className={`relative flex min-h-[56px] flex-col rounded-xl border border-dashed p-3 text-xs shadow-sm ${
+                    entry?.remove_requested
+                      ? "border-rose-200 bg-rose-50 text-rose-600"
+                      : entry
+                        ? "border-emerald-200 bg-emerald-50 text-slate-700"
+                        : "border-slate-200 bg-white text-slate-600"
+                  } ${entry ? "justify-between" : "justify-center"}`}
+                >
+                  {entry ? (
+                    <>
+                      <span
+                        className={`text-sm font-semibold ${
+                          entry.remove_requested ? "text-rose-600" : "text-slate-900"
+                        }`}
+                      >
+                        <span className="mr-2 text-xs text-slate-400">
+                          {MAIN_CAPACITY + index + 1}.
+                        </span>
+                        {entry.players.first_name} {entry.players.last_name}
+                      </span>
+                      {entry.remove_requested ? (
+                        <span className="mt-2 text-[11px] font-semibold uppercase tracking-wide text-rose-500">
+                          Removal requested
+                        </span>
+                      ) : null}
+                      {isOpen ? (
+                        isUnlocked ? (
+                          <button
+                            type="button"
+                            onClick={() => leavePlayer(entry.player_id)}
+                            className="mt-2 inline-flex h-7 w-7 items-center justify-center rounded-full border border-rose-200 text-rose-500"
+                            aria-label="Remove player"
+                            disabled={interactionsDisabled}
+                          >
+                            ×
+                          </button>
+                        ) : canUndo ? (
+                          <button
+                            type="button"
+                            onClick={() => leavePlayer(entry.player_id)}
+                            className="mt-2 text-left text-xs font-semibold text-slate-600"
+                            disabled={interactionsDisabled}
+                          >
+                            Undo
+                          </button>
+                        ) : canRequestRemoval ? (
+                          <button
+                            type="button"
+                            onClick={() => requestRemoval(entry.player_id)}
+                            className="mt-2 text-left text-xs font-semibold text-rose-500"
+                            disabled={interactionsDisabled}
+                          >
+                            Remove me
+                          </button>
+                        ) : null
+                      ) : null}
+                    </>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={() => openDropdown(15 + index)}
+                      className="flex w-full items-center justify-between gap-3 text-left text-slate-400"
+                      data-slot-trigger
+                      aria-label="Add player"
+                      disabled={interactionsDisabled || Boolean(pendingPositions[15 + index])}
+                    >
+                      <span className="inline-flex items-center gap-2">
+                        <span className="text-xs text-slate-400">
+                          {MAIN_CAPACITY + index + 1}.
+                        </span>
+                        <svg
+                          xmlns="http://www.w3.org/2000/svg"
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          stroke="currentColor"
+                          strokeWidth="1.6"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          className="h-4 w-4"
+                        >
+                          <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+                          <circle cx="12" cy="7" r="3.5" />
+                        </svg>
+                        Free space
+                      </span>
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="2"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        className="h-4 w-4"
+                      >
+                        <path d="M12 5v14" />
+                        <path d="M5 12h14" />
+                      </svg>
+                    </button>
+                  )}
+
+                  {openSlot === 15 + index ? (
+                    <div
+                      className="absolute left-0 right-0 top-full z-10 mt-2 rounded-xl border border-slate-200 bg-white p-2 shadow-lg"
+                      data-slot-dropdown
+                    >
+                      <div className="flex items-center justify-between px-3 py-1 text-[10px] uppercase tracking-wide text-slate-400">
+                        <span>Add player</span>
+                        <button
+                          type="button"
+                          onClick={() => setOpenSlot(null)}
+                          className="text-slate-400 hover:text-slate-600"
+                          aria-label="Close"
+                          disabled={interactionsDisabled}
+                        >
+                          ×
+                        </button>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={handleAddNew}
+                        className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-sm font-semibold text-slate-900 hover:bg-slate-50"
+                        disabled={interactionsDisabled}
+                      >
+                        + Add new player
+                      </button>
+                      <div className="max-h-52 overflow-y-auto">
+                        {availablePlayers.length > 0 ? (
+                          availablePlayers.map((player) => (
+                            <button
+                              key={player.id}
+                              type="button"
+                              onClick={() => selectPlayer(player.id)}
+                              className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-sm text-slate-700 hover:bg-slate-50"
+                              disabled={interactionsDisabled}
+                            >
+                              <svg
+                                xmlns="http://www.w3.org/2000/svg"
+                                viewBox="0 0 24 24"
+                                fill="none"
+                                stroke="currentColor"
+                                strokeWidth="1.6"
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                className="h-4 w-4 text-slate-400"
+                              >
+                                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+                                <circle cx="12" cy="7" r="3.5" />
+                              </svg>
+                              {player.first_name} {player.last_name}
+                            </button>
+                          ))
+                        ) : (
+                          <div className="px-3 py-2 text-xs text-slate-400">
+                            No available players
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  ) : null}
+                </div>
+              );
+            })}
           </div>
         </div>
       </div>

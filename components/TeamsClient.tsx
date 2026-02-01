@@ -216,68 +216,6 @@ export default function TeamsClient({ gameweek, entries }: TeamsClientProps) {
         {renderTeamSlots("whites", "Whites", "bg-white border-slate-300")}
       </div>
 
-      <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
-        <h3 className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">
-          Subs
-        </h3>
-        <div className="mt-3 space-y-3">
-          {Array.from({ length: TEAM_LIMITS.subs }, (_, index) => ({
-            entry: grouped.subs[index] ?? null,
-            position: index,
-          })).map(({ entry, position }) => {
-            const occupiedInfo = entry
-              ? { playerId: entry.player_id, team: "subs" as Team, position: entry.position }
-              : undefined;
-            return (
-              <div
-                key={`subs-${position}`}
-                onDragOver={(event) => {
-                  if (!isUnlocked || isLocked) return;
-                  event.preventDefault();
-                }}
-                onDrop={() => handleDrop("subs", position, occupiedInfo)}
-                className="flex min-h-[52px] items-center justify-between rounded-xl border border-dashed border-slate-200 bg-white px-3 py-2 text-sm"
-              >
-                {entry ? (
-                  <div
-                    draggable={Boolean(isUnlocked) && !isLocked}
-                    onDragStart={() =>
-                      setDragged({
-                        playerId: entry.player_id,
-                        team: "subs",
-                        position: entry.position,
-                      })
-                    }
-                    className="w-full rounded-lg bg-white px-2 py-2 font-medium text-slate-900"
-                  >
-                    {entry.players.first_name} {entry.players.last_name}
-                  </div>
-                ) : isUnlocked && !isLocked ? (
-                  <select
-                    className="w-full rounded-lg border border-slate-200 px-2 py-2 text-sm"
-                    defaultValue=""
-                    onChange={(event) =>
-                      event.target.value
-                        ? assignPlayer(event.target.value, "subs", position)
-                        : null
-                    }
-                  >
-                    <option value="">Select player</option>
-                    {playersThisWeek.map((player) => (
-                      <option key={player.player_id} value={player.player_id}>
-                        {player.players.first_name} {player.players.last_name}
-                      </option>
-                    ))}
-                  </select>
-                ) : (
-                  <span className="text-xs text-slate-400">-</span>
-                )}
-              </div>
-            );
-          })}
-        </div>
-      </div>
-
       <section className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
         <p className="text-xs uppercase tracking-wide text-slate-400">
           Players in this week

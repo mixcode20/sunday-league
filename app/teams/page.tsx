@@ -1,6 +1,7 @@
 import TeamsClient from "@/components/TeamsClient";
 import TeamsReadOnly from "@/components/TeamsReadOnly";
 import GameweekInfoStrip from "@/components/GameweekInfoStrip";
+import ConfirmResultPanel from "@/components/ConfirmResultPanel";
 import { supabaseServer } from "@/lib/supabase";
 import { normalizePlayerJoin } from "@/lib/utils";
 
@@ -44,8 +45,8 @@ export default async function TeamsPage() {
 
   const normalizedEntries = (entries ?? []).map(normalizePlayerJoin);
 
-  const mainCount = Math.min(normalizedEntries.length, 14);
-  const subsCount = Math.max(normalizedEntries.length - 14, 0);
+  const mainCount = normalizedEntries.filter((entry) => entry.position <= 14).length;
+  const subsCount = normalizedEntries.filter((entry) => entry.position > 14).length;
 
   return (
     <div className="space-y-4">
@@ -57,6 +58,14 @@ export default async function TeamsPage() {
         mainCount={mainCount}
         subsCount={subsCount}
       />
+      <ConfirmResultPanel gameweek={gameweek} />
+
+      {gameweek.status === "locked" ? (
+        <div className="rounded-2xl border border-slate-200 bg-white p-4 text-sm text-slate-600 shadow-sm">
+          Final score: Darks {gameweek.darks_score ?? 0} -{" "}
+          {gameweek.whites_score ?? 0} · Locked
+        </div>
+      ) : null}
 
       {gameweek.status === "open" ? (
         <section className="flex items-start justify-between">
@@ -64,7 +73,7 @@ export default async function TeamsPage() {
             Current teams
           </p>
           <p className="text-xs text-slate-400">
-            Pick teams and subs for this week.
+            Pick teams for this week.
           </p>
         </section>
       ) : null}

@@ -38,7 +38,7 @@ create table if not exists gameweek_players (
   gameweek_id uuid not null references gameweeks(id) on delete cascade,
   player_id uuid not null references players(id) on delete cascade,
   team text not null check (team in ('darks', 'whites', 'subs')),
-  position integer not null default 0,
+  position integer not null,
   remove_requested boolean not null default false,
   created_at timestamptz not null default now(),
   unique (gameweek_id, player_id)
