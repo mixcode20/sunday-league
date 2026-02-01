@@ -41,12 +41,19 @@ export async function POST(request: Request) {
     );
   }
 
+  const safeTime =
+    typeof time === "string" && time.trim().length > 0 ? time.trim() : "9:15am";
+  const safeLocation =
+    typeof location === "string" && location.trim().length > 0
+      ? location.trim()
+      : "MH";
+
   const { data, error } = await supabase
     .from("gameweeks")
     .insert({
       game_date: date,
-      game_time: time || "9:15am",
-      location: location || "MH",
+      game_time: safeTime,
+      location: safeLocation,
       status: "open",
     })
     .select("id")

@@ -11,9 +11,24 @@ export default function CreateGameweek() {
   const { isUnlocked, organiserPin } = useOrganiserMode();
   const [date, setDate] = useState(getNextSundayISO());
   const [time, setTime] = useState("9:15am");
-  const [location, setLocation] = useState("MH");
+  const [location] = useState("MH");
   const [message, setMessage] = useState("");
   const [isOpen, setIsOpen] = useState(false);
+  const [customTime, setCustomTime] = useState("");
+
+  const quickPickTimes = ["9:00am", "9:15am", "9:30am", "9:45am", "10:00am"];
+
+  const formatTimeFromInput = (value: string) => {
+    if (!value) return "";
+    const [hoursRaw, minutesRaw] = value.split(":");
+    if (!hoursRaw || !minutesRaw) return "";
+    const hoursNumber = Number(hoursRaw);
+    if (Number.isNaN(hoursNumber)) return "";
+    const period = hoursNumber >= 12 ? "pm" : "am";
+    const hours12 = hoursNumber % 12 || 12;
+    const minutes = minutesRaw.padStart(2, "0").slice(0, 2);
+    return `${hours12}:${minutes}${period}`;
+  };
 
   const openModal = () => {
     setMessage("");
@@ -73,22 +88,51 @@ export default function CreateGameweek() {
           className="mt-2 w-full rounded-xl border border-slate-200 px-3 py-2 text-base"
         />
         <label className="mt-3 text-sm font-medium text-slate-600">Time</label>
+        <div className="mt-2 flex flex-wrap gap-2">
+          {quickPickTimes.map((option) => {
+            const isSelected = time === option;
+            return (
+              <button
+                key={option}
+                type="button"
+                onClick={() => {
+                  setTime(option);
+                  setCustomTime("");
+                }}
+                className={`rounded-full border px-3 py-1 text-sm font-medium ${
+                  isSelected
+                    ? "border-slate-900 bg-slate-900 text-white"
+                    : "border-slate-200 text-slate-700"
+                }`}
+                aria-pressed={isSelected}
+              >
+                {option}
+              </button>
+            );
+          })}
+        </div>
+        <label className="mt-3 text-sm font-medium text-slate-600">
+          Custom time
+        </label>
         <input
-          type="text"
-          value={time}
-          onChange={(event) => setTime(event.target.value)}
+          type="time"
+          value={customTime}
+          onChange={(event) => {
+            const nextValue = event.target.value;
+            setCustomTime(nextValue);
+            const formatted = formatTimeFromInput(nextValue);
+            if (formatted) setTime(formatted);
+          }}
           className="mt-2 w-full rounded-xl border border-slate-200 px-3 py-2 text-base"
-          placeholder="9:15am"
         />
         <label className="mt-3 text-sm font-medium text-slate-600">
           Location
         </label>
         <input
           type="text"
-          value={location}
-          onChange={(event) => setLocation(event.target.value)}
-          className="mt-2 w-full rounded-xl border border-slate-200 px-3 py-2 text-base text-slate-700"
-          placeholder="MH"
+          value="Mill Hill"
+          readOnly
+          className="mt-2 w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-base text-slate-700"
         />
         <button
           type="button"
