@@ -54,7 +54,11 @@ export async function POST(request: Request) {
 
   if (error) {
     return NextResponse.json(
-      { error: "Failed to create gameweek." },
+      {
+        error: error.message || "Failed to create gameweek.",
+        details: error.details ?? null,
+        hint: error.hint ?? null,
+      },
       { status: 500 }
     );
   }

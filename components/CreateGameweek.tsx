@@ -11,7 +11,7 @@ export default function CreateGameweek() {
   const { isUnlocked, organiserPin } = useOrganiserMode();
   const [date, setDate] = useState(getNextSundayISO());
   const [time, setTime] = useState("9:15am");
-  const [location] = useState("MH");
+  const [location, setLocation] = useState("MH");
   const [message, setMessage] = useState("");
   const [isOpen, setIsOpen] = useState(false);
 
@@ -22,6 +22,10 @@ export default function CreateGameweek() {
 
   const createGameweek = async () => {
     if (!organiserPin) return;
+    if (!date) {
+      setMessage("Date is required.");
+      return;
+    }
     setMessage("");
     const response = await fetch("/api/gameweeks/create", {
       method: "POST",
@@ -82,9 +86,9 @@ export default function CreateGameweek() {
         <input
           type="text"
           value={location}
+          onChange={(event) => setLocation(event.target.value)}
           className="mt-2 w-full rounded-xl border border-slate-200 px-3 py-2 text-base text-slate-700"
           placeholder="MH"
-          readOnly
         />
         <button
           type="button"

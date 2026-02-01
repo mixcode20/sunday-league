@@ -54,6 +54,15 @@ npm run build
 npm run start
 ```
 
+## Production verification
+
+- Debug endpoint: `GET /api/debug/env` returns the Supabase URL host and whether publishable/secret keys are set (no secrets).
+- Verify tables are empty: open Supabase and confirm `gameweeks`, `gameweek_players`, and `players` have zero rows.
+- Expected empty states:
+  - `/` shows “No open gameweek yet. Unlock organiser mode to create one.”
+  - `/` shows “No players yet. Use “+ New player” to add the first name.” when no players exist.
+  - `/teams` shows “No open gameweek yet. Unlock organiser mode to create one.”
+
 ## Notes
 
 - Only one open gameweek is allowed at a time (enforced by DB index).

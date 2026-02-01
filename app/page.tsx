@@ -4,6 +4,10 @@ import GameweekInfoStrip from "@/components/GameweekInfoStrip";
 import { supabaseServer } from "@/lib/supabase";
 import { normalizePlayerJoin } from "@/lib/utils";
 
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
+export const fetchCache = "force-no-store";
+
 export default async function Home() {
   const supabase = supabaseServer();
   const { data: openGameweek } = await supabase

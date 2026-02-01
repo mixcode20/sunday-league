@@ -5,6 +5,10 @@ import ConfirmResultPanel from "@/components/ConfirmResultPanel";
 import { supabaseServer } from "@/lib/supabase";
 import { normalizePlayerJoin } from "@/lib/utils";
 
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
+export const fetchCache = "force-no-store";
+
 export default async function TeamsPage() {
   const supabase = supabaseServer();
   const { data: openGameweek } = await supabase
