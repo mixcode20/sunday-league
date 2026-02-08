@@ -26,7 +26,7 @@ export default function GamePageClient() {
     routeTimerArmed.current = true;
   }, []);
 
-  const { data, error } = useSWR<GameOverviewResponse>(
+  const { data, error, mutate } = useSWR<GameOverviewResponse>(
     "/api/game/overview",
     fetcher,
     {
@@ -63,12 +63,13 @@ export default function GamePageClient() {
     <div className="space-y-4">
       <CreateGameweek />
       <GameweekInfoStrip
-        gameweekId={openGameweek?.id ?? null}
+        gameweekId={gameweek?.id ?? null}
         gameDate={gameweek?.game_date ?? null}
         time={gameweek?.game_time ?? null}
         location={gameweek?.location ?? null}
         mainCount={mainCount}
         subsCount={subsCount}
+        onRefresh={() => mutate()}
       />
 
       <section className="flex flex-col gap-4">

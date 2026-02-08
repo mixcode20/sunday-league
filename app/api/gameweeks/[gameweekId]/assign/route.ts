@@ -62,8 +62,18 @@ export async function POST(
     .eq("gameweek_id", gameweekId);
 
   if (entriesError || !entries) {
+    console.error("[teams-assign] failed to fetch team data", {
+      gameweekId,
+      error: entriesError ?? null,
+    });
     return NextResponse.json(
-      { error: "Failed to fetch team data." },
+      {
+        error: {
+          code: "entries_fetch_failed",
+          message: "Failed to fetch team data.",
+          details: entriesError?.details ?? entriesError?.message ?? null,
+        },
+      },
       { status: 500 }
     );
   }
@@ -113,8 +123,21 @@ export async function POST(
     .eq("player_id", playerId);
 
   if (error) {
+    console.error("[teams-assign] failed to update player", {
+      gameweekId,
+      playerId,
+      team,
+      position,
+      error,
+    });
     return NextResponse.json(
-      { error: "Failed to update player." },
+      {
+        error: {
+          code: error.code ?? "update_failed",
+          message: error.message ?? "Failed to update player.",
+          details: error.details ?? null,
+        },
+      },
       { status: 500 }
     );
   }

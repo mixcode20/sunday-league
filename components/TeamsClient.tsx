@@ -8,6 +8,7 @@ import type { Gameweek, GameweekPlayer, Team } from "@/lib/types";
 type TeamsClientProps = {
   gameweek: Gameweek;
   entries: GameweekPlayer[];
+  onRefresh?: () => void;
 };
 
 const TEAM_LIMITS: Record<Team, number> = {
@@ -22,7 +23,7 @@ type DragInfo = {
   position: number;
 };
 
-export default function TeamsClient({ gameweek, entries }: TeamsClientProps) {
+export default function TeamsClient({ gameweek, entries, onRefresh }: TeamsClientProps) {
   const router = useRouter();
   const { isUnlocked, organiserPin } = useOrganiserMode();
   const [statusMessage, setStatusMessage] = useState("");
@@ -57,6 +58,19 @@ export default function TeamsClient({ gameweek, entries }: TeamsClientProps) {
 
   const teamsSelected = grouped.darks.length + grouped.whites.length > 0;
 
+  const formatErrorMessage = (data: any, fallback: string) => {
+    if (!data) return fallback;
+    if (typeof data.error === "string") return data.error;
+    if (data.error && typeof data.error === "object") {
+      const message = data.error.message ?? fallback;
+      const details = data.error.details ? ` (${data.error.details})` : "";
+      const code = data.error.code ? ` [${data.error.code}]` : "";
+      return `${message}${code}${details}`;
+    }
+    if (typeof data.message === "string") return data.message;
+    return fallback;
+  };
+
   const assignPlayer = async (
     playerId: string,
     team: Team,
@@ -77,10 +91,28 @@ export default function TeamsClient({ gameweek, entries }: TeamsClientProps) {
       }),
     });
     if (!response.ok) {
-      const data = await response.json();
-      setStatusMessage(data.error ?? "Failed to update player.");
+      const data = await response.json().catch(() => null);
+      setStatusMessage(formatErrorMessage(data, "Failed to update player."));
       return;
     }
+    onRefresh?.();
+    router.refresh();
+  };
+
+  const clearTeamSlot = async (playerId: string) => {
+    if (!organiserPin) return;
+    setStatusMessage("");
+    const response = await fetch(`/api/gameweeks/${gameweek.id}/slots/clear`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ playerId, pin: organiserPin }),
+    });
+    if (!response.ok) {
+      const data = await response.json().catch(() => null);
+      setStatusMessage(formatErrorMessage(data, "Failed to clear slot."));
+      return;
+    }
+    onRefresh?.();
     router.refresh();
   };
 
@@ -186,7 +218,7 @@ export default function TeamsClient({ gameweek, entries }: TeamsClientProps) {
                       const value = event.target.value;
                       if (!value) {
                         if (entry) {
-                          assignPlayer(entry.player_id, "subs", null, true);
+                          clearTeamSlot(entry.player_id);
                         }
                         return;
                       }

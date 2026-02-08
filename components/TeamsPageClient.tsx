@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import useSWR from "swr";
 import GameweekInfoStrip from "@/components/GameweekInfoStrip";
 import ConfirmResultPanel from "@/components/ConfirmResultPanel";
@@ -25,12 +25,39 @@ export default function TeamsPageClient() {
     routeTimerArmed.current = true;
   }, []);
 
-  const { data, error } = useSWR<TeamsOverviewResponse>(
+  const [nonBlockingError, setNonBlockingError] = useState("");
+
+  const formatFetchError = (err: unknown) => {
+    if (!err || typeof err !== "object" || !("message" in err)) {
+      return "Failed to fetch team data.";
+    }
+    const message = String((err as { message?: string }).message ?? "");
+    try {
+      const parsed = JSON.parse(message);
+      if (parsed?.error?.message) {
+        const details = parsed.error.details ? ` (${parsed.error.details})` : "";
+        const code = parsed.error.code ? ` [${parsed.error.code}]` : "";
+        return `${parsed.error.message}${code}${details}`;
+      }
+      if (typeof parsed?.error === "string") {
+        return parsed.error;
+      }
+    } catch {
+      // ignore JSON parse errors
+    }
+    return message || "Failed to fetch team data.";
+  };
+
+  const { data, error, mutate } = useSWR<TeamsOverviewResponse>(
     "/api/teams/overview",
     fetcher,
     {
       refreshInterval: 12000,
       revalidateOnFocus: true,
+      keepPreviousData: true,
+      onError: (err) => {
+        setNonBlockingError(formatFetchError(err));
+      },
     }
   );
 
@@ -40,13 +67,19 @@ export default function TeamsPageClient() {
     routeTimerArmed.current = false;
   }, [data]);
 
+  useEffect(() => {
+    if (data) {
+      setNonBlockingError("");
+    }
+  }, [data]);
+
   const entries = data?.entries ?? [];
   const { main: mainCount, subs: subsCount } = useMemo(() => {
     const { positionMap } = buildEntryPositionMap(entries);
     return getSlotCounts(positionMap);
   }, [entries]);
 
-  if (error) {
+  if (error && !data) {
     return (
       <div className="rounded-2xl border border-rose-200 bg-rose-50 p-4 text-sm text-rose-700">
         Failed to load teams. Please refresh.
@@ -79,13 +112,19 @@ export default function TeamsPageClient() {
 
   return (
     <div className="space-y-4">
+      {nonBlockingError ? (
+        <div className="rounded-2xl border border-amber-200 bg-amber-50 p-3 text-sm text-amber-700">
+          {nonBlockingError}
+        </div>
+      ) : null}
       <GameweekInfoStrip
-        gameweekId={gameweek.status === "open" ? gameweek.id : null}
+        gameweekId={gameweek.id}
         gameDate={gameweek.game_date}
         time={gameweek.game_time ?? null}
         location={gameweek.location ?? null}
         mainCount={mainCount}
         subsCount={subsCount}
+        onRefresh={() => mutate()}
       />
       <ConfirmResultPanel gameweek={gameweek} />
 
@@ -106,7 +145,7 @@ export default function TeamsPageClient() {
       ) : null}
 
       {gameweek.status === "open" ? (
-        <TeamsClient gameweek={gameweek} entries={entries} />
+        <TeamsClient gameweek={gameweek} entries={entries} onRefresh={() => mutate()} />
       ) : (
         <TeamsReadOnly entries={entries} />
       )}
