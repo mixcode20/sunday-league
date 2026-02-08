@@ -57,12 +57,24 @@ export default function TeamsClient({ gameweek, entries }: TeamsClientProps) {
 
   const teamsSelected = grouped.darks.length + grouped.whites.length > 0;
 
-  const assignPlayer = async (playerId: string, team: Team, position: number) => {
+  const assignPlayer = async (
+    playerId: string,
+    team: Team,
+    position?: number | null,
+    allowReassign?: boolean
+  ) => {
     if (!organiserPin) return;
+    setStatusMessage("");
     const response = await fetch(`/api/gameweeks/${gameweek.id}/assign`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ playerId, team, position, pin: organiserPin }),
+      body: JSON.stringify({
+        playerId,
+        team,
+        position,
+        pin: organiserPin,
+        allowReassign: Boolean(allowReassign),
+      }),
     });
     if (!response.ok) {
       const data = await response.json();
@@ -74,9 +86,9 @@ export default function TeamsClient({ gameweek, entries }: TeamsClientProps) {
 
   const handleDrop = async (team: Team, position: number, occupied?: DragInfo) => {
     if (!dragged || !organiserPin) return;
-    await assignPlayer(dragged.playerId, team, position);
+    await assignPlayer(dragged.playerId, team, position, true);
     if (occupied && (occupied.team !== dragged.team || occupied.position !== dragged.position)) {
-      await assignPlayer(occupied.playerId, dragged.team, dragged.position);
+      await assignPlayer(occupied.playerId, dragged.team, dragged.position, true);
     }
     setDragged(null);
   };
@@ -91,6 +103,11 @@ export default function TeamsClient({ gameweek, entries }: TeamsClientProps) {
       entry: grouped[team][index] ?? null,
       position: index,
     }));
+
+    const isEditable = isUnlocked && !isLocked;
+    const assignedTeamPlayerIds = new Set(
+      entries.filter((entry) => entry.team !== "subs").map((entry) => entry.player_id)
+    );
 
     return (
       <div className={`rounded-2xl border border-slate-200 p-4 shadow-sm ${accent}`}>
@@ -114,6 +131,15 @@ export default function TeamsClient({ gameweek, entries }: TeamsClientProps) {
             return (
               <div
                 key={`${team}-${position}`}
+                draggable={Boolean(isEditable && entry)}
+                onDragStart={() => {
+                  if (!entry || !isEditable) return;
+                  setDragged({
+                    playerId: entry.player_id,
+                    team,
+                    position: entry.position,
+                  });
+                }}
                 onDragOver={(event) => {
                   if (!isUnlocked || isLocked) return;
                   event.preventDefault();
@@ -125,16 +151,40 @@ export default function TeamsClient({ gameweek, entries }: TeamsClientProps) {
                     : "border-slate-200 bg-white text-slate-900"
                 }`}
               >
-                {entry ? (
+                {isEditable ? (
+                  <select
+                    className="w-full rounded-lg border border-slate-200 px-2 py-2 text-sm"
+                    value={entry?.player_id ?? ""}
+                    onChange={(event) => {
+                      const value = event.target.value;
+                      if (!value) {
+                        if (entry) {
+                          assignPlayer(entry.player_id, "subs", null, true);
+                        }
+                        return;
+                      }
+                      assignPlayer(value, team, position);
+                    }}
+                  >
+                    <option value="">
+                      {entry ? "Clear slot" : "Select player"}
+                    </option>
+                    {playersThisWeek.map((player) => {
+                      const isCurrent = player.player_id === entry?.player_id;
+                      const isTaken = assignedTeamPlayerIds.has(player.player_id);
+                      return (
+                        <option
+                          key={player.player_id}
+                          value={player.player_id}
+                          disabled={isTaken && !isCurrent}
+                        >
+                          {player.players.first_name} {player.players.last_name}
+                        </option>
+                      );
+                    })}
+                  </select>
+                ) : entry ? (
                   <div
-                    draggable={Boolean(isUnlocked) && !isLocked}
-                    onDragStart={() =>
-                      setDragged({
-                        playerId: entry.player_id,
-                        team,
-                        position: entry.position,
-                      })
-                    }
                     className={`w-full rounded-lg px-2 py-2 font-medium ${
                       team === "darks"
                         ? "bg-slate-900 text-slate-100"
@@ -143,31 +193,8 @@ export default function TeamsClient({ gameweek, entries }: TeamsClientProps) {
                   >
                     {entry.players.first_name} {entry.players.last_name}
                   </div>
-                ) : isUnlocked && !isLocked ? (
-                  <select
-                    className="w-full rounded-lg border border-slate-200 px-2 py-2 text-sm"
-                    defaultValue=""
-                    onChange={(event) =>
-                      event.target.value
-                        ? assignPlayer(event.target.value, team, position)
-                        : null
-                    }
-                  >
-                    <option value="">Select player</option>
-                    {playersThisWeek.map((player) => (
-                      <option key={player.player_id} value={player.player_id}>
-                        {player.players.first_name} {player.players.last_name}
-                      </option>
-                    ))}
-                  </select>
                 ) : (
-                  <span
-                    className={`text-xs ${
-                      team === "darks" ? "text-slate-400" : "text-slate-400"
-                    }`}
-                  >
-                    -
-                  </span>
+                  <span className="text-xs text-slate-400">-</span>
                 )}
               </div>
             );

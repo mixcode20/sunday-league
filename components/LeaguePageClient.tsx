@@ -64,7 +64,6 @@ export default function LeaguePageClient() {
 
   return (
     <div className="space-y-4">
-      <h2 className="text-lg font-semibold text-slate-900">League</h2>
       <LeagueTableClient rows={data.rows} />
       {data.playersCount === 0 ? (
         <p className="text-sm text-slate-500">

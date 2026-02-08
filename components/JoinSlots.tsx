@@ -5,6 +5,8 @@ import { useRouter } from "next/navigation";
 import type { GameweekPlayer, Player } from "@/lib/types";
 import Modal from "@/components/Modal";
 import { useOrganiserMode } from "@/components/OrganiserModeProvider";
+import { buildEntryPositionMap, getSubSlotPositions, MAIN_SLOT_CAPACITY } from "@/lib/slots";
+import { debugPerfEnabled } from "@/lib/swr";
 
 type JoinSlotsProps = {
   isOpen: boolean;
@@ -13,8 +15,7 @@ type JoinSlotsProps = {
   entries: GameweekPlayer[];
 };
 
-const MAIN_CAPACITY = 14;
-const SUB_CAPACITY = 4;
+const MAIN_CAPACITY = MAIN_SLOT_CAPACITY;
 const UNDO_WINDOW_MS = 5 * 60 * 1000;
 
 export default function JoinSlots({
@@ -198,43 +199,46 @@ export default function JoinSlots({
     });
   }, [liveEntries, slotErrors]);
 
-  const orderedEntries = useMemo(() => {
-    const merged = [...liveEntries].reduce<Record<number, GameweekPlayer>>(
-      (acc, entry) => {
-        acc[entry.position] = entry;
-        return acc;
-      },
-      {}
-    );
+  const { positionMap: basePositionMap, diagnostics } = useMemo(
+    () => buildEntryPositionMap(liveEntries),
+    [liveEntries]
+  );
 
+  useEffect(() => {
+    if (!debugPerfEnabled) return;
+    if (diagnostics.invalidEntries.length === 0 && diagnostics.duplicatePositions.length === 0) {
+      return;
+    }
+    console.warn("[join-slots] slot data issues", {
+      gameweekId,
+      invalidPositions: diagnostics.invalidEntries.map((entry) => ({
+        id: entry.id,
+        player_id: entry.player_id,
+        position: entry.position,
+      })),
+      duplicatePositions: diagnostics.duplicatePositions,
+    });
+  }, [diagnostics, gameweekId]);
+
+  const mergedPositionMap = useMemo(() => {
+    const next: Record<number, GameweekPlayer> = { ...basePositionMap };
     Object.values(optimisticByPosition).forEach((entry) => {
-      if (!merged[entry.position]) {
-        merged[entry.position] = entry;
+      if (!next[entry.position]) {
+        next[entry.position] = entry;
       }
     });
-
-    return Object.values(merged).sort((a, b) => a.position - b.position);
-  }, [liveEntries, optimisticByPosition]);
-
+    return next;
+  }, [basePositionMap, optimisticByPosition]);
 
   const slotEntries = useMemo(() => {
-    const entryMap = orderedEntries.reduce<Record<number, GameweekPlayer>>(
-      (acc, entry) => {
-        acc[entry.position] = entry;
-        return acc;
-      },
-      {}
-    );
     const mainSlots = Array.from(
       { length: MAIN_CAPACITY },
-      (_, index) => entryMap[index + 1] ?? null
+      (_, index) => mergedPositionMap[index + 1] ?? null
     );
-    const subsSlots = Array.from(
-      { length: SUB_CAPACITY },
-      (_, index) => entryMap[15 + index] ?? null
-    );
-    return { mainSlots, subsSlots };
-  }, [orderedEntries]);
+    const subPositions = getSubSlotPositions(mergedPositionMap);
+    const subsSlots = subPositions.map((position) => mergedPositionMap[position] ?? null);
+    return { mainSlots, subsSlots, subPositions };
+  }, [mergedPositionMap]);
   const isSlotPending = (position: number) => Boolean(pendingPositions[position]);
 
   const refreshEntries = async () => {
@@ -437,9 +441,12 @@ export default function JoinSlots({
     }
   };
 
-  const availablePlayers = players.filter(
-    (player) => !orderedEntries.some((entry) => entry.player_id === player.id)
-  );
+  const filledPlayerIds = useMemo(() => {
+    const ids = new Set(liveEntries.map((entry) => entry.player_id));
+    Object.values(optimisticByPosition).forEach((entry) => ids.add(entry.player_id));
+    return ids;
+  }, [liveEntries, optimisticByPosition]);
+  const availablePlayers = players.filter((player) => !filledPlayerIds.has(player.id));
 
   const openDropdown = (slotIndex: number) => {
     if (!isOpen || isSlotPending(slotIndex)) return;
@@ -693,7 +700,7 @@ export default function JoinSlots({
           <p className="text-xs uppercase tracking-[0.2em] text-slate-400">Subs</p>
           <div className="mt-2 grid grid-cols-1 gap-3">
             {slotEntries.subsSlots.map((entry, index) => {
-              const slotPosition = MAIN_CAPACITY + index + 1;
+              const slotPosition = slotEntries.subPositions[index];
               const sessionState = entry ? getSessionState(entry) : null;
               const canUndo = Boolean(
                 sessionState?.isOwner && sessionState?.withinUndo && !entry?.remove_requested
@@ -709,7 +716,7 @@ export default function JoinSlots({
               );
               return (
                 <div
-                  key={`sub-${index}`}
+                  key={`sub-${slotPosition}`}
                   className={`relative flex min-h-[56px] flex-col rounded-xl border border-dashed p-3 text-xs shadow-sm ${
                     entry?.remove_requested
                       ? "border-rose-200 bg-rose-50 text-rose-600"

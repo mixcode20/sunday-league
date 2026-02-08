@@ -4,7 +4,7 @@ import SiteNav from "@/components/SiteNav";
 import OrganiserModeProvider from "@/components/OrganiserModeProvider";
 
 export const metadata: Metadata = {
-  title: "WhatsApp Footy",
+  title: "Sunday Powerleague",
   description: "Weekly 7-a-side football organiser",
 };
 

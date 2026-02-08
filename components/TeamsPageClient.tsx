@@ -8,6 +8,7 @@ import TeamsClient from "@/components/TeamsClient";
 import TeamsReadOnly from "@/components/TeamsReadOnly";
 import type { Gameweek, GameweekPlayer } from "@/lib/types";
 import { fetcher, debugPerfEnabled } from "@/lib/swr";
+import { buildEntryPositionMap, getSlotCounts } from "@/lib/slots";
 
 type TeamsOverviewResponse = {
   gameweek: Gameweek | null;
@@ -40,14 +41,10 @@ export default function TeamsPageClient() {
   }, [data]);
 
   const entries = data?.entries ?? [];
-  const mainCount = useMemo(
-    () => entries.filter((entry) => entry.position <= 14).length,
-    [entries]
-  );
-  const subsCount = useMemo(
-    () => entries.filter((entry) => entry.position > 14).length,
-    [entries]
-  );
+  const { main: mainCount, subs: subsCount } = useMemo(() => {
+    const { positionMap } = buildEntryPositionMap(entries);
+    return getSlotCounts(positionMap);
+  }, [entries]);
 
   if (error) {
     return (
@@ -60,7 +57,7 @@ export default function TeamsPageClient() {
   if (!data) {
     return (
       <div className="space-y-4">
-        <GameweekInfoStrip />
+        <div className="h-16 rounded-2xl border border-slate-200 bg-white" />
         <div className="h-24 rounded-2xl border border-slate-200 bg-white" />
         <div className="h-64 rounded-2xl border border-slate-200 bg-white" />
       </div>

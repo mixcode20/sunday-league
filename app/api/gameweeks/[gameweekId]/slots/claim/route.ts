@@ -25,7 +25,7 @@ export async function POST(
     );
   }
 
-  if (position < 1 || position > 18) {
+  if (position < 1) {
     return NextResponse.json(
       {
         ok: false,

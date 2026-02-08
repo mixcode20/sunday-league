@@ -5,7 +5,7 @@ import { isOrganiserPinConfigured, verifyOrganiserPin } from "@/lib/organiser";
 const TEAM_LIMITS: Record<string, number> = {
   darks: 7,
   whites: 7,
-  subs: 4,
+  subs: Number.MAX_SAFE_INTEGER,
 };
 
 export async function POST(
@@ -13,7 +13,7 @@ export async function POST(
   context: { params: Promise<{ gameweekId: string }> }
 ) {
   const { gameweekId } = await context.params;
-  const { playerId, team, position, pin } = await request.json();
+  const { playerId, team, position, pin, allowReassign } = await request.json();
 
   if (!isOrganiserPinConfigured()) {
     return NextResponse.json(
@@ -58,7 +58,7 @@ export async function POST(
 
   const { data: entries, error: entriesError } = await supabase
     .from("gameweek_players")
-    .select("player_id, team")
+    .select("player_id, team, position")
     .eq("gameweek_id", gameweekId);
 
   if (entriesError || !entries) {
@@ -84,9 +84,28 @@ export async function POST(
     );
   }
 
+  if (
+    current &&
+    !allowReassign &&
+    current.team !== "subs" &&
+    (current.team !== team || (typeof position === "number" && current.position !== position))
+  ) {
+    return NextResponse.json(
+      { error: "Player already assigned to a team slot. Clear the slot first." },
+      { status: 409 }
+    );
+  }
+
   const updatePayload: Record<string, number | string> = { team };
   if (typeof position === "number") {
     updatePayload.position = position;
+  } else if (team === "subs") {
+    const existingSubPositions = entries
+      .map((entry) => entry.position)
+      .filter((pos) => typeof pos === "number" && pos >= 15);
+    const maxSubPosition =
+      existingSubPositions.length > 0 ? Math.max(...existingSubPositions) : 14;
+    updatePayload.position = maxSubPosition + 1;
   }
 
   const { error } = await supabase

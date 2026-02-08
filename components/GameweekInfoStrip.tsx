@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { formatGameweekDate } from "@/lib/utils";
+import { buildEntryPositionMap, getSlotCounts } from "@/lib/slots";
 
 type GameweekInfoStripProps = {
   gameweekId?: string | null;
@@ -33,12 +34,8 @@ export default function GameweekInfoStrip({
       if (!response.ok) return;
       const data = await response.json();
       if (Array.isArray(data.entries)) {
-        const main = data.entries.filter(
-          (entry: { position: number }) => entry.position <= 14
-        ).length;
-        const subs = data.entries.filter(
-          (entry: { position: number }) => entry.position > 14
-        ).length;
+        const { positionMap } = buildEntryPositionMap(data.entries);
+        const { main, subs } = getSlotCounts(positionMap);
         setCounts({
           main,
           subs,
@@ -73,7 +70,7 @@ export default function GameweekInfoStrip({
             {time ?? "9:15am"} · {displayLocation}
           </div>
           <div>
-            {Math.min(counts.main, 14)}/14 · {Math.min(counts.subs, 4)}/4 subs
+            {counts.main}/14 · Subs: {counts.subs}
           </div>
         </div>
       </div>

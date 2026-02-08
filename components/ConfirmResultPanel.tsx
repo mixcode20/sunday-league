@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import Modal from "@/components/Modal";
 import { useOrganiserMode } from "@/components/OrganiserModeProvider";
 import type { Gameweek } from "@/lib/types";
+import { getGameweekDateTime } from "@/lib/utils";
 
 type ConfirmResultPanelProps = {
   gameweek: Gameweek;
@@ -23,7 +24,10 @@ export default function ConfirmResultPanel({ gameweek }: ConfirmResultPanelProps
   const [message, setMessage] = useState("");
   const [submitting, setSubmitting] = useState(false);
 
-  if (!isUnlocked) return null;
+  const gameDateTime = getGameweekDateTime(gameweek.game_date, gameweek.game_time);
+  const canConfirm = Boolean(gameDateTime && Date.now() >= gameDateTime.getTime());
+
+  if (!isUnlocked || !canConfirm) return null;
 
   const submitResult = async () => {
     if (!organiserPin) {

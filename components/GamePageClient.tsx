@@ -7,6 +7,7 @@ import JoinSlots from "@/components/JoinSlots";
 import GameweekInfoStrip from "@/components/GameweekInfoStrip";
 import type { Gameweek, GameweekPlayer, Player } from "@/lib/types";
 import { fetcher, debugPerfEnabled } from "@/lib/swr";
+import { buildEntryPositionMap, getSlotCounts } from "@/lib/slots";
 
 type GameOverviewResponse = {
   openGameweek: Gameweek | null;
@@ -41,14 +42,10 @@ export default function GamePageClient() {
   }, [data]);
 
   const normalizedEntries = data?.entries ?? [];
-  const mainCount = useMemo(
-    () => normalizedEntries.filter((entry) => entry.position <= 14).length,
-    [normalizedEntries]
-  );
-  const subsCount = useMemo(
-    () => normalizedEntries.filter((entry) => entry.position > 14).length,
-    [normalizedEntries]
-  );
+  const { main: mainCount, subs: subsCount } = useMemo(() => {
+    const { positionMap } = buildEntryPositionMap(normalizedEntries);
+    return getSlotCounts(positionMap);
+  }, [normalizedEntries]);
 
   if (error) {
     return (
