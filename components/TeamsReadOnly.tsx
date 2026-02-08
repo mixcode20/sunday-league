@@ -18,7 +18,12 @@ export default function TeamsReadOnly({ entries }: { entries: GameweekPlayer[] }
   });
 
   (Object.keys(grouped) as Team[]).forEach((team) => {
-    grouped[team] = [...grouped[team]].sort((a, b) => a.position - b.position);
+    grouped[team] = [...grouped[team]].sort((a, b) => {
+      const aPos = a.team_position ?? Number.MAX_SAFE_INTEGER;
+      const bPos = b.team_position ?? Number.MAX_SAFE_INTEGER;
+      if (aPos !== bPos) return aPos - bPos;
+      return a.position - b.position;
+    });
   });
 
   const teamsSelected = grouped.darks.length + grouped.whites.length > 0;
@@ -38,9 +43,33 @@ export default function TeamsReadOnly({ entries }: { entries: GameweekPlayer[] }
         </span>
       </div>
       <div className="mt-3 space-y-3">
-        {Array.from({ length: TEAM_LIMITS[team] }, (_, index) => {
-          const entry = grouped[team][index] ?? null;
-          return (
+        {(() => {
+          const limit = TEAM_LIMITS[team];
+          const slots: Array<GameweekPlayer | null> = Array.from(
+            { length: limit },
+            () => null
+          );
+          const overflow: GameweekPlayer[] = [];
+          grouped[team].forEach((entry) => {
+            const slotPosition = entry.team_position;
+            if (
+              typeof slotPosition === "number" &&
+              slotPosition >= 1 &&
+              slotPosition <= limit &&
+              !slots[slotPosition - 1]
+            ) {
+              slots[slotPosition - 1] = entry;
+            } else {
+              overflow.push(entry);
+            }
+          });
+          let overflowIndex = 0;
+          slots.forEach((entry, index) => {
+            if (entry || overflowIndex >= overflow.length) return;
+            slots[index] = overflow[overflowIndex];
+            overflowIndex += 1;
+          });
+          return slots.map((entry, index) => (
             <div
               key={`${team}-${index}`}
               className="flex min-h-[52px] items-center rounded-xl border border-dashed border-slate-200 bg-white px-3 py-2 text-sm"
@@ -53,8 +82,8 @@ export default function TeamsReadOnly({ entries }: { entries: GameweekPlayer[] }
                 <span className="text-xs text-slate-400">Pick</span>
               )}
             </div>
-          );
-        })}
+          ));
+        })()}
       </div>
     </div>
   );

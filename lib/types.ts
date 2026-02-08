@@ -24,6 +24,7 @@ export type GameweekPlayer = {
   player_id: string;
   team: Team;
   position: number;
+  team_position?: number | null;
   remove_requested: boolean;
   players: Player;
 };

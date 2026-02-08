@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import type { GameweekPlayer, Player } from "@/lib/types";
 import Modal from "@/components/Modal";
@@ -43,7 +43,10 @@ export default function JoinSlots({
     Record<string, { position: number; joinedAt: number }>
   >({});
   const [now, setNow] = useState(() => Date.now());
-  const dropdownRef = useRef<HTMLDivElement | null>(null);
+  const [subMovePrompt, setSubMovePrompt] = useState<{
+    mainEntry: GameweekPlayer;
+    suggestedSub: GameweekPlayer;
+  } | null>(null);
   const debugJoinFlow =
     typeof window !== "undefined" &&
     process.env.NEXT_PUBLIC_DEBUG_JOIN_FLOW === "true";
@@ -95,24 +98,6 @@ export default function JoinSlots({
 
     return () => clearInterval(interval);
   }, [gameweekId]);
-
-  useEffect(() => {
-    const handleClick = (event: MouseEvent) => {
-      if (openSlot === null) return;
-      const target = event.target as HTMLElement | null;
-      if (!target) return;
-      if (
-        target.closest("[data-slot-trigger]") ||
-        target.closest("[data-slot-dropdown]")
-      ) {
-        return;
-      }
-      setOpenSlot(null);
-    };
-
-    document.addEventListener("click", handleClick);
-    return () => document.removeEventListener("click", handleClick);
-  }, [openSlot]);
 
   const persistSessionJoins = (
     next: Record<string, { position: number; joinedAt: number }>
@@ -240,6 +225,48 @@ export default function JoinSlots({
     return { mainSlots, subsSlots, subPositions };
   }, [mergedPositionMap]);
   const isSlotPending = (position: number) => Boolean(pendingPositions[position]);
+
+  const getNextAvailableMainSlot = (assumeEmptyPosition?: number) => {
+    for (let position = 1; position <= MAIN_CAPACITY; position += 1) {
+      if (position === assumeEmptyPosition) {
+        return position;
+      }
+      if (!mergedPositionMap[position]) {
+        return position;
+      }
+    }
+    return null;
+  };
+
+  const resolveJoinTargetSlot = (requestedPosition: number) => {
+    if (requestedPosition > MAIN_CAPACITY) {
+      const nextMain = getNextAvailableMainSlot();
+      if (typeof nextMain === "number") {
+        return { position: nextMain, movedToMain: true };
+      }
+    }
+    return { position: requestedPosition, movedToMain: false };
+  };
+
+  const getEarliestSubEntry = () => {
+    for (let index = 0; index < slotEntries.subsSlots.length; index += 1) {
+      const entry = slotEntries.subsSlots[index];
+      if (entry) {
+        return entry;
+      }
+    }
+    return null;
+  };
+
+  const openSlotTitle = useMemo(() => {
+    if (openSlot === null) return "";
+    if (openSlot <= MAIN_CAPACITY) {
+      return `Player #${openSlot}`;
+    }
+    const subIndex = slotEntries.subPositions.indexOf(openSlot);
+    const subNumber = subIndex >= 0 ? subIndex + 1 : openSlot - MAIN_CAPACITY;
+    return `Sub #${subNumber}`;
+  }, [openSlot, slotEntries.subPositions]);
 
   const refreshEntries = async () => {
     if (!gameweekId) return;
@@ -372,7 +399,7 @@ export default function JoinSlots({
   };
 
   const leavePlayer = async (playerId: string) => {
-    if (!gameweekId) return;
+    if (!gameweekId) return false;
     setMessage("");
     setLiveEntries((prev) => prev.filter((entry) => entry.player_id !== playerId));
     clearSessionJoin(playerId);
@@ -386,10 +413,57 @@ export default function JoinSlots({
       setMessage(data.error ?? "Could not remove.");
       router.refresh();
       await refreshEntries();
-      return;
+      return false;
     }
     await refreshEntries();
     router.refresh();
+    return true;
+  };
+
+  const movePlayerToPosition = async (playerId: string, position: number) => {
+    if (!gameweekId) return false;
+    setMessage("");
+    setPendingPositions((prev) => ({ ...prev, [position]: true }));
+    setLiveEntries((prev) =>
+      prev.map((entry) =>
+        entry.player_id === playerId ? { ...entry, position } : entry
+      )
+    );
+    setSessionJoins((prev) => {
+      const existing = prev[playerId];
+      if (!existing) return prev;
+      const next = { ...prev, [playerId]: { ...existing, position } };
+      if (typeof window !== "undefined" && gameweekId) {
+        sessionStorage.setItem(`joinSession:${gameweekId}`, JSON.stringify(next));
+      }
+      return next;
+    });
+    try {
+      const response = await fetch(`/api/gameweeks/${gameweekId}/slots/move`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ playerId, position }),
+      });
+      const data = await response.json();
+      if (!response.ok) {
+        setMessage(data.error ?? "Could not move player.");
+        await refreshEntries();
+        return false;
+      }
+      await refreshEntries();
+      router.refresh();
+      return true;
+    } catch {
+      setMessage("Could not move player.");
+      await refreshEntries();
+      return false;
+    } finally {
+      setPendingPositions((prev) => {
+        const next = { ...prev };
+        delete next[position];
+        return next;
+      });
+    }
   };
 
   const requestRemoval = async (playerId: string) => {
@@ -455,7 +529,10 @@ export default function JoinSlots({
 
   const selectPlayer = async (playerId: string) => {
     if (openSlot === null || isSlotPending(openSlot)) return;
-    const targetSlot = openSlot;
+    const { position: targetSlot, movedToMain } = resolveJoinTargetSlot(openSlot);
+    if (movedToMain) {
+      setMessage(`Moved into Player #${targetSlot} (main slots fill first)`);
+    }
     setOpenSlot(null);
     const result = await joinPlayer(playerId, targetSlot);
     if (result.ok) {
@@ -467,7 +544,11 @@ export default function JoinSlots({
 
   const handleAddNew = () => {
     if (openSlot === null || isSlotPending(openSlot)) return;
-    setPendingSlot(openSlot);
+    const { position: targetSlot, movedToMain } = resolveJoinTargetSlot(openSlot);
+    if (movedToMain) {
+      setMessage(`Moved into Player #${targetSlot} (main slots fill first)`);
+    }
+    setPendingSlot(targetSlot);
     setOpenSlot(null);
     setCreating(true);
   };
@@ -481,6 +562,46 @@ export default function JoinSlots({
       isOwner: true,
       withinUndo: now - sessionInfo.joinedAt <= UNDO_WINDOW_MS,
     };
+  };
+
+  const handleOrganiserRemove = (entry: GameweekPlayer) => {
+    if (entry.position <= MAIN_CAPACITY) {
+      const suggested = getEarliestSubEntry();
+      if (suggested) {
+        setSubMovePrompt({
+          mainEntry: entry,
+          suggestedSub: suggested,
+        });
+        return;
+      }
+    }
+    void leavePlayer(entry.player_id);
+  };
+
+  const handleMovePromptYes = async () => {
+    if (!subMovePrompt) return;
+    const { mainEntry, suggestedSub } = subMovePrompt;
+    const targetPosition = getNextAvailableMainSlot(mainEntry.position);
+    setSubMovePrompt(null);
+    if (!targetPosition) {
+      await refreshEntries();
+      return;
+    }
+    const removed = await leavePlayer(mainEntry.player_id);
+    if (!removed) return;
+    const moved = await movePlayerToPosition(suggestedSub.player_id, targetPosition);
+    if (moved) {
+      setMessage(
+        `Moved ${suggestedSub.players.first_name} ${suggestedSub.players.last_name} into Player #${targetPosition}.`
+      );
+    }
+  };
+
+  const handleMovePromptNo = async () => {
+    if (!subMovePrompt) return;
+    const { mainEntry } = subMovePrompt;
+    setSubMovePrompt(null);
+    await leavePlayer(mainEntry.player_id);
   };
 
   return (
@@ -553,7 +674,7 @@ export default function JoinSlots({
                       isUnlocked ? (
                         <button
                           type="button"
-                          onClick={() => leavePlayer(entry.player_id)}
+                          onClick={() => handleOrganiserRemove(entry)}
                           className="mt-2 inline-flex h-7 w-7 items-center justify-center rounded-full border border-rose-200 text-rose-500"
                           aria-label="Remove player"
                           disabled={isSlotPending(entry.position)}
@@ -625,67 +746,6 @@ export default function JoinSlots({
                   </button>
                 )}
 
-                {openSlot === index + 1 ? (
-                  <div
-                    className="absolute left-0 right-0 top-full z-10 mt-2 rounded-xl border border-slate-200 bg-white p-2 shadow-lg"
-                    data-slot-dropdown
-                    ref={dropdownRef}
-                  >
-                    <div className="flex items-center justify-between px-3 py-1 text-[10px] uppercase tracking-wide text-slate-400">
-                      <span>Add player</span>
-                      <button
-                        type="button"
-                        onClick={() => setOpenSlot(null)}
-                        className="text-slate-400 hover:text-slate-600"
-                        aria-label="Close"
-                        disabled={isSlotPending(index + 1)}
-                      >
-                        ×
-                      </button>
-                    </div>
-                    <button
-                      type="button"
-                      onClick={handleAddNew}
-                      className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-sm font-semibold text-slate-900 hover:bg-slate-50"
-                      disabled={isSlotPending(index + 1)}
-                    >
-                      + Add new player
-                    </button>
-                    <div className="max-h-52 overflow-y-auto">
-                      {availablePlayers.length > 0 ? (
-                        availablePlayers.map((player) => (
-                          <button
-                            key={player.id}
-                            type="button"
-                            onClick={() => selectPlayer(player.id)}
-                            className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-sm text-slate-700 hover:bg-slate-50"
-                            disabled={isSlotPending(index + 1)}
-                          >
-                            <svg
-                              xmlns="http://www.w3.org/2000/svg"
-                              viewBox="0 0 24 24"
-                              fill="none"
-                              stroke="currentColor"
-                              strokeWidth="1.6"
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                              className="h-4 w-4 text-slate-400"
-                            >
-                              <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
-                              <circle cx="12" cy="7" r="3.5" />
-                            </svg>
-                            {player.first_name} {player.last_name}
-                          </button>
-                        ))
-                      ) : (
-                        <div className="px-3 py-2 text-xs text-slate-400">
-                          No available players
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                ) : null}
-
                 {slotError ? (
                   <p className="mt-2 text-[11px] font-semibold text-amber-600">
                     {slotError}
@@ -750,15 +810,19 @@ export default function JoinSlots({
                         </span>
                       ) : null}
                       {isOpen ? (
-                        isUnlocked ? (
-                          <button
-                            type="button"
-                            onClick={() => leavePlayer(entry.player_id)}
-                            className="mt-2 inline-flex h-7 w-7 items-center justify-center rounded-full border border-rose-200 text-rose-500"
-                            aria-label="Remove player"
-                            disabled={isSlotPending(entry.position)}
-                          >
-                            ×
+                      isUnlocked ? (
+                        <button
+                          type="button"
+                          onClick={() =>
+                            entry.position <= MAIN_CAPACITY
+                              ? handleOrganiserRemove(entry)
+                              : leavePlayer(entry.player_id)
+                          }
+                          className="mt-2 inline-flex h-7 w-7 items-center justify-center rounded-full border border-rose-200 text-rose-500"
+                          aria-label="Remove player"
+                          disabled={isSlotPending(entry.position)}
+                        >
+                          ×
                           </button>
                         ) : canUndo ? (
                           <button
@@ -825,66 +889,6 @@ export default function JoinSlots({
                     </button>
                   )}
 
-                  {openSlot === slotPosition ? (
-                    <div
-                      className="absolute left-0 right-0 top-full z-10 mt-2 rounded-xl border border-slate-200 bg-white p-2 shadow-lg"
-                      data-slot-dropdown
-                    >
-                      <div className="flex items-center justify-between px-3 py-1 text-[10px] uppercase tracking-wide text-slate-400">
-                        <span>Add player</span>
-                        <button
-                          type="button"
-                        onClick={() => setOpenSlot(null)}
-                        className="text-slate-400 hover:text-slate-600"
-                        aria-label="Close"
-                        disabled={isSlotPending(slotPosition)}
-                      >
-                        ×
-                      </button>
-                    </div>
-                    <button
-                      type="button"
-                      onClick={handleAddNew}
-                      className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-sm font-semibold text-slate-900 hover:bg-slate-50"
-                      disabled={isSlotPending(slotPosition)}
-                    >
-                      + Add new player
-                    </button>
-                      <div className="max-h-52 overflow-y-auto">
-                        {availablePlayers.length > 0 ? (
-                          availablePlayers.map((player) => (
-                            <button
-                            key={player.id}
-                            type="button"
-                            onClick={() => selectPlayer(player.id)}
-                            className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-sm text-slate-700 hover:bg-slate-50"
-                            disabled={isSlotPending(slotPosition)}
-                          >
-                              <svg
-                                xmlns="http://www.w3.org/2000/svg"
-                                viewBox="0 0 24 24"
-                                fill="none"
-                                stroke="currentColor"
-                                strokeWidth="1.6"
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                                className="h-4 w-4 text-slate-400"
-                              >
-                                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
-                                <circle cx="12" cy="7" r="3.5" />
-                              </svg>
-                              {player.first_name} {player.last_name}
-                            </button>
-                          ))
-                        ) : (
-                          <div className="px-3 py-2 text-xs text-slate-400">
-                            No available players
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  ) : null}
-
                   {slotError ? (
                     <p className="mt-2 text-[11px] font-semibold text-amber-600">
                       {slotError}
@@ -896,6 +900,92 @@ export default function JoinSlots({
           </div>
         </div>
       </div>
+
+      <Modal
+        isOpen={openSlot !== null}
+        title={openSlotTitle}
+        onClose={() => setOpenSlot(null)}
+        position="center"
+        closeVariant="icon"
+      >
+        <button
+          type="button"
+          onClick={handleAddNew}
+          className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-sm font-semibold text-slate-900 hover:bg-slate-50"
+          disabled={openSlot === null ? true : isSlotPending(openSlot)}
+        >
+          + Add new player
+        </button>
+        <div className="mt-2 max-h-64 overflow-y-auto">
+          {availablePlayers.length > 0 ? (
+            availablePlayers.map((player) => (
+              <button
+                key={player.id}
+                type="button"
+                onClick={() => selectPlayer(player.id)}
+                className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-sm text-slate-700 hover:bg-slate-50"
+                disabled={openSlot === null ? true : isSlotPending(openSlot)}
+              >
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="1.6"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  className="h-4 w-4 text-slate-400"
+                >
+                  <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+                  <circle cx="12" cy="7" r="3.5" />
+                </svg>
+                {player.first_name} {player.last_name}
+              </button>
+            ))
+          ) : (
+            <div className="px-3 py-2 text-xs text-slate-400">
+              No available players
+            </div>
+          )}
+        </div>
+      </Modal>
+
+      <Modal
+        isOpen={Boolean(subMovePrompt)}
+        title="Move sub up?"
+        onClose={() => setSubMovePrompt(null)}
+        position="center"
+        closeVariant="icon"
+      >
+        {subMovePrompt ? (
+          <>
+            <p className="text-sm text-slate-600">
+              Fill the empty spot with Sub:{" "}
+              <span className="font-semibold text-slate-900">
+                {subMovePrompt.suggestedSub.players.first_name}{" "}
+                {subMovePrompt.suggestedSub.players.last_name}
+              </span>
+              ?
+            </p>
+            <div className="mt-4 grid grid-cols-2 gap-2">
+              <button
+                type="button"
+                onClick={handleMovePromptYes}
+                className="rounded-xl bg-slate-900 px-4 py-2 text-sm font-semibold text-white"
+              >
+                Yes, move up
+              </button>
+              <button
+                type="button"
+                onClick={handleMovePromptNo}
+                className="rounded-xl border border-slate-200 px-4 py-2 text-sm font-semibold text-slate-700"
+              >
+                No
+              </button>
+            </div>
+          </>
+        ) : null}
+      </Modal>
 
       <Modal isOpen={creating} title="Add new player" onClose={() => setCreating(false)}>
         <label className="text-sm font-medium text-slate-600">First name</label>

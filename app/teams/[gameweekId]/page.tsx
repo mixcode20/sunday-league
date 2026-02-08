@@ -31,6 +31,7 @@ export default async function TeamsHistoryPage({
     )
     .eq("gameweek_id", gameweek.id)
     .order("team", { ascending: true })
+    .order("team_position", { ascending: true })
     .order("position", { ascending: true });
 
   const normalizedEntries = (entries ?? []).map(normalizePlayerJoin);

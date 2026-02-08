@@ -40,18 +40,18 @@ export default function TeamsClient({ gameweek, entries }: TeamsClientProps) {
       base[entry.team].push(entry);
     });
     (Object.keys(base) as Team[]).forEach((team) => {
-      base[team] = [...base[team]].sort((a, b) => a.position - b.position);
+      base[team] = [...base[team]].sort((a, b) => {
+        const aPos = a.team_position ?? Number.MAX_SAFE_INTEGER;
+        const bPos = b.team_position ?? Number.MAX_SAFE_INTEGER;
+        if (aPos !== bPos) return aPos - bPos;
+        return a.position - b.position;
+      });
     });
     return base;
   }, [entries]);
 
   const playersThisWeek = useMemo(
-    () =>
-      [...entries].sort((a, b) =>
-        `${a.players.first_name} ${a.players.last_name}`.localeCompare(
-          `${b.players.first_name} ${b.players.last_name}`
-        )
-      ),
+    () => [...entries].sort((a, b) => a.position - b.position),
     [entries]
   );
 
@@ -99,10 +99,33 @@ export default function TeamsClient({ gameweek, entries }: TeamsClientProps) {
     accent: string,
     isDark?: boolean
   ) => {
-    const slots = Array.from({ length: TEAM_LIMITS[team] }, (_, index) => ({
-      entry: grouped[team][index] ?? null,
-      position: index,
-    }));
+    const limit = TEAM_LIMITS[team];
+    const slots: Array<{ entry: GameweekPlayer | null; position: number }> = Array.from(
+      { length: limit },
+      (_, index) => ({ entry: null, position: index + 1 })
+    );
+    const overflow: GameweekPlayer[] = [];
+
+    grouped[team].forEach((entry) => {
+      const slotPosition = entry.team_position;
+      if (
+        typeof slotPosition === "number" &&
+        slotPosition >= 1 &&
+        slotPosition <= limit &&
+        !slots[slotPosition - 1].entry
+      ) {
+        slots[slotPosition - 1].entry = entry;
+      } else {
+        overflow.push(entry);
+      }
+    });
+
+    let overflowIndex = 0;
+    slots.forEach((slot, index) => {
+      if (slot.entry || overflowIndex >= overflow.length) return;
+      slots[index].entry = overflow[overflowIndex];
+      overflowIndex += 1;
+    });
 
     const isEditable = isUnlocked && !isLocked;
     const assignedTeamPlayerIds = new Set(
@@ -126,7 +149,11 @@ export default function TeamsClient({ gameweek, entries }: TeamsClientProps) {
         <div className="mt-3 space-y-3">
           {slots.map(({ entry, position }) => {
             const occupiedInfo = entry
-              ? { playerId: entry.player_id, team, position: entry.position }
+              ? {
+                  playerId: entry.player_id,
+                  team,
+                  position: entry.team_position ?? position,
+                }
               : undefined;
             return (
               <div
@@ -137,7 +164,7 @@ export default function TeamsClient({ gameweek, entries }: TeamsClientProps) {
                   setDragged({
                     playerId: entry.player_id,
                     team,
-                    position: entry.position,
+                    position: entry.team_position ?? position,
                   });
                 }}
                 onDragOver={(event) => {

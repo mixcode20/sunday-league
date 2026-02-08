@@ -34,6 +34,7 @@ export async function GET() {
         .select("*, players(id, first_name, last_name)")
         .eq("gameweek_id", gameweek.id)
         .order("team", { ascending: true })
+        .order("team_position", { ascending: true })
         .order("position", { ascending: true })
     : { data: [] };
 

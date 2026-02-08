@@ -58,7 +58,7 @@ export async function POST(
 
   const { data: entries, error: entriesError } = await supabase
     .from("gameweek_players")
-    .select("player_id, team, position")
+    .select("player_id, team, position, team_position")
     .eq("gameweek_id", gameweekId);
 
   if (entriesError || !entries) {
@@ -88,7 +88,8 @@ export async function POST(
     current &&
     !allowReassign &&
     current.team !== "subs" &&
-    (current.team !== team || (typeof position === "number" && current.position !== position))
+    (current.team !== team ||
+      (typeof position === "number" && current.team_position !== position))
   ) {
     return NextResponse.json(
       { error: "Player already assigned to a team slot. Clear the slot first." },
@@ -96,16 +97,13 @@ export async function POST(
     );
   }
 
-  const updatePayload: Record<string, number | string> = { team };
-  if (typeof position === "number") {
-    updatePayload.position = position;
-  } else if (team === "subs") {
-    const existingSubPositions = entries
-      .map((entry) => entry.position)
-      .filter((pos) => typeof pos === "number" && pos >= 15);
-    const maxSubPosition =
-      existingSubPositions.length > 0 ? Math.max(...existingSubPositions) : 14;
-    updatePayload.position = maxSubPosition + 1;
+  const updatePayload: Record<string, number | string | null> = { team };
+  if (team === "subs") {
+    updatePayload.team_position = null;
+  } else if (typeof position === "number") {
+    updatePayload.team_position = position;
+  } else {
+    updatePayload.team_position = null;
   }
 
   const { error } = await supabase
