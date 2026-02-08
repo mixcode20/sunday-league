@@ -65,16 +65,6 @@ export default function GameweekInfoStrip({
     return () => clearInterval(interval);
   }, [gameweekId]);
 
-  if (!gameDate) {
-    return (
-      <div className="mt-[5px] w-full border-b border-slate-200 bg-white">
-        <div className="mx-auto w-full max-w-5xl px-4 py-[5px] text-sm text-slate-500">
-          No gameweek scheduled yet.
-        </div>
-      </div>
-    );
-  }
-
   const formatTimeFromInput = (value: string) => {
     if (!value) return "";
     const [hoursRaw, minutesRaw] = value.split(":");
@@ -102,6 +92,16 @@ export default function GameweekInfoStrip({
     const minutesStr = String(minutes).padStart(2, "0");
     return `${hoursStr}:${minutesStr}`;
   }, [time]);
+
+  if (!gameDate) {
+    return (
+      <div className="mt-[5px] w-full border-b border-slate-200 bg-white">
+        <div className="mx-auto w-full max-w-5xl px-4 py-[5px] text-sm text-slate-500">
+          No gameweek scheduled yet.
+        </div>
+      </div>
+    );
+  }
 
   const openEdit = () => {
     setMessage("");
