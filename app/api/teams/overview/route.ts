@@ -28,15 +28,21 @@ export async function GET() {
   const latestLocked = lockedResult.data ?? null;
   const gameweek = openGameweek ?? latestLocked;
 
-  const { data: entries } = gameweek
+  const { data: entries, error: entriesError } = gameweek
     ? await supabase
         .from("gameweek_players")
         .select("*, players(id, first_name, last_name)")
         .eq("gameweek_id", gameweek.id)
-        .order("team", { ascending: true })
-        .order("team_position", { ascending: true })
         .order("position", { ascending: true })
-    : { data: [] };
+        .order("created_at", { ascending: true })
+    : { data: [], error: null };
+
+  if (entriesError) {
+    return NextResponse.json(
+      { error: "Failed to fetch entries." },
+      { status: 500 }
+    );
+  }
 
   const normalizedEntries = (entries ?? []).map(normalizePlayerJoin);
 

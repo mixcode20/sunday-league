@@ -25,7 +25,7 @@ export default function JoinSlots({
   entries,
 }: JoinSlotsProps) {
   const router = useRouter();
-  const { isUnlocked } = useOrganiserMode();
+  const { isUnlocked, organiserPin } = useOrganiserMode();
   const [message, setMessage] = useState("");
   const [creating, setCreating] = useState(false);
   const [newFirst, setNewFirst] = useState("");
@@ -420,6 +420,32 @@ export default function JoinSlots({
     return true;
   };
 
+  const removeFromGame = async (playerId: string) => {
+    if (!gameweekId) return false;
+    if (!organiserPin) {
+      setMessage("Organiser PIN required.");
+      return false;
+    }
+    setMessage("");
+    setLiveEntries((prev) => prev.filter((entry) => entry.player_id !== playerId));
+    clearSessionJoin(playerId);
+    const response = await fetch(`/api/gameweeks/${gameweekId}/kick`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ playerId, pin: organiserPin }),
+    });
+    const data = await response.json();
+    if (!response.ok) {
+      setMessage(data.error ?? "Could not remove.");
+      router.refresh();
+      await refreshEntries();
+      return false;
+    }
+    await refreshEntries();
+    router.refresh();
+    return true;
+  };
+
   const movePlayerToPosition = async (playerId: string, position: number) => {
     if (!gameweekId) return false;
     setMessage("");
@@ -486,6 +512,37 @@ export default function JoinSlots({
     );
     if (!response.ok) {
       setMessage("Could not request removal.");
+      router.refresh();
+      await refreshEntries();
+      return;
+    }
+    await refreshEntries();
+  };
+
+  const clearRemovalRequest = async (playerId: string) => {
+    if (!gameweekId) return;
+    if (!organiserPin) {
+      setMessage("Organiser PIN required.");
+      return;
+    }
+    setMessage("");
+    setLiveEntries((prev) =>
+      prev.map((entry) =>
+        entry.player_id === playerId
+          ? { ...entry, remove_requested: false }
+          : entry
+      )
+    );
+    const response = await fetch(
+      `/api/gameweeks/${gameweekId}/clear-remove`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ playerId, pin: organiserPin }),
+      }
+    );
+    if (!response.ok) {
+      setMessage("Could not clear removal request.");
       router.refresh();
       await refreshEntries();
       return;
@@ -575,7 +632,7 @@ export default function JoinSlots({
         return;
       }
     }
-    void leavePlayer(entry.player_id);
+    void removeFromGame(entry.player_id);
   };
 
   const handleMovePromptYes = async () => {
@@ -587,7 +644,7 @@ export default function JoinSlots({
       await refreshEntries();
       return;
     }
-    const removed = await leavePlayer(mainEntry.player_id);
+    const removed = await removeFromGame(mainEntry.player_id);
     if (!removed) return;
     const moved = await movePlayerToPosition(suggestedSub.player_id, targetPosition);
     if (moved) {
@@ -601,7 +658,7 @@ export default function JoinSlots({
     if (!subMovePrompt) return;
     const { mainEntry } = subMovePrompt;
     setSubMovePrompt(null);
-    await leavePlayer(mainEntry.player_id);
+    await removeFromGame(mainEntry.player_id);
   };
 
   return (
@@ -672,15 +729,37 @@ export default function JoinSlots({
                     ) : null}
                     {isOpen ? (
                       isUnlocked ? (
-                        <button
-                          type="button"
-                          onClick={() => handleOrganiserRemove(entry)}
-                          className="mt-2 inline-flex h-7 w-7 items-center justify-center rounded-full border border-rose-200 text-rose-500"
-                          aria-label="Remove player"
-                          disabled={isSlotPending(entry.position)}
-                        >
-                          ×
-                        </button>
+                        entry.remove_requested ? (
+                          <div className="mt-2 flex items-center gap-2">
+                            <button
+                              type="button"
+                              onClick={() => clearRemovalRequest(entry.player_id)}
+                              className="text-left text-xs font-semibold text-slate-600"
+                              disabled={isSlotPending(entry.position)}
+                            >
+                              Clear request
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => handleOrganiserRemove(entry)}
+                              className="inline-flex h-7 w-7 items-center justify-center rounded-full border border-rose-200 text-rose-500"
+                              aria-label="Remove from game"
+                              disabled={isSlotPending(entry.position)}
+                            >
+                              ×
+                            </button>
+                          </div>
+                        ) : (
+                          <button
+                            type="button"
+                            onClick={() => handleOrganiserRemove(entry)}
+                            className="mt-2 inline-flex h-7 w-7 items-center justify-center rounded-full border border-rose-200 text-rose-500"
+                            aria-label="Remove from game"
+                            disabled={isSlotPending(entry.position)}
+                          >
+                            ×
+                          </button>
+                        )
                       ) : canUndo ? (
                         <button
                           type="button"
@@ -810,20 +889,46 @@ export default function JoinSlots({
                         </span>
                       ) : null}
                       {isOpen ? (
-                      isUnlocked ? (
-                        <button
-                          type="button"
-                          onClick={() =>
-                            entry.position <= MAIN_CAPACITY
-                              ? handleOrganiserRemove(entry)
-                              : leavePlayer(entry.player_id)
-                          }
-                          className="mt-2 inline-flex h-7 w-7 items-center justify-center rounded-full border border-rose-200 text-rose-500"
-                          aria-label="Remove player"
-                          disabled={isSlotPending(entry.position)}
-                        >
-                          ×
-                          </button>
+                        isUnlocked ? (
+                          entry.remove_requested ? (
+                            <div className="mt-2 flex items-center gap-2">
+                              <button
+                                type="button"
+                                onClick={() => clearRemovalRequest(entry.player_id)}
+                                className="text-left text-xs font-semibold text-slate-600"
+                                disabled={isSlotPending(entry.position)}
+                              >
+                                Clear request
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() =>
+                                  entry.position <= MAIN_CAPACITY
+                                    ? handleOrganiserRemove(entry)
+                                    : removeFromGame(entry.player_id)
+                                }
+                                className="inline-flex h-7 w-7 items-center justify-center rounded-full border border-rose-200 text-rose-500"
+                                aria-label="Remove from game"
+                                disabled={isSlotPending(entry.position)}
+                              >
+                                ×
+                              </button>
+                            </div>
+                          ) : (
+                            <button
+                              type="button"
+                              onClick={() =>
+                                entry.position <= MAIN_CAPACITY
+                                  ? handleOrganiserRemove(entry)
+                                  : removeFromGame(entry.player_id)
+                              }
+                              className="mt-2 inline-flex h-7 w-7 items-center justify-center rounded-full border border-rose-200 text-rose-500"
+                              aria-label="Remove from game"
+                              disabled={isSlotPending(entry.position)}
+                            >
+                              ×
+                            </button>
+                          )
                         ) : canUndo ? (
                           <button
                             type="button"
