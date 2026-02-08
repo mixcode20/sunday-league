@@ -39,6 +39,7 @@ create table if not exists gameweek_players (
   player_id uuid not null references players(id) on delete cascade,
   team text not null check (team in ('darks', 'whites', 'subs')),
   position integer not null,
+  team_position integer,
   remove_requested boolean not null default false,
   created_at timestamptz not null default now(),
   unique (gameweek_id, player_id)
@@ -49,6 +50,13 @@ create unique index if not exists gameweek_players_slot_unique_idx
 
 create index if not exists gameweek_players_gameweek_team_idx
   on gameweek_players (gameweek_id, team, position);
+
+create index if not exists gameweek_players_team_position_idx
+  on gameweek_players (gameweek_id, team, team_position);
+
+create unique index if not exists gameweek_players_team_position_unique_idx
+  on gameweek_players (gameweek_id, team, team_position)
+  where team_position is not null;
 
 create index if not exists gameweek_players_player_idx
   on gameweek_players (player_id);
