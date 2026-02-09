@@ -519,6 +519,33 @@ export default function JoinSlots({
     await refreshEntries();
   };
 
+  const cancelRemovalRequest = async (playerId: string) => {
+    if (!gameweekId) return;
+    setMessage("");
+    setLiveEntries((prev) =>
+      prev.map((entry) =>
+        entry.player_id === playerId
+          ? { ...entry, remove_requested: false }
+          : entry
+      )
+    );
+    const response = await fetch(
+      `/api/gameweeks/${gameweekId}/request-remove`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ playerId, cancel: true }),
+      }
+    );
+    if (!response.ok) {
+      setMessage("Could not cancel removal request.");
+      router.refresh();
+      await refreshEntries();
+      return;
+    }
+    await refreshEntries();
+  };
+
   const clearRemovalRequest = async (playerId: string) => {
     if (!gameweekId) return;
     if (!organiserPin) {
@@ -760,6 +787,15 @@ export default function JoinSlots({
                             ×
                           </button>
                         )
+                      ) : entry.remove_requested ? (
+                        <button
+                          type="button"
+                          onClick={() => cancelRemovalRequest(entry.player_id)}
+                          className="mt-2 text-left text-xs font-semibold text-slate-600"
+                          disabled={isSlotPending(entry.position)}
+                        >
+                          Cancel
+                        </button>
                       ) : canUndo ? (
                         <button
                           type="button"
@@ -883,14 +919,14 @@ export default function JoinSlots({
                           Claiming...
                         </span>
                       ) : null}
-                      {entry.remove_requested ? (
-                        <span className="mt-2 text-[11px] font-semibold uppercase tracking-wide text-rose-500">
-                          Removal requested
-                        </span>
-                      ) : null}
-                      {isOpen ? (
-                        isUnlocked ? (
-                          entry.remove_requested ? (
+                    {entry.remove_requested ? (
+                      <span className="mt-2 text-[11px] font-semibold uppercase tracking-wide text-rose-500">
+                        Removal requested
+                      </span>
+                    ) : null}
+                    {isOpen ? (
+                      isUnlocked ? (
+                        entry.remove_requested ? (
                             <div className="mt-2 flex items-center gap-2">
                               <button
                                 type="button"
@@ -929,6 +965,15 @@ export default function JoinSlots({
                               ×
                             </button>
                           )
+                        ) : entry.remove_requested ? (
+                          <button
+                            type="button"
+                            onClick={() => cancelRemovalRequest(entry.player_id)}
+                            className="mt-2 text-left text-xs font-semibold text-slate-600"
+                            disabled={isSlotPending(entry.position)}
+                          >
+                            Cancel
+                          </button>
                         ) : canUndo ? (
                           <button
                             type="button"
