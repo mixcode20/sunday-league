@@ -5,7 +5,7 @@ export default async function AdminPlayersPage() {
   const supabase = supabaseServer();
   const { data: players } = await supabase
     .from("players")
-    .select("id, first_name, last_name")
+    .select("id, first_name, last_name, archived")
     .order("first_name", { ascending: true });
 
   return <AdminPlayersClient players={players ?? []} />;

@@ -18,7 +18,7 @@ export async function POST(request: Request) {
   const { data, error } = await supabase
     .from("players")
     .insert({ first_name: trimmedFirst, last_name: trimmedLast })
-    .select("id, first_name, last_name")
+    .select("id, first_name, last_name, archived")
     .single();
 
   if (error) {

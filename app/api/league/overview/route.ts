@@ -14,7 +14,7 @@ export async function GET() {
 
   const supabase = supabaseServer();
   const [playersResult, gameweeksResult] = await Promise.all([
-    supabase.from("players").select("id, first_name, last_name"),
+    supabase.from("players").select("id, first_name, last_name, archived"),
     supabase
       .from("gameweeks")
       .select("id, darks_score, whites_score, winner, result_mode")
@@ -39,6 +39,7 @@ export async function GET() {
     stats[player.id] = {
       id: player.id,
       name: `${player.first_name} ${player.last_name}`,
+      archived: player.archived,
       gp: 0,
       w: 0,
       d: 0,

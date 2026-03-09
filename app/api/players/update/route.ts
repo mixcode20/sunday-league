@@ -31,7 +31,7 @@ export async function POST(request: Request) {
     .from("players")
     .update({ first_name: trimmedFirst, last_name: trimmedLast })
     .eq("id", id)
-    .select("id, first_name, last_name")
+    .select("id, first_name, last_name, archived")
     .single();
 
   if (error) {

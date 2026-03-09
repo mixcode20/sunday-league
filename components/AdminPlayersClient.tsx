@@ -76,17 +76,17 @@ export default function AdminPlayersClient({ players }: AdminPlayersClientProps)
     router.refresh();
   };
 
-  const handleDelete = async (id: string) => {
+  const handleArchive = async (id: string) => {
     if (!organiserPin) return;
     setMessage("");
-    const response = await fetch("/api/players/delete", {
+    const response = await fetch("/api/players/archive", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ id, pin: organiserPin }),
     });
     const data = await response.json();
     if (!response.ok) {
-      setMessage(data.error ?? "Failed to delete player.");
+      setMessage(data.error ?? "Failed to archive player.");
       return;
     }
     router.refresh();
@@ -115,7 +115,7 @@ export default function AdminPlayersClient({ players }: AdminPlayersClientProps)
               Player management
             </h2>
             <p className="mt-1 text-sm text-slate-500">
-              Create, edit, or remove players.
+              Create, edit, or archive players.
             </p>
           </div>
         </div>
@@ -133,7 +133,7 @@ export default function AdminPlayersClient({ players }: AdminPlayersClientProps)
             Organiser menu
           </p>
           <p className="mt-2">
-            Add new players above, edit or delete existing players below.
+            Add new players above, edit active players, or archive them below.
           </p>
         </div>
       ) : (
@@ -209,13 +209,19 @@ export default function AdminPlayersClient({ players }: AdminPlayersClientProps)
                         </button>
                         <button
                           type="button"
-                          onClick={() => handleDelete(player.id)}
-                          className="flex-1 rounded-xl border border-rose-200 px-3 py-2 text-sm text-rose-600"
+                          onClick={() => handleArchive(player.id)}
+                          disabled={player.archived}
+                          className="flex-1 rounded-xl border border-amber-200 px-3 py-2 text-sm text-amber-700 disabled:cursor-not-allowed disabled:opacity-50"
                         >
-                          Delete
+                          {player.archived ? "Archived" : "Archive"}
                         </button>
                       </div>
                     </div>
+                    {player.archived ? (
+                      <p className="mt-2 text-xs font-medium uppercase tracking-wide text-amber-700">
+                        Archived
+                      </p>
+                    ) : null}
                   </div>
                 );
               })
@@ -236,7 +242,16 @@ export default function AdminPlayersClient({ players }: AdminPlayersClientProps)
                   key={player.id}
                   className="rounded-xl border border-slate-100 bg-slate-50 px-3 py-2 text-sm text-slate-700"
                 >
-                  {player.first_name} {player.last_name}
+                  <div className="flex items-center gap-2">
+                    <span>
+                      {player.first_name} {player.last_name}
+                    </span>
+                    {player.archived ? (
+                      <span className="rounded-full border border-amber-200 bg-amber-50 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-amber-700">
+                        Archived
+                      </span>
+                    ) : null}
+                  </div>
                 </div>
               ))
             )}

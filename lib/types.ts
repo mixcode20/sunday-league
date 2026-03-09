@@ -8,6 +8,7 @@ export type Player = {
   id: string;
   first_name: string;
   last_name: string;
+  archived: boolean;
 };
 
 export type Gameweek = {
@@ -37,6 +38,7 @@ export type GameweekPlayer = {
 export type LeagueStatRow = {
   id: string;
   name: string;
+  archived: boolean;
   gp: number;
   w: number;
   d: number;

@@ -4,6 +4,7 @@ create table if not exists players (
   id uuid primary key default gen_random_uuid(),
   first_name text not null,
   last_name text not null,
+  archived boolean not null default false,
   created_at timestamptz not null default now()
 );
 
