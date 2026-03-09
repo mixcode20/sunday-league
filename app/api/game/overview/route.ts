@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { listPlayers } from "@/lib/players";
 import { supabaseServer } from "@/lib/supabase";
 import { normalizePlayerJoin } from "@/lib/utils";
 
@@ -22,13 +23,7 @@ export async function GET() {
       .order("game_date", { ascending: false })
       .limit(1)
       .maybeSingle(),
-    supabase
-      .from("players")
-      .select("id, first_name, last_name, archived")
-      .eq("archived", false)
-      .order("first_name", {
-        ascending: true,
-      }),
+    listPlayers(supabase, { activeOnly: true }),
   ]);
 
   const openGameweek = openResult.data ?? null;

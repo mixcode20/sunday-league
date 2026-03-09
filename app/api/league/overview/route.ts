@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { listPlayers } from "@/lib/players";
 import { supabaseServer } from "@/lib/supabase";
 import type { LeagueStatRow } from "@/lib/types";
 import { getGameweekGoals, getGameweekWinner } from "@/lib/utils";
@@ -14,7 +15,7 @@ export async function GET() {
 
   const supabase = supabaseServer();
   const [playersResult, gameweeksResult] = await Promise.all([
-    supabase.from("players").select("id, first_name, last_name, archived"),
+    listPlayers(supabase),
     supabase
       .from("gameweeks")
       .select("id, darks_score, whites_score, winner, result_mode")
