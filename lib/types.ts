@@ -1,5 +1,8 @@
 export type GameweekStatus = "open" | "locked";
 export type Team = "darks" | "whites" | "subs";
+export type ResultMode = "score" | "result";
+export type Winner = "darks" | "whites" | "draw";
+export type LeagueSortDirection = "asc" | "desc";
 
 export type Player = {
   id: string;
@@ -15,6 +18,8 @@ export type Gameweek = {
   status: GameweekStatus;
   darks_score: number | null;
   whites_score: number | null;
+  result_mode: ResultMode | null;
+  winner: Winner | null;
   locked_at: string | null;
 };
 
@@ -27,4 +32,17 @@ export type GameweekPlayer = {
   team_position?: number | null;
   remove_requested: boolean;
   players: Player;
+};
+
+export type LeagueStatRow = {
+  id: string;
+  name: string;
+  gp: number;
+  w: number;
+  d: number;
+  l: number;
+  winPct: number;
+  goalsFor: number;
+  goalsAgainst: number;
+  goalDifference: number;
 };

@@ -18,12 +18,37 @@ create table if not exists gameweeks (
   status text not null check (status in ('open', 'locked')),
   darks_score integer check (darks_score >= 0),
   whites_score integer check (whites_score >= 0),
+  result_mode text check (result_mode in ('score', 'result')),
+  winner text check (winner in ('darks', 'whites', 'draw')),
   locked_at timestamptz,
   created_at timestamptz not null default now(),
   check (
-    (status = 'open' and darks_score is null and whites_score is null)
+    (
+      status = 'open'
+      and darks_score is null
+      and whites_score is null
+      and result_mode is null
+      and winner is null
+    )
     or
-    (status = 'locked' and darks_score is not null and whites_score is not null)
+    (
+      status = 'locked'
+      and (
+        (
+          result_mode = 'score'
+          and darks_score is not null
+          and whites_score is not null
+          and winner is not null
+        )
+        or
+        (
+          result_mode = 'result'
+          and darks_score is null
+          and whites_score is null
+          and winner is not null
+        )
+      )
+    )
   )
 );
 

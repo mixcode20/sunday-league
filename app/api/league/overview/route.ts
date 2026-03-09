@@ -1,19 +1,11 @@
 import { NextResponse } from "next/server";
 import { supabaseServer } from "@/lib/supabase";
+import type { LeagueStatRow } from "@/lib/types";
+import { getGameweekGoals, getGameweekWinner } from "@/lib/utils";
 
 const debugPerf =
   process.env.DEBUG_PERF === "true" ||
   process.env.NEXT_PUBLIC_DEBUG_PERF === "true";
-
-type StatRow = {
-  id: string;
-  name: string;
-  gp: number;
-  w: number;
-  d: number;
-  l: number;
-  winPct: number;
-};
 
 export async function GET() {
   if (debugPerf) {
@@ -25,7 +17,7 @@ export async function GET() {
     supabase.from("players").select("id, first_name, last_name"),
     supabase
       .from("gameweeks")
-      .select("id, darks_score, whites_score")
+      .select("id, darks_score, whites_score, winner, result_mode")
       .eq("status", "locked"),
   ]);
   const players = playersResult.data ?? [];
@@ -41,7 +33,7 @@ export async function GET() {
           .in("gameweek_id", gameweekIds)
       : { data: [] };
 
-  const stats: Record<string, StatRow> = {};
+  const stats: Record<string, LeagueStatRow> = {};
 
   players.forEach((player) => {
     stats[player.id] = {
@@ -52,36 +44,36 @@ export async function GET() {
       d: 0,
       l: 0,
       winPct: 0,
+      goalsFor: 0,
+      goalsAgainst: 0,
+      goalDifference: 0,
     };
   });
 
-  const gameweekResultMap = new Map<string, { darks: number; whites: number }>();
+  const gameweekResultMap = new Map<string, "darks" | "whites" | "draw">();
+  const gameweekMap = new Map<string, (typeof gameweeks)[number]>();
   gameweeks.forEach((gameweek) => {
-    if (
-      typeof gameweek.darks_score === "number" &&
-      typeof gameweek.whites_score === "number"
-    ) {
-      gameweekResultMap.set(gameweek.id, {
-        darks: gameweek.darks_score,
-        whites: gameweek.whites_score,
-      });
-    }
+    gameweekMap.set(gameweek.id, gameweek);
+    const winner = getGameweekWinner(gameweek);
+    if (winner) gameweekResultMap.set(gameweek.id, winner);
   });
 
   (entries ?? []).forEach((entry) => {
     if (entry.team === "subs") return;
+    const gameweek = gameweekMap.get(entry.gameweek_id);
     const result = gameweekResultMap.get(entry.gameweek_id);
-    if (!result) return;
+    if (!gameweek || !result) return;
     const row = stats[entry.player_id];
     if (!row) return;
     row.gp += 1;
     const isDarks = entry.team === "darks";
-    if (result.darks === result.whites) {
+    const goals = getGameweekGoals(gameweek, entry.team);
+
+    row.goalsFor += goals.goalsFor;
+    row.goalsAgainst += goals.goalsAgainst;
+    if (result === "draw") {
       row.d += 1;
-    } else if (
-      (isDarks && result.darks > result.whites) ||
-      (!isDarks && result.whites > result.darks)
-    ) {
+    } else if ((isDarks && result === "darks") || (!isDarks && result === "whites")) {
       row.w += 1;
     } else {
       row.l += 1;
@@ -91,6 +83,7 @@ export async function GET() {
   const rows = Object.values(stats).map((row) => ({
     ...row,
     winPct: row.gp ? (row.w / row.gp) * 100 : 0,
+    goalDifference: row.goalsFor - row.goalsAgainst,
   }));
 
   if (debugPerf) {

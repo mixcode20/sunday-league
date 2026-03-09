@@ -9,6 +9,7 @@ import TeamsReadOnly from "@/components/TeamsReadOnly";
 import type { Gameweek, GameweekPlayer } from "@/lib/types";
 import { fetcher, debugPerfEnabled } from "@/lib/swr";
 import { buildEntryPositionMap, getSlotCounts } from "@/lib/slots";
+import { getGameweekWinner, winnerLabel } from "@/lib/utils";
 
 type TeamsOverviewResponse = {
   gameweek: Gameweek | null;
@@ -98,6 +99,7 @@ export default function TeamsPageClient() {
   }
 
   const gameweek = data.gameweek;
+  const gameweekWinner = gameweek ? getGameweekWinner(gameweek) : null;
 
   if (!gameweek) {
     return (
@@ -130,8 +132,10 @@ export default function TeamsPageClient() {
 
       {gameweek.status === "locked" ? (
         <div className="rounded-2xl border border-slate-200 bg-white p-4 text-sm text-slate-600 shadow-sm">
-          Final score: Darks {gameweek.darks_score ?? 0} -{" "}
-          {gameweek.whites_score ?? 0} · Locked
+          {typeof gameweek.darks_score === "number" &&
+          typeof gameweek.whites_score === "number"
+            ? `Final score: Darks ${gameweek.darks_score} - ${gameweek.whites_score} · Locked`
+            : `Final result: ${winnerLabel(gameweekWinner)} · Locked`}
         </div>
       ) : null}
 

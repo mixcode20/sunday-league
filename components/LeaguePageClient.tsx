@@ -4,20 +4,11 @@ import { useEffect, useRef } from "react";
 import Link from "next/link";
 import useSWR from "swr";
 import LeagueTableClient from "@/components/LeagueTableClient";
+import type { LeagueStatRow } from "@/lib/types";
 import { fetcher, debugPerfEnabled } from "@/lib/swr";
 
-type StatRow = {
-  id: string;
-  name: string;
-  gp: number;
-  w: number;
-  d: number;
-  l: number;
-  winPct: number;
-};
-
 type LeagueOverviewResponse = {
-  rows: StatRow[];
+  rows: LeagueStatRow[];
   playersCount: number;
 };
 

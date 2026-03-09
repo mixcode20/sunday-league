@@ -1,6 +1,6 @@
 import TeamsReadOnly from "@/components/TeamsReadOnly";
 import { supabaseServer } from "@/lib/supabase";
-import { formatDate, normalizePlayerJoin } from "@/lib/utils";
+import { formatDate, getGameweekWinner, normalizePlayerJoin, winnerLabel } from "@/lib/utils";
 
 export default async function GameDetailPage({
   params,
@@ -34,6 +34,10 @@ export default async function GameDetailPage({
     .order("position", { ascending: true });
 
   const normalizedEntries = (entries ?? []).map(normalizePlayerJoin);
+  const winner = getGameweekWinner(gameweek);
+  const hasScore =
+    typeof gameweek.darks_score === "number" &&
+    typeof gameweek.whites_score === "number";
 
   return (
     <div className="space-y-6">
@@ -44,8 +48,9 @@ export default async function GameDetailPage({
         </h2>
         {gameweek.status === "locked" ? (
           <p className="mt-2 text-lg font-semibold text-slate-800">
-            Darks {gameweek.darks_score ?? 0} - {gameweek.whites_score ?? 0}{" "}
-            Whites
+            {hasScore
+              ? `Darks ${gameweek.darks_score} - ${gameweek.whites_score} Whites`
+              : winnerLabel(winner)}
           </p>
         ) : (
           <p className="mt-2 text-sm text-slate-500">

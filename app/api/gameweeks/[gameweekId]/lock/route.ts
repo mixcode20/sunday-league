@@ -1,13 +1,16 @@
 import { NextRequest, NextResponse } from "next/server";
 import { supabaseServer } from "@/lib/supabase";
 import { isOrganiserPinConfigured, verifyOrganiserPin } from "@/lib/organiser";
+import { deriveWinnerFromScores } from "@/lib/utils";
 
 export async function POST(
   request: NextRequest,
   context: { params: Promise<{ gameweekId: string }> }
 ) {
   const { gameweekId } = await context.params;
-  const { darksScore, whitesScore, pin } = await request.json();
+  const payload = await request.json();
+  const { pin } = payload;
+  const resultMode = payload?.resultMode === "result" ? "result" : "score";
 
   if (!isOrganiserPinConfigured()) {
     return NextResponse.json(
@@ -20,11 +23,39 @@ export async function POST(
     return NextResponse.json({ error: "Invalid PIN." }, { status: 401 });
   }
 
-  if (typeof darksScore !== "number" || typeof whitesScore !== "number") {
-    return NextResponse.json(
-      { error: "Scores must be numbers." },
-      { status: 400 }
-    );
+  let darksScore: number | null = null;
+  let whitesScore: number | null = null;
+  let winner: "darks" | "whites" | "draw" | null = null;
+
+  if (resultMode === "score") {
+    if (
+      typeof payload?.darksScore !== "number" ||
+      typeof payload?.whitesScore !== "number" ||
+      !Number.isInteger(payload.darksScore) ||
+      !Number.isInteger(payload.whitesScore) ||
+      payload.darksScore < 0 ||
+      payload.whitesScore < 0
+    ) {
+      return NextResponse.json(
+        { error: "Scores must be non-negative numbers." },
+        { status: 400 }
+      );
+    }
+    darksScore = payload.darksScore;
+    whitesScore = payload.whitesScore;
+    winner = deriveWinnerFromScores(darksScore, whitesScore);
+  } else {
+    if (
+      payload?.winner !== "darks" &&
+      payload?.winner !== "whites" &&
+      payload?.winner !== "draw"
+    ) {
+      return NextResponse.json(
+        { error: "A result option is required." },
+        { status: 400 }
+      );
+    }
+    winner = payload.winner;
   }
 
   const supabase = supabaseServer();
@@ -52,6 +83,8 @@ export async function POST(
       status: "locked",
       darks_score: darksScore,
       whites_score: whitesScore,
+      result_mode: resultMode,
+      winner,
       locked_at: new Date().toISOString(),
     })
     .eq("id", gameweekId);

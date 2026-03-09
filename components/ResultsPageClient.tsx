@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import useSWR from "swr";
 import type { Gameweek, GameweekPlayer } from "@/lib/types";
-import { formatGameweekDate } from "@/lib/utils";
+import { formatGameweekDate, getGameweekWinner, winnerLabel } from "@/lib/utils";
 import { fetcher, debugPerfEnabled } from "@/lib/swr";
 
 type ResultsOverviewResponse = {
@@ -79,11 +79,14 @@ export default function ResultsPageClient() {
   const darks = normalized.filter((entry) => entry.team === "darks");
   const whites = normalized.filter((entry) => entry.team === "whites");
 
-  const darksScore = currentGameweek.darks_score ?? 0;
-  const whitesScore = currentGameweek.whites_score ?? 0;
-  const isDraw = darksScore === whitesScore;
-  const darksOutcome = isDraw ? "Draw" : darksScore > whitesScore ? "Win" : "Loss";
-  const whitesOutcome = isDraw ? "Draw" : whitesScore > darksScore ? "Win" : "Loss";
+  const hasScore =
+    typeof currentGameweek.darks_score === "number" &&
+    typeof currentGameweek.whites_score === "number";
+  const winner = getGameweekWinner(currentGameweek);
+  const darksOutcome =
+    winner === "draw" ? "Draw" : winner === "darks" ? "Win" : winner === "whites" ? "Loss" : "-";
+  const whitesOutcome =
+    winner === "draw" ? "Draw" : winner === "whites" ? "Win" : winner === "darks" ? "Loss" : "-";
 
   return (
     <div className="space-y-6">
@@ -135,10 +138,12 @@ export default function ResultsPageClient() {
               </h3>
               {outcomeBadge(
                 darksOutcome,
-                isDraw
+                darksOutcome === "Draw"
                   ? "border-slate-200 text-slate-500"
                   : darksOutcome === "Win"
                     ? "border-emerald-200 text-emerald-600"
+                    : darksOutcome === "-"
+                      ? "border-slate-200 text-slate-500"
                     : "border-rose-200 text-rose-600"
               )}
             </div>
@@ -154,11 +159,17 @@ export default function ResultsPageClient() {
             </div>
           </div>
 
-          <div className="flex items-center gap-3 rounded-2xl border border-slate-200 bg-slate-50 px-6 py-4 text-2xl font-semibold text-slate-800">
-            <span>{darksScore}</span>
-            <span className="text-slate-400">-</span>
-            <span>{whitesScore}</span>
-          </div>
+          {hasScore ? (
+            <div className="flex items-center gap-3 rounded-2xl border border-slate-200 bg-slate-50 px-6 py-4 text-2xl font-semibold text-slate-800">
+              <span>{currentGameweek.darks_score}</span>
+              <span className="text-slate-400">-</span>
+              <span>{currentGameweek.whites_score}</span>
+            </div>
+          ) : (
+            <div className="rounded-2xl border border-slate-200 bg-slate-50 px-6 py-4 text-center text-sm font-semibold text-slate-700">
+              {winnerLabel(winner)}
+            </div>
+          )}
 
           <div className="w-full">
             <div className="flex items-center justify-between">
@@ -167,10 +178,12 @@ export default function ResultsPageClient() {
               </h3>
               {outcomeBadge(
                 whitesOutcome,
-                isDraw
+                whitesOutcome === "Draw"
                   ? "border-slate-200 text-slate-500"
                   : whitesOutcome === "Win"
                     ? "border-emerald-200 text-emerald-600"
+                    : whitesOutcome === "-"
+                      ? "border-slate-200 text-slate-500"
                     : "border-rose-200 text-rose-600"
               )}
             </div>

@@ -17,7 +17,7 @@ export async function GET(request: Request) {
   const supabase = supabaseServer();
   const { data: gameweeks } = await supabase
     .from("gameweeks")
-    .select("id, game_date, darks_score, whites_score, status")
+    .select("id, game_date, darks_score, whites_score, result_mode, winner, status")
     .eq("status", "locked")
     .order("game_date", { ascending: false });
 

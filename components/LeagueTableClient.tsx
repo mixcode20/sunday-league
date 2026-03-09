@@ -1,38 +1,64 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import type { LeagueSortDirection, LeagueStatRow } from "@/lib/types";
 
-type Row = {
-  id: string;
-  name: string;
-  gp: number;
-  w: number;
-  d: number;
-  l: number;
-  winPct: number;
-};
+type SortKey =
+  | "gp"
+  | "w"
+  | "d"
+  | "l"
+  | "winPct"
+  | "goalsFor"
+  | "goalsAgainst"
+  | "goalDifference";
 
-type SortKey = "gp" | "w" | "d" | "l" | "winPct";
+const columns: [SortKey, string][] = [
+  ["gp", "GP"],
+  ["w", "W"],
+  ["d", "D"],
+  ["l", "L"],
+  ["winPct", "W%"],
+  ["goalsFor", "F"],
+  ["goalsAgainst", "A"],
+  ["goalDifference", "GD"],
+];
 
-export default function LeagueTableClient({ rows }: { rows: Row[] }) {
+const compareByName = (a: LeagueStatRow, b: LeagueStatRow) =>
+  a.name.localeCompare(b.name, undefined, { sensitivity: "base" });
+
+const compareNumeric = (
+  a: number,
+  b: number,
+  direction: LeagueSortDirection
+) => (direction === "desc" ? b - a : a - b);
+
+export default function LeagueTableClient({ rows }: { rows: LeagueStatRow[] }) {
   const [sortKey, setSortKey] = useState<SortKey>("w");
-  const [direction, setDirection] = useState<"asc" | "desc">("desc");
+  const [direction, setDirection] = useState<LeagueSortDirection>("desc");
 
   const sorted = useMemo(() => {
     const sortedRows = [...rows];
-    const multiplier = direction === "asc" ? 1 : -1;
 
     sortedRows.sort((a, b) => {
-      if (sortKey === "w") {
-        if (b.w !== a.w) return (b.w - a.w) * multiplier;
-        if (b.winPct !== a.winPct) return (b.winPct - a.winPct) * multiplier;
-        if (b.gp !== a.gp) return (b.gp - a.gp) * multiplier;
-        return a.name.localeCompare(b.name);
+      if (sortKey === "w" && direction === "desc") {
+        const winsDiff = compareNumeric(a.w, b.w, "desc");
+        if (winsDiff !== 0) return winsDiff;
+
+        const goalDifferenceDiff = compareNumeric(
+          a.goalDifference,
+          b.goalDifference,
+          "desc"
+        );
+        if (goalDifferenceDiff !== 0) return goalDifferenceDiff;
+
+        return compareByName(a, b);
       }
 
-      const diff = (b[sortKey] - a[sortKey]) * multiplier;
+      const diff = compareNumeric(a[sortKey], b[sortKey], direction);
       if (diff !== 0) return diff;
-      return a.name.localeCompare(b.name);
+
+      return compareByName(a, b);
     });
 
     return sortedRows;
@@ -48,28 +74,23 @@ export default function LeagueTableClient({ rows }: { rows: Row[] }) {
   };
 
   return (
-    <div className="rounded-2xl border border-slate-200 bg-white shadow-sm">
-      <table className="w-full table-fixed text-left text-xs">
+    <div className="overflow-x-auto rounded-2xl border border-slate-200 bg-white shadow-sm">
+      <table className="min-w-[720px] w-full table-fixed text-left text-xs">
         <colgroup>
           <col style={{ width: "40%" }} />
-          <col style={{ width: "12%" }} />
-          <col style={{ width: "12%" }} />
-          <col style={{ width: "12%" }} />
-          <col style={{ width: "12%" }} />
-          <col style={{ width: "12%" }} />
+          <col style={{ width: "7.5%" }} />
+          <col style={{ width: "7.5%" }} />
+          <col style={{ width: "7.5%" }} />
+          <col style={{ width: "7.5%" }} />
+          <col style={{ width: "7.5%" }} />
+          <col style={{ width: "7.5%" }} />
+          <col style={{ width: "7.5%" }} />
+          <col style={{ width: "7.5%" }} />
         </colgroup>
         <thead className="bg-slate-100 text-[11px] uppercase tracking-wide text-slate-500">
           <tr>
             <th className="px-3 py-2">Player</th>
-            {(
-              [
-                ["gp", "GP"],
-                ["w", "W"],
-                ["d", "D"],
-                ["l", "L"],
-                ["winPct", "W%"],
-              ] as [SortKey, string][]
-            ).map(([key, label]) => (
+            {columns.map(([key, label]) => (
               <th
                 key={key}
                 className="cursor-pointer px-2 py-2"
@@ -101,11 +122,14 @@ export default function LeagueTableClient({ rows }: { rows: Row[] }) {
                 <td className="px-2 py-2 text-slate-600">
                   {row.winPct.toFixed(0)}%
                 </td>
+                <td className="px-2 py-2 text-slate-600">{row.goalsFor}</td>
+                <td className="px-2 py-2 text-slate-600">{row.goalsAgainst}</td>
+                <td className="px-2 py-2 text-slate-600">{row.goalDifference}</td>
               </tr>
             ))
           ) : (
             <tr>
-              <td colSpan={6} className="px-4 py-6 text-center text-slate-400">
+              <td colSpan={9} className="px-4 py-6 text-center text-slate-400">
                 No locked results yet.
               </td>
             </tr>

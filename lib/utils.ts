@@ -85,3 +85,63 @@ export const getGameweekDateTime = (dateString: string, timeString?: string | nu
   date.setHours(parsed.hours, parsed.minutes, 0, 0);
   return date;
 };
+
+export const deriveWinnerFromScores = (
+  darksScore: number | null,
+  whitesScore: number | null
+) => {
+  if (typeof darksScore !== "number" || typeof whitesScore !== "number") {
+    return null;
+  }
+  if (darksScore === whitesScore) return "draw" as const;
+  return darksScore > whitesScore ? ("darks" as const) : ("whites" as const);
+};
+
+export const getGameweekWinner = (gameweek: {
+  winner?: "darks" | "whites" | "draw" | null;
+  darks_score: number | null;
+  whites_score: number | null;
+}) => {
+  if (
+    gameweek.winner === "darks" ||
+    gameweek.winner === "whites" ||
+    gameweek.winner === "draw"
+  ) {
+    return gameweek.winner;
+  }
+  return deriveWinnerFromScores(gameweek.darks_score, gameweek.whites_score);
+};
+
+export const getGameweekGoals = (
+  gameweek: {
+    darks_score: number | null;
+    whites_score: number | null;
+  },
+  team: "darks" | "whites"
+): { goalsFor: number; goalsAgainst: number } => {
+  if (gameweek.darks_score === null || gameweek.whites_score === null) {
+    return { goalsFor: 0, goalsAgainst: 0 };
+  }
+
+  const darksScore = gameweek.darks_score;
+  const whitesScore = gameweek.whites_score;
+
+  if (team === "darks") {
+    return {
+      goalsFor: darksScore,
+      goalsAgainst: whitesScore,
+    };
+  }
+
+  return {
+    goalsFor: whitesScore,
+    goalsAgainst: darksScore,
+  };
+};
+
+export const winnerLabel = (winner: "darks" | "whites" | "draw" | null) => {
+  if (winner === "darks") return "Darks won";
+  if (winner === "whites") return "Whites won";
+  if (winner === "draw") return "Draw";
+  return "Result pending";
+};
