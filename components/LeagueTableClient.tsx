@@ -140,16 +140,16 @@ export default function LeagueTableClient({ rows }: { rows: LeagueStatRow[] }) {
           {message.text}
         </div>
       ) : null}
-      <div className="rounded-2xl border border-slate-200 bg-white shadow-sm">
+      <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
         <table className="w-full table-fixed text-left text-xs">
           <colgroup>
-            <col style={{ width: "38%" }} />
-            <col style={{ width: "10.3333%" }} />
-            <col style={{ width: "10.3333%" }} />
-            <col style={{ width: "10.3333%" }} />
-            <col style={{ width: "10.3333%" }} />
-            <col style={{ width: "10.3333%" }} />
-            <col style={{ width: "10.3333%" }} />
+            <col style={{ width: "35%" }} />
+            <col style={{ width: "10.6%" }} />
+            <col style={{ width: "10.6%" }} />
+            <col style={{ width: "10.6%" }} />
+            <col style={{ width: "10.6%" }} />
+            <col style={{ width: "10.6%" }} />
+            <col style={{ width: "12%" }} />
           </colgroup>
           <thead className="bg-slate-100 text-[11px] uppercase tracking-wide text-slate-500">
             <tr>
@@ -176,8 +176,8 @@ export default function LeagueTableClient({ rows }: { rows: LeagueStatRow[] }) {
             {sorted.length > 0 ? (
               sorted.map((row) => (
                 <tr key={row.id} className="border-t border-slate-100">
-                  <td className="px-3 py-2 font-medium text-slate-800">
-                    <div className="relative min-h-8 pr-10">
+                  <td className="px-3 py-2 align-middle font-medium text-slate-800">
+                    <div className="relative flex min-h-8 items-center pr-10">
                       <span>{row.name}</span>
                       {isUnlocked ? (
                         <button
@@ -195,12 +195,12 @@ export default function LeagueTableClient({ rows }: { rows: LeagueStatRow[] }) {
                       ) : null}
                     </div>
                   </td>
-                  <td className="px-2 py-2 text-center text-slate-600">{row.gp}</td>
-                  <td className="px-2 py-2 text-center text-slate-600">{row.w}</td>
-                  <td className="px-2 py-2 text-center text-slate-600">{row.d}</td>
-                  <td className="px-2 py-2 text-center text-slate-600">{row.l}</td>
-                  <td className="px-2 py-2 text-center text-slate-600">{row.goalDifference}</td>
-                  <td className="px-2 py-2 text-center text-slate-600">
+                  <td className="px-2 py-2 align-middle text-center text-slate-600">{row.gp}</td>
+                  <td className="px-2 py-2 align-middle text-center text-slate-600">{row.w}</td>
+                  <td className="px-2 py-2 align-middle text-center text-slate-600">{row.d}</td>
+                  <td className="px-2 py-2 align-middle text-center text-slate-600">{row.l}</td>
+                  <td className="px-2 py-2 align-middle text-center text-slate-600">{row.goalDifference}</td>
+                  <td className="px-2 py-2 align-middle text-center text-slate-600">
                     {row.winPct.toFixed(0)}%
                   </td>
                 </tr>
