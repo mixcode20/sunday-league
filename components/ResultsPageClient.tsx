@@ -4,13 +4,9 @@ import { useEffect, useRef } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import useSWR from "swr";
+import TeamsReadOnly from "@/components/TeamsReadOnly";
 import type { Gameweek, GameweekPlayer } from "@/lib/types";
-import {
-  formatGameweekDate,
-  formatPlayerName,
-  getGameweekWinner,
-  winnerLabel,
-} from "@/lib/utils";
+import { formatGameweekDate, getGameweekWinner } from "@/lib/utils";
 import { fetcher, debugPerfEnabled } from "@/lib/swr";
 
 type ResultsOverviewResponse = {
@@ -20,13 +16,32 @@ type ResultsOverviewResponse = {
   newerId: string | null;
 };
 
-const outcomeBadge = (label: string, variant: string) => (
-  <span
-    className={`rounded-full border px-2 py-0.5 text-xs font-semibold uppercase tracking-wide ${variant}`}
-  >
-    {label}
-  </span>
-);
+const buildSummary = (gameweek: Gameweek) => {
+  const hasScore =
+    typeof gameweek.darks_score === "number" &&
+    typeof gameweek.whites_score === "number";
+  const winner = getGameweekWinner(gameweek);
+
+  if (gameweek.result_mode === "score" && hasScore) {
+    return {
+      leftValue: String(gameweek.darks_score),
+      leftLabel: "Darks",
+      focusValue: `${gameweek.darks_score}-${gameweek.whites_score}`,
+      focusLabel: "Score",
+      rightValue: String(gameweek.whites_score),
+      rightLabel: "Whites",
+    };
+  }
+
+  return {
+    leftValue: winner === "draw" ? "Draw" : winner === "darks" ? "Darks" : "Whites",
+    leftLabel: "Winner",
+    focusValue: winner === "draw" ? "Level" : winner === "darks" ? "Darks" : "Whites",
+    focusLabel: "Full time",
+    rightValue: winner === "draw" ? "Shared" : "3 pts",
+    rightLabel: "Outcome",
+  };
+};
 
 export default function ResultsPageClient() {
   const searchParams = useSearchParams();
@@ -81,129 +96,72 @@ export default function ResultsPageClient() {
 
   const { currentGameweek, entries, olderId, newerId } = data;
   const normalized = entries ?? [];
-  const darks = normalized.filter((entry) => entry.team === "darks");
-  const whites = normalized.filter((entry) => entry.team === "whites");
-
-  const hasScore =
-    typeof currentGameweek.darks_score === "number" &&
-    typeof currentGameweek.whites_score === "number";
-  const winner = getGameweekWinner(currentGameweek);
-  const darksOutcome =
-    winner === "draw" ? "Draw" : winner === "darks" ? "Win" : winner === "whites" ? "Loss" : "-";
-  const whitesOutcome =
-    winner === "draw" ? "Draw" : winner === "whites" ? "Win" : winner === "darks" ? "Loss" : "-";
+  const summary = buildSummary(currentGameweek);
 
   return (
     <div className="space-y-6">
-      <section className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
-        <div className="flex items-center justify-between">
-          <div>
-            <p className="text-xs uppercase tracking-wide text-slate-400">
-              Results
-            </p>
-            <h2 className="text-2xl font-semibold text-slate-900">
+      <section className="overflow-hidden rounded-[2rem] bg-[linear-gradient(135deg,#260023_0%,#3d0038_55%,#22001f_100%)] p-6 text-white shadow-sm">
+        <div className="flex items-center justify-between gap-3">
+          <Link
+            href={olderId ? `/history?gameweekId=${olderId}` : "#"}
+            prefetch
+            className={`flex h-11 w-11 items-center justify-center rounded-full border text-2xl leading-none transition ${
+              olderId
+                ? "border-white/25 bg-white/5 text-white"
+                : "pointer-events-none border-white/10 text-white/25"
+            }`}
+            aria-disabled={!olderId}
+          >
+            ‹
+          </Link>
+          <div className="text-center">
+            <p className="text-xs uppercase tracking-[0.24em] text-white/60">Results</p>
+            <h2 className="text-xl font-semibold sm:text-2xl">
               {formatGameweekDate(currentGameweek.game_date)}
             </h2>
           </div>
-          <div className="flex items-center gap-2">
-            <Link
-              href={olderId ? `/history?gameweekId=${olderId}` : "#"}
-              prefetch
-              className={`rounded-full border px-3 py-2 text-sm ${
-                olderId
-                  ? "border-slate-200 text-slate-700"
-                  : "border-slate-100 text-slate-300 pointer-events-none"
-              }`}
-              aria-disabled={!olderId}
-            >
-              ←
-            </Link>
-            <Link
-              href={newerId ? `/history?gameweekId=${newerId}` : "#"}
-              prefetch
-              className={`rounded-full border px-3 py-2 text-sm ${
-                newerId
-                  ? "border-slate-200 text-slate-700"
-                  : "border-slate-100 text-slate-300 pointer-events-none"
-              }`}
-              aria-disabled={!newerId}
-            >
-              →
-            </Link>
+          <Link
+            href={newerId ? `/history?gameweekId=${newerId}` : "#"}
+            prefetch
+            className={`flex h-11 w-11 items-center justify-center rounded-full border text-2xl leading-none transition ${
+              newerId
+                ? "border-white/25 bg-white/5 text-white"
+                : "pointer-events-none border-white/10 text-white/25"
+            }`}
+            aria-disabled={!newerId}
+          >
+            ›
+          </Link>
+        </div>
+
+        <div className="mt-8 grid gap-4 sm:grid-cols-[1fr_auto_1fr] sm:items-center">
+          <div className="text-center sm:text-left">
+            <div className="text-4xl font-semibold tracking-tight sm:text-5xl">
+              {summary.leftValue}
+            </div>
+            <p className="mt-2 text-base text-white/75 sm:text-lg">{summary.leftLabel}</p>
+          </div>
+
+          <div className="rounded-[1.75rem] bg-[linear-gradient(135deg,#1ee3ff_0%,#2fb7ff_48%,#8f73ff_100%)] px-8 py-7 text-center text-slate-950 shadow-[0_18px_40px_rgba(0,0,0,0.22)]">
+            <div className="text-5xl font-semibold tracking-tight sm:text-6xl">
+              {summary.focusValue}
+            </div>
+            <p className="mt-2 text-base font-medium uppercase tracking-[0.18em] text-slate-900/70">
+              {summary.focusLabel}
+            </p>
+          </div>
+
+          <div className="text-center sm:text-right">
+            <div className="text-4xl font-semibold tracking-tight sm:text-5xl">
+              {summary.rightValue}
+            </div>
+            <p className="mt-2 text-base text-white/75 sm:text-lg">{summary.rightLabel}</p>
           </div>
         </div>
       </section>
 
       <section className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
-        <div className="flex flex-col items-center gap-4 md:flex-row md:justify-between">
-          <div className="w-full">
-            <div className="flex items-center justify-between">
-              <h3 className="text-sm font-semibold uppercase tracking-wide text-slate-500">
-                Darks
-              </h3>
-              {outcomeBadge(
-                darksOutcome,
-                darksOutcome === "Draw"
-                  ? "border-slate-200 text-slate-500"
-                  : darksOutcome === "Win"
-                    ? "border-emerald-200 text-emerald-600"
-                    : darksOutcome === "-"
-                      ? "border-slate-200 text-slate-500"
-                    : "border-rose-200 text-rose-600"
-              )}
-            </div>
-            <div className="mt-3 space-y-2">
-              {darks.map((entry) => (
-                <div
-                  key={entry.player_id}
-                  className="rounded-xl border border-slate-100 bg-slate-50 px-3 py-2 text-sm"
-                >
-                  {formatPlayerName(entry.players)}
-                </div>
-              ))}
-            </div>
-          </div>
-
-          {hasScore ? (
-            <div className="flex items-center gap-3 rounded-2xl border border-slate-200 bg-slate-50 px-6 py-4 text-2xl font-semibold text-slate-800">
-              <span>{currentGameweek.darks_score}</span>
-              <span className="text-slate-400">-</span>
-              <span>{currentGameweek.whites_score}</span>
-            </div>
-          ) : (
-            <div className="rounded-2xl border border-slate-200 bg-slate-50 px-6 py-4 text-center text-sm font-semibold text-slate-700">
-              {winnerLabel(winner)}
-            </div>
-          )}
-
-          <div className="w-full">
-            <div className="flex items-center justify-between">
-              <h3 className="text-sm font-semibold uppercase tracking-wide text-slate-500">
-                Whites
-              </h3>
-              {outcomeBadge(
-                whitesOutcome,
-                whitesOutcome === "Draw"
-                  ? "border-slate-200 text-slate-500"
-                  : whitesOutcome === "Win"
-                    ? "border-emerald-200 text-emerald-600"
-                    : whitesOutcome === "-"
-                      ? "border-slate-200 text-slate-500"
-                    : "border-rose-200 text-rose-600"
-              )}
-            </div>
-            <div className="mt-3 space-y-2">
-              {whites.map((entry) => (
-                <div
-                  key={entry.player_id}
-                  className="rounded-xl border border-slate-100 bg-slate-50 px-3 py-2 text-sm"
-                >
-                  {formatPlayerName(entry.players)}
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
+        <TeamsReadOnly entries={normalized} />
       </section>
     </div>
   );
