@@ -140,8 +140,8 @@ export default function LeagueTableClient({ rows }: { rows: LeagueStatRow[] }) {
           {message.text}
         </div>
       ) : null}
-      <div className="-mx-[5%] rounded-2xl border border-slate-200 bg-white shadow-sm">
-        <table className="w-[110%] table-fixed text-left text-xs">
+      <div className="rounded-2xl border border-slate-200 bg-white shadow-sm">
+        <table className="w-full table-fixed text-left text-xs">
           <colgroup>
             <col style={{ width: "38%" }} />
             <col style={{ width: "10.3333%" }} />
@@ -160,10 +160,10 @@ export default function LeagueTableClient({ rows }: { rows: LeagueStatRow[] }) {
                   className="cursor-pointer px-2 py-2 text-center"
                   onClick={() => toggleSort(key)}
                 >
-                  <div className="flex flex-col items-center justify-center leading-tight">
+                  <div className="relative flex items-center justify-center pb-3 leading-tight">
                     <span>{label}</span>
                     {sortKey === key ? (
-                      <span className="mt-0.5 text-[10px]">
+                      <span className="absolute bottom-0 left-1/2 -translate-x-1/2 text-[10px]">
                         {direction === "asc" ? "▲" : "▼"}
                       </span>
                     ) : null}
