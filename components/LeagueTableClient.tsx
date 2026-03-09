@@ -143,13 +143,13 @@ export default function LeagueTableClient({ rows }: { rows: LeagueStatRow[] }) {
       <div className="rounded-2xl border border-slate-200 bg-white shadow-sm">
         <table className="w-full table-fixed text-left text-xs">
           <colgroup>
-            <col style={{ width: "42%" }} />
-            <col style={{ width: "9.6667%" }} />
-            <col style={{ width: "9.6667%" }} />
-            <col style={{ width: "9.6667%" }} />
-            <col style={{ width: "9.6667%" }} />
-            <col style={{ width: "9.6667%" }} />
-            <col style={{ width: "9.6667%" }} />
+            <col style={{ width: "39%" }} />
+            <col style={{ width: "10.1667%" }} />
+            <col style={{ width: "10.1667%" }} />
+            <col style={{ width: "10.1667%" }} />
+            <col style={{ width: "10.1667%" }} />
+            <col style={{ width: "10.1667%" }} />
+            <col style={{ width: "10.1667%" }} />
           </colgroup>
           <thead className="bg-slate-100 text-[11px] uppercase tracking-wide text-slate-500">
             <tr>
