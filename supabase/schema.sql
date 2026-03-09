@@ -23,7 +23,7 @@ create table if not exists gameweeks (
   winner text check (winner in ('darks', 'whites', 'draw')),
   locked_at timestamptz,
   created_at timestamptz not null default now(),
-  check (
+  constraint gameweeks_check check (
     (
       status = 'open'
       and darks_score is null

@@ -10,7 +10,7 @@ export async function POST(
   const { gameweekId } = await context.params;
   const payload = await request.json();
   const { pin } = payload;
-  const resultMode = payload?.resultMode === "result" ? "result" : "score";
+  const resultMode = payload?.resultMode;
 
   if (!isOrganiserPinConfigured()) {
     return NextResponse.json(
@@ -21,6 +21,13 @@ export async function POST(
 
   if (!verifyOrganiserPin(pin)) {
     return NextResponse.json({ error: "Invalid PIN." }, { status: 401 });
+  }
+
+  if (resultMode !== "score" && resultMode !== "result") {
+    return NextResponse.json(
+      { error: 'Result mode must be either "score" or "result".' },
+      { status: 400 }
+    );
   }
 
   let darksScore: number | null = null;
@@ -37,7 +44,7 @@ export async function POST(
       payload.whitesScore < 0
     ) {
       return NextResponse.json(
-        { error: "Scores must be non-negative numbers." },
+        { error: "By score requires whole-number darksScore and whitesScore values." },
         { status: 400 }
       );
     }
@@ -51,7 +58,7 @@ export async function POST(
       payload?.winner !== "draw"
     ) {
       return NextResponse.json(
-        { error: "A result option is required." },
+        { error: 'By result requires winner to be "darks", "whites", or "draw".' },
         { status: 400 }
       );
     }

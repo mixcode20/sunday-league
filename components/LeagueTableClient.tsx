@@ -143,14 +143,13 @@ export default function LeagueTableClient({ rows }: { rows: LeagueStatRow[] }) {
       <div className="rounded-2xl border border-slate-200 bg-white shadow-sm">
         <table className="w-full table-fixed text-left text-xs">
           <colgroup>
-            <col style={{ width: "46%" }} />
-            <col style={{ width: "7%" }} />
-            <col style={{ width: "7%" }} />
-            <col style={{ width: "7%" }} />
-            <col style={{ width: "7%" }} />
-            <col style={{ width: "7%" }} />
-            <col style={{ width: "7%" }} />
-            {isUnlocked ? <col style={{ width: "12%" }} /> : null}
+            <col style={{ width: "42%" }} />
+            <col style={{ width: "9.6667%" }} />
+            <col style={{ width: "9.6667%" }} />
+            <col style={{ width: "9.6667%" }} />
+            <col style={{ width: "9.6667%" }} />
+            <col style={{ width: "9.6667%" }} />
+            <col style={{ width: "9.6667%" }} />
           </colgroup>
           <thead className="bg-slate-100 text-[11px] uppercase tracking-wide text-slate-500">
             <tr>
@@ -171,7 +170,6 @@ export default function LeagueTableClient({ rows }: { rows: LeagueStatRow[] }) {
                   </div>
                 </th>
               ))}
-              {isUnlocked ? <th className="px-2 py-2 text-right">Manage</th> : null}
             </tr>
           </thead>
           <tbody>
@@ -205,15 +203,11 @@ export default function LeagueTableClient({ rows }: { rows: LeagueStatRow[] }) {
                   <td className="px-2 py-2 text-slate-600">
                     {row.winPct.toFixed(0)}%
                   </td>
-                  {isUnlocked ? <td className="px-2 py-2 text-right" /> : null}
                 </tr>
               ))
             ) : (
               <tr>
-                <td
-                  colSpan={isUnlocked ? 8 : 7}
-                  className="px-4 py-6 text-center text-slate-400"
-                >
+                <td colSpan={7} className="px-4 py-6 text-center text-slate-400">
                   No locked results yet.
                 </td>
               </tr>
