@@ -27,7 +27,7 @@ export default async function TeamsHistoryPage({
   const { data: entries } = await supabase
     .from("gameweek_players")
     .select(
-      "*, players(id, first_name, last_name)"
+      "*, players(id, first_name, last_name, archived)"
     )
     .eq("gameweek_id", gameweek.id)
     .order("team", { ascending: true })

@@ -5,7 +5,12 @@ import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import useSWR from "swr";
 import type { Gameweek, GameweekPlayer } from "@/lib/types";
-import { formatGameweekDate, getGameweekWinner, winnerLabel } from "@/lib/utils";
+import {
+  formatGameweekDate,
+  formatPlayerName,
+  getGameweekWinner,
+  winnerLabel,
+} from "@/lib/utils";
 import { fetcher, debugPerfEnabled } from "@/lib/swr";
 
 type ResultsOverviewResponse = {
@@ -153,7 +158,7 @@ export default function ResultsPageClient() {
                   key={entry.player_id}
                   className="rounded-xl border border-slate-100 bg-slate-50 px-3 py-2 text-sm"
                 >
-                  {entry.players.first_name} {entry.players.last_name}
+                  {formatPlayerName(entry.players)}
                 </div>
               ))}
             </div>
@@ -193,7 +198,7 @@ export default function ResultsPageClient() {
                   key={entry.player_id}
                   className="rounded-xl border border-slate-100 bg-slate-50 px-3 py-2 text-sm"
                 >
-                  {entry.players.first_name} {entry.players.last_name}
+                  {formatPlayerName(entry.players)}
                 </div>
               ))}
             </div>

@@ -1,4 +1,5 @@
 import type { GameweekPlayer, Team } from "@/lib/types";
+import { formatPlayerName } from "@/lib/utils";
 
 const TEAM_LIMITS: Record<Team, number> = {
   darks: 7,
@@ -76,7 +77,7 @@ export default function TeamsReadOnly({ entries }: { entries: GameweekPlayer[] }
             >
               {entry ? (
                 <span className="font-medium text-slate-900">
-                  {entry.players.first_name} {entry.players.last_name}
+                  {formatPlayerName(entry.players)}
                 </span>
               ) : (
                 <span className="text-xs text-slate-400">Pick</span>

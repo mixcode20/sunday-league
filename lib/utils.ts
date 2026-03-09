@@ -50,6 +50,11 @@ export const normalizePlayerJoin = <T extends { players: any }>(entry: T) => {
   };
 };
 
+export const formatPlayerName = (player: {
+  first_name?: string | null;
+  last_name?: string | null;
+}) => [player.first_name ?? "", player.last_name ?? ""].join(" ").trim();
+
 export const parseGameTime = (timeString: string) => {
   const normalized = timeString.trim().toLowerCase();
   if (!normalized) return null;

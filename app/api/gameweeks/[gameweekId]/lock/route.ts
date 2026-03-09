@@ -91,7 +91,14 @@ export async function POST(
 
   if (error) {
     return NextResponse.json(
-      { error: "Failed to lock gameweek." },
+      {
+        error: {
+          code: error.code ?? "lock_failed",
+          message: error.message ?? "Failed to lock gameweek.",
+          details: error.details ?? null,
+          hint: error.hint ?? null,
+        },
+      },
       { status: 500 }
     );
   }

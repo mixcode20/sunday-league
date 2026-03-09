@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { listPlayers } from "@/lib/players";
 import { supabaseServer } from "@/lib/supabase";
 import type { LeagueStatRow } from "@/lib/types";
-import { getGameweekGoals, getGameweekWinner } from "@/lib/utils";
+import { formatPlayerName, getGameweekGoals, getGameweekWinner } from "@/lib/utils";
 
 const debugPerf =
   process.env.DEBUG_PERF === "true" ||
@@ -15,7 +15,7 @@ export async function GET() {
 
   const supabase = supabaseServer();
   const [playersResult, gameweeksResult] = await Promise.all([
-    listPlayers(supabase),
+    listPlayers(supabase, { activeOnly: true }),
     supabase
       .from("gameweeks")
       .select("id, darks_score, whites_score, winner, result_mode")
@@ -39,7 +39,7 @@ export async function GET() {
   players.forEach((player) => {
     stats[player.id] = {
       id: player.id,
-      name: `${player.first_name} ${player.last_name}`,
+      name: formatPlayerName(player),
       archived: player.archived,
       gp: 0,
       w: 0,

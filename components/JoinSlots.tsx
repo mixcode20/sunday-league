@@ -7,6 +7,7 @@ import Modal from "@/components/Modal";
 import { useOrganiserMode } from "@/components/OrganiserModeProvider";
 import { buildEntryPositionMap, getSubSlotPositions, MAIN_SLOT_CAPACITY } from "@/lib/slots";
 import { debugPerfEnabled } from "@/lib/swr";
+import { formatPlayerName } from "@/lib/utils";
 
 type JoinSlotsProps = {
   isOpen: boolean;
@@ -676,7 +677,7 @@ export default function JoinSlots({
     const moved = await movePlayerToPosition(suggestedSub.player_id, targetPosition);
     if (moved) {
       setMessage(
-        `Moved ${suggestedSub.players.first_name} ${suggestedSub.players.last_name} into Player #${targetPosition}.`
+        `Moved ${formatPlayerName(suggestedSub.players)} into Player #${targetPosition}.`
       );
     }
   };
@@ -742,7 +743,7 @@ export default function JoinSlots({
                       <span className="mr-2 text-xs text-slate-400">
                         {index + 1}.
                       </span>
-                      {entry.players.first_name} {entry.players.last_name}
+                      {formatPlayerName(entry.players)}
                     </span>
                     {isPending && isOptimistic ? (
                       <span className="mt-2 text-[11px] font-semibold uppercase tracking-wide text-slate-400">
@@ -912,7 +913,7 @@ export default function JoinSlots({
                         <span className="mr-2 text-xs text-slate-400">
                           {slotPosition}.
                         </span>
-                        {entry.players.first_name} {entry.players.last_name}
+                        {formatPlayerName(entry.players)}
                       </span>
                       {isPending && isOptimistic ? (
                         <span className="mt-2 text-[11px] font-semibold uppercase tracking-wide text-slate-400">
@@ -1089,7 +1090,7 @@ export default function JoinSlots({
                   <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
                   <circle cx="12" cy="7" r="3.5" />
                 </svg>
-                {player.first_name} {player.last_name}
+                {formatPlayerName(player)}
               </button>
             ))
           ) : (
@@ -1112,8 +1113,7 @@ export default function JoinSlots({
             <p className="text-sm text-slate-600">
               Fill the empty spot with Sub:{" "}
               <span className="font-semibold text-slate-900">
-                {subMovePrompt.suggestedSub.players.first_name}{" "}
-                {subMovePrompt.suggestedSub.players.last_name}
+                {formatPlayerName(subMovePrompt.suggestedSub.players)}
               </span>
               ?
             </p>
@@ -1145,7 +1145,9 @@ export default function JoinSlots({
           onChange={(event) => setNewFirst(event.target.value)}
           className="mt-2 w-full rounded-xl border border-slate-200 px-3 py-2 text-base"
         />
-        <label className="mt-3 text-sm font-medium text-slate-600">Last name</label>
+        <label className="mt-3 text-sm font-medium text-slate-600">
+          Last name (optional)
+        </label>
         <input
           type="text"
           value={newLast}

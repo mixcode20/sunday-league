@@ -4,6 +4,7 @@ import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useOrganiserMode } from "@/components/OrganiserModeProvider";
 import type { Player } from "@/lib/types";
+import { formatPlayerName } from "@/lib/utils";
 
 type AdminPlayersClientProps = {
   players: Player[];
@@ -24,11 +25,7 @@ export default function AdminPlayersClient({ players }: AdminPlayersClientProps)
 
   const sortedPlayers = useMemo(
     () =>
-      [...players].sort((a, b) =>
-        `${a.first_name} ${a.last_name}`.localeCompare(
-          `${b.first_name} ${b.last_name}`
-        )
-      ),
+      [...players].sort((a, b) => formatPlayerName(a).localeCompare(formatPlayerName(b))),
     [players]
   );
 
@@ -154,7 +151,7 @@ export default function AdminPlayersClient({ players }: AdminPlayersClientProps)
               />
               <input
                 className="rounded-xl border border-slate-200 px-3 py-2 text-sm"
-                placeholder="Last name"
+                placeholder="Last name (optional)"
                 value={newLastName}
                 onChange={(event) => setNewLastName(event.target.value)}
               />
@@ -244,7 +241,7 @@ export default function AdminPlayersClient({ players }: AdminPlayersClientProps)
                 >
                   <div className="flex items-center gap-2">
                     <span>
-                      {player.first_name} {player.last_name}
+                      {formatPlayerName(player)}
                     </span>
                     {player.archived ? (
                       <span className="rounded-full border border-amber-200 bg-amber-50 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-amber-700">

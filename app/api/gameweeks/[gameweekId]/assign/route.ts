@@ -8,6 +8,9 @@ const TEAM_LIMITS: Record<string, number> = {
   subs: Number.MAX_SAFE_INTEGER,
 };
 
+const isArchivedColumnMissing = (error: { code?: string; message?: string } | null) =>
+  error?.code === "42703" || error?.message?.toLowerCase().includes("archived") === true;
+
 export async function POST(
   request: NextRequest,
   context: { params: Promise<{ gameweekId: string }> }
@@ -54,6 +57,30 @@ export async function POST(
       { error: "Gameweek is locked." },
       { status: 403 }
     );
+  }
+
+  const playerLookup = await supabase
+    .from("players")
+    .select("id, archived")
+    .eq("id", playerId)
+    .maybeSingle();
+
+  if (!isArchivedColumnMissing(playerLookup.error)) {
+    if (playerLookup.error) {
+      return NextResponse.json(
+        { error: playerLookup.error.message ?? "Failed to load player." },
+        { status: 500 }
+      );
+    }
+    if (!playerLookup.data) {
+      return NextResponse.json({ error: "Player not found." }, { status: 404 });
+    }
+    if (playerLookup.data.archived) {
+      return NextResponse.json(
+        { error: "Archived players cannot be assigned to team slots." },
+        { status: 409 }
+      );
+    }
   }
 
   const { data: entries, error: entriesError } = await supabase

@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import type { Player } from "@/lib/types";
+import { formatPlayerName } from "@/lib/utils";
 
 type JoinFormProps = {
   gameweekId: string;
@@ -58,7 +59,7 @@ export default function JoinForm({ gameweekId, players }: JoinFormProps) {
         <option value="">Choose player...</option>
         {players.map((player) => (
           <option key={player.id} value={player.id}>
-            {player.first_name} {player.last_name}
+            {formatPlayerName(player)}
           </option>
         ))}
       </select>

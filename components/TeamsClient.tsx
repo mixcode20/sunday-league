@@ -4,6 +4,7 @@ import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useOrganiserMode } from "@/components/OrganiserModeProvider";
 import type { Gameweek, GameweekPlayer, Team } from "@/lib/types";
+import { formatPlayerName } from "@/lib/utils";
 
 type TeamsClientProps = {
   gameweek: Gameweek;
@@ -55,7 +56,6 @@ export default function TeamsClient({ gameweek, entries, onRefresh }: TeamsClien
     () => [...entries].sort((a, b) => a.position - b.position),
     [entries]
   );
-
   const teamsSelected = grouped.darks.length + grouped.whites.length > 0;
 
   const formatErrorMessage = (data: any, fallback: string) => {
@@ -228,7 +228,9 @@ export default function TeamsClient({ gameweek, entries, onRefresh }: TeamsClien
                     <option value="">
                       {entry ? "Clear slot" : "Select player"}
                     </option>
-                    {playersThisWeek.map((player) => {
+                    {playersThisWeek
+                      .filter((player) => !player.players.archived || player.player_id === entry?.player_id)
+                      .map((player) => {
                       const isCurrent = player.player_id === entry?.player_id;
                       const isTaken = assignedTeamPlayerIds.has(player.player_id);
                       return (
@@ -237,7 +239,7 @@ export default function TeamsClient({ gameweek, entries, onRefresh }: TeamsClien
                           value={player.player_id}
                           disabled={isTaken && !isCurrent}
                         >
-                          {player.players.first_name} {player.players.last_name}
+                          {formatPlayerName(player.players)}
                         </option>
                       );
                     })}
@@ -250,7 +252,7 @@ export default function TeamsClient({ gameweek, entries, onRefresh }: TeamsClien
                         : "bg-white text-slate-900"
                     }`}
                   >
-                    {entry.players.first_name} {entry.players.last_name}
+                    {formatPlayerName(entry.players)}
                   </div>
                 ) : (
                   <span className="text-xs text-slate-400">-</span>
@@ -313,7 +315,7 @@ export default function TeamsClient({ gameweek, entries, onRefresh }: TeamsClien
                 key={entry.player_id}
                 className="rounded-xl border border-slate-100 bg-slate-50 px-3 py-2 text-sm"
               >
-                {entry.players.first_name} {entry.players.last_name}
+                {formatPlayerName(entry.players)}
               </div>
             ))
           ) : (

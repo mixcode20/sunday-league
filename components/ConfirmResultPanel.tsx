@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { useSWRConfig } from "swr";
 import Modal from "@/components/Modal";
 import { useOrganiserMode } from "@/components/OrganiserModeProvider";
 import type { Gameweek } from "@/lib/types";
@@ -13,6 +14,7 @@ type ConfirmResultPanelProps = {
 
 export default function ConfirmResultPanel({ gameweek }: ConfirmResultPanelProps) {
   const router = useRouter();
+  const { mutate } = useSWRConfig();
   const { isUnlocked, organiserPin } = useOrganiserMode();
   const [isOpen, setIsOpen] = useState(false);
   const [resultMode, setResultMode] = useState<"score" | "result">("score");
@@ -30,6 +32,25 @@ export default function ConfirmResultPanel({ gameweek }: ConfirmResultPanelProps
   const canConfirm = Boolean(gameDateTime && Date.now() >= gameDateTime.getTime());
 
   if (!isUnlocked || !canConfirm) return null;
+
+  const formatApiError = (data: unknown, fallback: string) => {
+    if (!data || typeof data !== "object") return fallback;
+    if ("error" in data && typeof data.error === "string") {
+      return data.error;
+    }
+    if ("error" in data && data.error && typeof data.error === "object") {
+      const error = data.error as {
+        message?: string;
+        details?: string | null;
+        code?: string | null;
+      };
+      const message = error.message ?? fallback;
+      const details = error.details ? ` (${error.details})` : "";
+      const code = error.code ? ` [${error.code}]` : "";
+      return `${message}${code}${details}`;
+    }
+    return fallback;
+  };
 
   const submitResult = async () => {
     if (!organiserPin) {
@@ -83,13 +104,20 @@ export default function ConfirmResultPanel({ gameweek }: ConfirmResultPanelProps
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(payload),
     });
-    const data = await response.json();
+    const data = await response.json().catch(() => null);
     if (!response.ok) {
-      setMessage(data.error ?? "Failed to confirm result.");
+      setMessage(formatApiError(data, "Failed to confirm result."));
       setSubmitting(false);
       return;
     }
+    await Promise.all([
+      mutate("/api/game/overview"),
+      mutate("/api/teams/overview"),
+      mutate("/api/league/overview"),
+      mutate((key) => typeof key === "string" && key.startsWith("/api/results/overview")),
+    ]);
     setSubmitting(false);
+    setMessage("");
     setIsOpen(false);
     router.refresh();
   };

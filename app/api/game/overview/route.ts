@@ -34,7 +34,7 @@ export async function GET() {
   const { data: entries } = gameweek
     ? await supabase
         .from("gameweek_players")
-        .select("*, players(id, first_name, last_name)")
+        .select("*, players(id, first_name, last_name, archived)")
         .eq("gameweek_id", gameweek.id)
         .order("position", { ascending: true })
         .order("created_at", { ascending: true })

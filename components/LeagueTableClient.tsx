@@ -143,13 +143,13 @@ export default function LeagueTableClient({ rows }: { rows: LeagueStatRow[] }) {
       <div className="rounded-2xl border border-slate-200 bg-white shadow-sm">
         <table className="w-full table-fixed text-left text-xs">
           <colgroup>
-            <col style={{ width: "40%" }} />
-            <col style={{ width: isUnlocked ? "8%" : "10%" }} />
-            <col style={{ width: isUnlocked ? "8%" : "10%" }} />
-            <col style={{ width: isUnlocked ? "8%" : "10%" }} />
-            <col style={{ width: isUnlocked ? "8%" : "10%" }} />
-            <col style={{ width: isUnlocked ? "8%" : "10%" }} />
-            <col style={{ width: isUnlocked ? "8%" : "10%" }} />
+            <col style={{ width: "46%" }} />
+            <col style={{ width: "7%" }} />
+            <col style={{ width: "7%" }} />
+            <col style={{ width: "7%" }} />
+            <col style={{ width: "7%" }} />
+            <col style={{ width: "7%" }} />
+            <col style={{ width: "7%" }} />
             {isUnlocked ? <col style={{ width: "12%" }} /> : null}
           </colgroup>
           <thead className="bg-slate-100 text-[11px] uppercase tracking-wide text-slate-500">
@@ -179,12 +179,21 @@ export default function LeagueTableClient({ rows }: { rows: LeagueStatRow[] }) {
               sorted.map((row) => (
                 <tr key={row.id} className="border-t border-slate-100">
                   <td className="px-3 py-2 font-medium text-slate-800">
-                    <div className="flex items-center gap-2">
+                    <div className="relative min-h-8 pr-10">
                       <span>{row.name}</span>
-                      {row.archived ? (
-                        <span className="rounded-full border border-amber-200 bg-amber-50 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-amber-700">
-                          Archived
-                        </span>
+                      {isUnlocked ? (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setMessage(null);
+                            setArchiveInput("");
+                            setPlayerPendingArchive(row);
+                          }}
+                          className="absolute right-0 top-1/2 inline-flex -translate-y-1/2 items-center justify-center rounded-full border border-rose-200 bg-rose-50 px-2.5 py-0.5 text-[11px] font-semibold text-rose-600 transition hover:border-rose-300 hover:bg-rose-100"
+                          aria-label={`Archive ${row.name}`}
+                        >
+                          X
+                        </button>
                       ) : null}
                     </div>
                   </td>
@@ -196,22 +205,7 @@ export default function LeagueTableClient({ rows }: { rows: LeagueStatRow[] }) {
                   <td className="px-2 py-2 text-slate-600">
                     {row.winPct.toFixed(0)}%
                   </td>
-                  {isUnlocked ? (
-                    <td className="px-2 py-2 text-right">
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setMessage(null);
-                          setArchiveInput("");
-                          setPlayerPendingArchive(row);
-                        }}
-                        disabled={row.archived}
-                        className="rounded-full border border-amber-200 px-2.5 py-1 text-[11px] font-semibold uppercase tracking-wide text-amber-700 disabled:cursor-not-allowed disabled:opacity-50"
-                      >
-                        {row.archived ? "Archived" : "Archive"}
-                      </button>
-                    </td>
-                  ) : null}
+                  {isUnlocked ? <td className="px-2 py-2 text-right" /> : null}
                 </tr>
               ))
             ) : (

@@ -7,9 +7,9 @@ export async function POST(request: Request) {
   const trimmedFirst = String(firstName ?? "").trim();
   const trimmedLast = String(lastName ?? "").trim();
 
-  if (!trimmedFirst || !trimmedLast) {
+  if (!trimmedFirst) {
     return NextResponse.json(
-      { error: "First and last name are required." },
+      { error: "First name is required." },
       { status: 400 }
     );
   }

@@ -19,9 +19,9 @@ export async function POST(request: Request) {
   const trimmedFirst = String(firstName ?? "").trim();
   const trimmedLast = String(lastName ?? "").trim();
 
-  if (!id || !trimmedFirst || !trimmedLast) {
+  if (!id || !trimmedFirst) {
     return NextResponse.json(
-      { error: "Player id, first name, and last name are required." },
+      { error: "Player id and first name are required." },
       { status: 400 }
     );
   }

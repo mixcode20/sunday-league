@@ -2,6 +2,9 @@ import { NextRequest, NextResponse } from "next/server";
 import { supabaseServer } from "@/lib/supabase";
 import { normalizePlayerJoin } from "@/lib/utils";
 
+const isArchivedColumnMissing = (error: { code?: string; message?: string } | null) =>
+  error?.code === "42703" || error?.message?.toLowerCase().includes("archived") === true;
+
 export async function POST(
   request: NextRequest,
   context: { params: Promise<{ gameweekId: string }> }
@@ -76,6 +79,51 @@ export async function POST(
     );
   }
 
+  const playerLookup = await supabase
+    .from("players")
+    .select("id, archived")
+    .eq("id", playerId)
+    .maybeSingle();
+
+  if (!isArchivedColumnMissing(playerLookup.error)) {
+    if (playerLookup.error) {
+      return NextResponse.json(
+        {
+          ok: false,
+          code: "player_lookup_failed",
+          message: playerLookup.error.message ?? "Failed to load player.",
+          details: playerLookup.error.details ?? null,
+          hint: playerLookup.error.hint ?? null,
+        },
+        { status: 500 }
+      );
+    }
+    if (!playerLookup.data) {
+      return NextResponse.json(
+        {
+          ok: false,
+          code: "player_not_found",
+          message: "Player not found.",
+          details: null,
+          hint: null,
+        },
+        { status: 404 }
+      );
+    }
+    if (playerLookup.data.archived) {
+      return NextResponse.json(
+        {
+          ok: false,
+          code: "player_archived",
+          message: "Archived players cannot be added to a gameweek.",
+          details: null,
+          hint: null,
+        },
+        { status: 409 }
+      );
+    }
+  }
+
   const { data: createdEntry, error } = await supabase
     .from("gameweek_players")
     .insert({
@@ -85,7 +133,7 @@ export async function POST(
       position,
     })
     .select(
-      "*, players(id, first_name, last_name)"
+      "*, players(id, first_name, last_name, archived)"
     )
     .single();
 
@@ -167,7 +215,7 @@ export async function POST(
   const { data: entries, error: entriesError } = await supabase
     .from("gameweek_players")
     .select(
-      "*, players(id, first_name, last_name)"
+      "*, players(id, first_name, last_name, archived)"
     )
     .eq("gameweek_id", gameweekId)
     .order("position", { ascending: true })
