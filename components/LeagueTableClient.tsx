@@ -143,13 +143,13 @@ export default function LeagueTableClient({ rows }: { rows: LeagueStatRow[] }) {
       <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
         <table className="w-full table-fixed text-left text-xs">
           <colgroup>
-            <col style={{ width: "35%" }} />
-            <col style={{ width: "10.6%" }} />
-            <col style={{ width: "10.6%" }} />
-            <col style={{ width: "10.6%" }} />
-            <col style={{ width: "10.6%" }} />
-            <col style={{ width: "10.6%" }} />
-            <col style={{ width: "12%" }} />
+            <col style={{ width: "40%" }} />
+            <col style={{ width: "9%" }} />
+            <col style={{ width: "9%" }} />
+            <col style={{ width: "9%" }} />
+            <col style={{ width: "9%" }} />
+            <col style={{ width: "9%" }} />
+            <col style={{ width: "15%" }} />
           </colgroup>
           <thead className="bg-slate-100 text-[11px] uppercase tracking-wide text-slate-500">
             <tr>
@@ -157,17 +157,17 @@ export default function LeagueTableClient({ rows }: { rows: LeagueStatRow[] }) {
               {columns.map(([key, label]) => (
                 <th
                   key={key}
-                  className="cursor-pointer px-2 py-2 text-center"
+                  className="relative cursor-pointer px-2 py-2 text-center align-middle"
                   onClick={() => toggleSort(key)}
                 >
-                  <div className="relative flex items-center justify-center pb-3 leading-tight">
+                  <div className="flex items-center justify-center leading-tight">
                     <span>{label}</span>
-                    {sortKey === key ? (
-                      <span className="absolute bottom-0 left-1/2 -translate-x-1/2 text-[10px]">
-                        {direction === "asc" ? "▲" : "▼"}
-                      </span>
-                    ) : null}
                   </div>
+                  {sortKey === key ? (
+                    <span className="pointer-events-none absolute bottom-0 left-1/2 -translate-x-1/2 text-[10px]">
+                      {direction === "asc" ? "▲" : "▼"}
+                    </span>
+                  ) : null}
                 </th>
               ))}
             </tr>

@@ -140,15 +140,6 @@ export default function TeamsPageClient() {
       ) : null}
 
       {gameweek.status === "open" ? (
-        <section className="flex items-start justify-between">
-          <p className="text-xs uppercase tracking-wide text-slate-400">
-            Current teams
-          </p>
-          <p className="text-xs text-slate-400">Pick teams for this week.</p>
-        </section>
-      ) : null}
-
-      {gameweek.status === "open" ? (
         <TeamsClient gameweek={gameweek} entries={entries} onRefresh={() => mutate()} />
       ) : (
         <TeamsReadOnly entries={entries} />
