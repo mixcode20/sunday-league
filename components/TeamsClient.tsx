@@ -37,22 +37,6 @@ function ChevronDownIcon() {
   );
 }
 
-function SearchIcon() {
-  return (
-    <svg viewBox="0 0 20 20" aria-hidden="true" className="h-4 w-4 fill-current">
-      <path d="M8.5 3a5.5 5.5 0 1 0 3.47 9.77l3.63 3.63 1.06-1.06-3.63-3.63A5.5 5.5 0 0 0 8.5 3Zm0 1.5a4 4 0 1 1 0 8 4 4 0 0 1 0-8Z" />
-    </svg>
-  );
-}
-
-function CheckIcon() {
-  return (
-    <svg viewBox="0 0 20 20" aria-hidden="true" className="h-4 w-4 fill-current">
-      <path d="M16.7 5.29a1 1 0 0 1 .01 1.41l-7.12 7.2a1 1 0 0 1-1.42 0L3.3 9.04a1 1 0 1 1 1.4-1.43l4.18 4.1L15.3 5.3a1 1 0 0 1 1.4-.01Z" />
-    </svg>
-  );
-}
-
 function PlayerAvatar() {
   return (
     <span className="flex h-8 w-8 items-center justify-center rounded-full bg-[rgba(148,163,184,0.22)] text-[rgba(100,116,139,0.9)]">
@@ -69,8 +53,6 @@ export default function TeamsClient({ gameweek, entries, onRefresh }: TeamsClien
   const [statusMessage, setStatusMessage] = useState("");
   const [dragged, setDragged] = useState<DragInfo | null>(null);
   const [openSlotKey, setOpenSlotKey] = useState<string | null>(null);
-  const [searchTerm, setSearchTerm] = useState("");
-  const [pendingPlayerId, setPendingPlayerId] = useState<string | null>(null);
   const slotMenuRef = useRef<HTMLDivElement | null>(null);
 
   const isLocked = gameweek.status === "locked";
@@ -371,15 +353,12 @@ export default function TeamsClient({ gameweek, entries, onRefresh }: TeamsClien
       : openSlotMeta?.team === "whites"
         ? "Select Player for Whites"
         : "";
-  const normalizedSearch = searchTerm.trim().toLowerCase();
   const visiblePlayers = useMemo(
     () =>
       playersThisWeek.filter(
-        (player) =>
-          (!player.players.archived || player.player_id === openSlotEntry?.player_id) &&
-          formatPlayerName(player.players).toLowerCase().includes(normalizedSearch)
+        (player) => !player.players.archived || player.player_id === openSlotEntry?.player_id
       ),
-    [normalizedSearch, openSlotEntry?.player_id, playersThisWeek]
+    [openSlotEntry?.player_id, playersThisWeek]
   );
   const availablePlayers = useMemo(
     () =>
@@ -408,8 +387,6 @@ export default function TeamsClient({ gameweek, entries, onRefresh }: TeamsClien
 
   const closeSelector = () => {
     setOpenSlotKey(null);
-    setSearchTerm("");
-    setPendingPlayerId(null);
   };
 
   const openSelector = (slotKey: string) => {
@@ -418,27 +395,13 @@ export default function TeamsClient({ gameweek, entries, onRefresh }: TeamsClien
       return;
     }
 
-    const currentEntry = entryBySlotKey.get(slotKey) ?? null;
-    setSearchTerm("");
-    setPendingPlayerId(currentEntry?.player_id ?? null);
     setOpenSlotKey(slotKey);
-  };
-
-  const handleSelectPlayer = async () => {
-    if (!openSlotMeta || !pendingPlayerId) return;
-    if (pendingPlayerId === openSlotEntry?.player_id) {
-      closeSelector();
-      return;
-    }
-    await assignPlayer(pendingPlayerId, openSlotMeta.team, openSlotMeta.position);
-    closeSelector();
   };
 
   const renderPlayerRow = (
     player: GameweekPlayer,
     options?: { badge?: string; disabled?: boolean; selectable?: boolean }
   ) => {
-    const isSelected = pendingPlayerId === player.player_id;
     const selectable = options?.selectable ?? !options?.disabled;
 
     return (
@@ -446,21 +409,17 @@ export default function TeamsClient({ gameweek, entries, onRefresh }: TeamsClien
         key={player.player_id}
         type="button"
         disabled={!selectable}
-        onClick={() => {
+        onClick={async () => {
           if (!selectable) return;
-          setPendingPlayerId(player.player_id);
+          if (!openSlotMeta) return;
+          await assignPlayer(player.player_id, openSlotMeta.team, openSlotMeta.position);
+          closeSelector();
         }}
         className={`flex w-full items-center gap-3 border-b border-[rgba(226,232,240,0.82)] px-4 py-3 text-left ${
-          isSelected ? "bg-[rgba(15,61,52,0.12)]" : "bg-white"
+          selectable ? "bg-white hover:bg-[rgba(15,61,52,0.05)]" : "bg-white"
         } ${selectable ? "hover:bg-[rgba(15,61,52,0.05)]" : "cursor-not-allowed opacity-80"}`}
       >
-        {isSelected ? (
-          <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-[var(--color-primary-dark)] text-white">
-            <CheckIcon />
-          </span>
-        ) : (
-          <PlayerAvatar />
-        )}
+        <PlayerAvatar />
         <span className="min-w-0 flex-1 truncate text-base text-[var(--color-text)]">
           {formatPlayerName(player.players)}
         </span>
@@ -538,34 +497,32 @@ export default function TeamsClient({ gameweek, entries, onRefresh }: TeamsClien
       </div>
 
       {openSlotMeta ? (
-        <div className="fixed inset-0 z-40 flex justify-center bg-[rgba(15,30,28,0.34)] px-4 pt-[20vh] backdrop-blur-[2px]">
+        <div className="fixed inset-0 z-40 flex justify-center bg-[rgba(15,30,28,0.34)] px-4 pt-[10vh] backdrop-blur-[2px]">
           <div
             ref={slotMenuRef}
             className="w-full max-w-md overflow-hidden rounded-[1.5rem] border border-[var(--color-border)] bg-white text-[var(--color-text)] shadow-[0_20px_40px_rgba(15,61,52,0.12)]"
           >
-            <div className="flex items-center justify-between border-b border-[rgba(226,232,240,0.82)] px-5 py-4">
-              <h3 className="text-[1.08rem] font-semibold tracking-[-0.02em] text-[var(--color-text)]">
+            <div
+              className={`flex items-center justify-between border-b border-[rgba(226,232,240,0.82)] px-5 py-4 ${
+                openSlotMeta.team === "darks"
+                  ? "bg-[var(--color-primary-dark)] text-white"
+                  : "bg-white text-[var(--color-text)]"
+              }`}
+            >
+              <h3 className="text-[1.08rem] font-semibold tracking-[-0.02em]">
                 {openSlotTitle}
               </h3>
               <button
-                className="ui-btn ui-btn-secondary min-h-0 rounded-full px-3 py-2 text-sm"
+                className={`ui-btn ui-btn-secondary min-h-0 rounded-full px-3 py-2 text-sm ${
+                  openSlotMeta.team === "darks"
+                    ? "border-white/25 bg-white/10 text-white hover:bg-white/16"
+                    : ""
+                }`}
                 onClick={closeSelector}
                 type="button"
               >
                 Close
               </button>
-            </div>
-            <div className="border-b border-[rgba(226,232,240,0.82)] px-4 py-3">
-              <label className="flex items-center gap-2 rounded-2xl border border-[rgba(226,232,240,0.92)] bg-[rgba(248,250,252,0.9)] px-3 py-2 text-[var(--color-text-secondary)]">
-                <SearchIcon />
-                <input
-                  type="text"
-                  value={searchTerm}
-                  onChange={(event) => setSearchTerm(event.target.value)}
-                  placeholder="Search players..."
-                  className="w-full bg-transparent text-sm text-[var(--color-text)] outline-none placeholder:text-[var(--color-text-secondary)]"
-                />
-              </label>
             </div>
             <div className="max-h-[min(52vh,28rem)] overflow-y-auto">
               {renderSection("Available", availablePlayers, { selectable: true })}
@@ -581,18 +538,11 @@ export default function TeamsClient({ gameweek, entries, onRefresh }: TeamsClien
               })}
               {availablePlayers.length === 0 && darksPlayers.length === 0 && whitesPlayers.length === 0 ? (
                 <div className="px-4 py-8 text-center text-sm text-[var(--color-text-secondary)]">
-                  No players match your search.
+                  No players available.
                 </div>
               ) : null}
             </div>
-            <div className="flex gap-3 border-t border-[rgba(226,232,240,0.82)] px-4 py-4">
-              <button
-                type="button"
-                onClick={closeSelector}
-                className="ui-btn ui-btn-secondary min-h-0 flex-1 rounded-xl px-4 py-3 text-sm"
-              >
-                Cancel
-              </button>
+            <div className="flex justify-end border-t border-[rgba(226,232,240,0.82)] px-4 py-4">
               {openSlotEntry ? (
                 <button
                   type="button"
@@ -605,14 +555,6 @@ export default function TeamsClient({ gameweek, entries, onRefresh }: TeamsClien
                   Clear Slot
                 </button>
               ) : null}
-              <button
-                type="button"
-                onClick={handleSelectPlayer}
-                disabled={!pendingPlayerId}
-                className="ui-btn min-h-0 flex-1 rounded-xl px-4 py-3 text-sm disabled:cursor-not-allowed disabled:opacity-60"
-              >
-                Select Player
-              </button>
             </div>
           </div>
         </div>

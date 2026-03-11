@@ -110,9 +110,6 @@ export default function TeamsPageClient() {
       <div className="space-y-4">
         <GameweekInfoStrip />
         <CreateGameweek players={players} onCreated={handleGameweekCreated} />
-        <div className="ui-empty p-4 text-sm">
-          No open gameweek yet. Unlock organiser mode to create one.
-        </div>
       </div>
     );
   }

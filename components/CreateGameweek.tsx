@@ -34,9 +34,7 @@ export default function CreateGameweek({
   const [customTime, setCustomTime] = useState("");
   const [selectedPlayerIds, setSelectedPlayerIds] = useState<string[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const hasActiveOpenGameweek = activeGameweekStatus === "open";
   const hasCompletedGameweek = activeGameweekStatus === "locked";
-  const buttonLabel = hasCompletedGameweek ? "Create next gameweek" : "Create new game";
   const orderedPlayers = useMemo(
     () =>
       [...players].sort((a, b) => {
@@ -63,10 +61,6 @@ export default function CreateGameweek({
   };
 
   const openModal = () => {
-    if (hasActiveOpenGameweek) {
-      setMessage("Submit the current gameweek result before creating the next one.");
-      return;
-    }
     setMessage("");
     setDate(getNextSundayISO());
     setTime("9:15am");
@@ -135,7 +129,7 @@ export default function CreateGameweek({
     router.refresh();
   };
 
-  if (!isUnlocked) return null;
+  if (!isUnlocked || !hasCompletedGameweek) return null;
 
   return (
     <>
@@ -143,20 +137,14 @@ export default function CreateGameweek({
         <button
           type="button"
           onClick={openModal}
-          disabled={hasActiveOpenGameweek}
-          className="ui-btn ui-btn-primary w-full disabled:cursor-not-allowed disabled:opacity-60"
+          className="ui-btn ui-btn-primary w-full"
         >
-          {buttonLabel}
+          Create next gameweek
         </button>
-        {hasActiveOpenGameweek ? (
-          <p className="mt-2 text-center text-sm text-[var(--color-text-secondary)]">
-            Unlocked after current game result
-          </p>
-        ) : null}
       </div>
       <Modal
         isOpen={isOpen}
-        title={hasCompletedGameweek ? "Create next gameweek" : "Create new game"}
+        title="Create next gameweek"
         onClose={closeModal}
         position="top"
       >

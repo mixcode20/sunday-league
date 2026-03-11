@@ -7,7 +7,17 @@ import Modal from "@/components/Modal";
 import { useOrganiserMode } from "@/components/OrganiserModeProvider";
 import { buildEntryPositionMap, getSubSlotPositions, MAIN_SLOT_CAPACITY } from "@/lib/slots";
 import { debugPerfEnabled } from "@/lib/swr";
-import { formatPlayerName } from "@/lib/utils";
+import {
+  getGrantedPlayerId,
+  getSelfRemovalCookieMaxAgeSeconds,
+  getSelfRemovalCookieName,
+  grantSelfRemovalAccess,
+  parseSelfRemovalCookie,
+  revokeSelfRemovalAccess,
+  serializeSelfRemovalCookie,
+  type SelfRemovalGrantMap,
+} from "@/lib/selfRemovalCookie";
+import { formatCompactDate, formatPlayerName } from "@/lib/utils";
 
 type JoinSlotsProps = {
   isOpen: boolean;
@@ -44,6 +54,7 @@ export default function JoinSlots({
   const [sessionJoins, setSessionJoins] = useState<
     Record<string, { position: number; joinedAt: number }>
   >({});
+  const [selfRemovalAccess, setSelfRemovalAccess] = useState<SelfRemovalGrantMap>({});
   const [now, setNow] = useState(() => Date.now());
   const [subMovePrompt, setSubMovePrompt] = useState<{
     mainEntry: GameweekPlayer;
@@ -82,6 +93,15 @@ export default function JoinSlots({
   }, [gameweekId]);
 
   useEffect(() => {
+    if (typeof document === "undefined") return;
+    const rawCookie = document.cookie
+      .split("; ")
+      .find((part) => part.startsWith(`${getSelfRemovalCookieName()}=`))
+      ?.slice(getSelfRemovalCookieName().length + 1);
+    setSelfRemovalAccess(parseSelfRemovalCookie(rawCookie));
+  }, [gameweekId]);
+
+  useEffect(() => {
     if (Object.keys(sessionJoins).length === 0) return;
     const interval = window.setInterval(() => setNow(Date.now()), 30000);
     return () => window.clearInterval(interval);
@@ -115,6 +135,13 @@ export default function JoinSlots({
       sessionStorage.setItem(`joinSession:${gameweekId}`, JSON.stringify(next));
     }
   }, [gameweekId]);
+
+  const persistSelfRemovalAccess = useCallback((next: SelfRemovalGrantMap) => {
+    setSelfRemovalAccess(next);
+    if (typeof document !== "undefined") {
+      document.cookie = `${getSelfRemovalCookieName()}=${serializeSelfRemovalCookie(next)}; max-age=${getSelfRemovalCookieMaxAgeSeconds()}; path=/; samesite=lax`;
+    }
+  }, []);
 
   const recordSessionJoin = (playerId: string, position: number) => {
     setSessionJoins((prev) => {
@@ -380,6 +407,9 @@ export default function JoinSlots({
         });
       }
       recordSessionJoin(playerId, position);
+      persistSelfRemovalAccess(
+        grantSelfRemovalAccess(selfRemovalAccess, gameweekId, playerId)
+      );
       if (Array.isArray(data?.entries)) {
         setLiveEntries(data.entries);
       } else {
@@ -411,6 +441,12 @@ export default function JoinSlots({
     setMessage("");
     setLiveEntries((prev) => prev.filter((entry) => entry.player_id !== playerId));
     clearSessionJoin(playerId);
+    const nextSelfRemovalAccess = revokeSelfRemovalAccess(
+      selfRemovalAccess,
+      gameweekId,
+      playerId
+    );
+    persistSelfRemovalAccess(nextSelfRemovalAccess);
     const response = await fetch(`/api/gameweeks/${gameweekId}/leave`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -419,6 +455,7 @@ export default function JoinSlots({
     const data = await response.json();
     if (!response.ok) {
       setMessage(data.error ?? "Could not remove.");
+      persistSelfRemovalAccess(selfRemovalAccess);
       router.refresh();
       await refreshEntries();
       return false;
@@ -437,6 +474,12 @@ export default function JoinSlots({
     setMessage("");
     setLiveEntries((prev) => prev.filter((entry) => entry.player_id !== playerId));
     clearSessionJoin(playerId);
+    const nextSelfRemovalAccess = revokeSelfRemovalAccess(
+      selfRemovalAccess,
+      gameweekId,
+      playerId
+    );
+    persistSelfRemovalAccess(nextSelfRemovalAccess);
     const response = await fetch(`/api/gameweeks/${gameweekId}/kick`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -445,6 +488,7 @@ export default function JoinSlots({
     const data = await response.json();
     if (!response.ok) {
       setMessage(data.error ?? "Could not remove.");
+      persistSelfRemovalAccess(selfRemovalAccess);
       router.refresh();
       await refreshEntries();
       return false;
@@ -650,12 +694,17 @@ export default function JoinSlots({
 
   const getSessionState = (entry: GameweekPlayer) => {
     const sessionInfo = sessionJoins[entry.player_id];
+    const grantedPlayerId = gameweekId
+      ? getGrantedPlayerId(selfRemovalAccess, gameweekId)
+      : null;
+    const isCookieOwner = grantedPlayerId === entry.player_id;
     if (!sessionInfo || sessionInfo.position !== entry.position) {
-      return { isOwner: false, withinUndo: false };
+      return { isOwner: false, withinUndo: false, isCookieOwner };
     }
     return {
       isOwner: true,
       withinUndo: now - sessionInfo.joinedAt <= UNDO_WINDOW_MS,
+      isCookieOwner,
     };
   };
 
@@ -746,6 +795,23 @@ export default function JoinSlots({
     </svg>
   );
 
+  const searchIcon = (className: string) => (
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className={className}
+      aria-hidden="true"
+    >
+      <circle cx="11" cy="11" r="6.5" />
+      <path d="m16 16 4 4" />
+    </svg>
+  );
+
   return (
     <div className="space-y-4">
       {players.length === 0 ? (
@@ -769,7 +835,10 @@ export default function JoinSlots({
               sessionState?.isOwner && sessionState?.withinUndo && !entry?.remove_requested
             );
             const canRequestRemoval = Boolean(
-              sessionState?.isOwner && !sessionState?.withinUndo && !entry?.remove_requested
+              sessionState?.isCookieOwner && !canUndo && !entry?.remove_requested
+            );
+            const canCancelRemoval = Boolean(
+              sessionState?.isCookieOwner && entry?.remove_requested
             );
             const isHighlighted = highlightedPosition === slotPosition;
             const slotError = slotErrors[slotPosition];
@@ -822,7 +891,7 @@ export default function JoinSlots({
                         >
                           ×
                         </button>
-                      ) : isOpen && entry.remove_requested ? (
+                      ) : isOpen && canCancelRemoval ? (
                         <button
                           type="button"
                           onClick={() => cancelRemovalRequest(entry.player_id)}
@@ -905,7 +974,7 @@ export default function JoinSlots({
                         {userIcon("h-4 w-4")}
                       </span>
                       <span className="truncate text-[14px] font-medium leading-none text-[var(--color-text-secondary)]">
-                        Free Space
+                        Free space
                       </span>
                     </span>
                     <span className="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-full border border-[var(--color-border)] bg-[rgba(15,61,52,0.04)] text-[var(--color-text-secondary)]">
@@ -934,7 +1003,10 @@ export default function JoinSlots({
                 sessionState?.isOwner && sessionState?.withinUndo && !entry?.remove_requested
               );
               const canRequestRemoval = Boolean(
-                sessionState?.isOwner && !sessionState?.withinUndo && !entry?.remove_requested
+                sessionState?.isCookieOwner && !canUndo && !entry?.remove_requested
+              );
+              const canCancelRemoval = Boolean(
+                sessionState?.isCookieOwner && entry?.remove_requested
               );
               const isHighlighted = highlightedPosition === slotPosition;
               const slotError = slotErrors[slotPosition];
@@ -991,7 +1063,7 @@ export default function JoinSlots({
                           >
                             ×
                           </button>
-                        ) : isOpen && entry.remove_requested ? (
+                        ) : isOpen && canCancelRemoval ? (
                           <button
                             type="button"
                             onClick={() => cancelRemovalRequest(entry.player_id)}
@@ -1074,7 +1146,7 @@ export default function JoinSlots({
                           {userIcon("h-4 w-4")}
                         </span>
                         <span className="truncate text-[14px] font-medium leading-none text-[var(--color-text-secondary)]">
-                          Free Space
+                          Free space
                         </span>
                       </span>
                       <span className="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-full border border-[var(--color-border)] bg-[rgba(15,61,52,0.04)] text-[var(--color-text-secondary)]">
@@ -1106,8 +1178,8 @@ export default function JoinSlots({
             Search players
           </label>
           <div className="relative">
-            <span className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-base text-[var(--color-text-secondary)]">
-              🔍
+            <span className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-[var(--color-primary)]">
+              {searchIcon("h-[18px] w-[18px]")}
             </span>
             <input
               id="player-search"
@@ -1126,10 +1198,25 @@ export default function JoinSlots({
                   key={player.id}
                   type="button"
                   onClick={() => selectPlayer(player.id)}
-                  className="flex w-full items-center rounded-lg px-1 py-2 text-left text-sm text-[var(--color-text)] hover:bg-[rgba(15,61,52,0.04)]"
+                  className="mb-2 flex w-full items-center gap-3 rounded-[16px] border border-[rgba(15,61,52,0.09)] bg-[linear-gradient(180deg,rgba(255,255,255,0.98),rgba(245,250,249,0.96))] px-3 py-3 text-left text-sm text-[var(--color-text)] shadow-[0_10px_20px_rgba(15,61,52,0.05)] transition hover:border-[rgba(31,122,99,0.24)] hover:bg-[rgba(126,217,87,0.08)]"
                   disabled={openSlot === null ? true : isSlotPending(openSlot)}
                 >
-                  {formatPlayerName(player)}
+                  <span className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[rgba(31,122,99,0.12)] text-[var(--color-primary-dark)]">
+                    {userIcon("h-[18px] w-[18px]")}
+                  </span>
+                  <span className="min-w-0 flex-1">
+                    <span className="block truncate text-[14px] font-semibold text-[var(--color-text)]">
+                      {formatPlayerName(player)}
+                    </span>
+                    <span className="mt-1 flex flex-wrap gap-2 text-[11px] font-medium uppercase tracking-[0.08em] text-[var(--color-text-secondary)]">
+                      <span className="rounded-full bg-white px-2.5 py-1 ring-1 ring-[rgba(15,61,52,0.08)]">
+                        {(player.games_played ?? 0)} GP
+                      </span>
+                      <span className="rounded-full bg-white px-2.5 py-1 ring-1 ring-[rgba(15,61,52,0.08)]">
+                        Last {formatCompactDate(player.last_game_date)}
+                      </span>
+                    </span>
+                  </span>
                 </button>
               ))
             ) : availablePlayers.length > 0 ? (

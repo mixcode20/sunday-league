@@ -8,6 +8,7 @@ type ListedPlayer = {
   last_name: string;
   archived: boolean;
   games_played?: number;
+  last_game_date?: string | null;
 };
 
 const isArchivedColumnMissing = (error: { code?: string; message?: string } | null) => {
@@ -82,7 +83,7 @@ export const listPlayersWithGamesPlayed = async (
 
   const { data: gameweeks, error: gameweeksError } = await supabase
     .from("gameweeks")
-    .select("id")
+    .select("id, game_date")
     .eq("status", "locked");
 
   if (gameweeksError) {
@@ -96,13 +97,17 @@ export const listPlayersWithGamesPlayed = async (
   if (gameweekIds.length === 0) {
     return {
       ...playersResult,
-      data: players.map((player) => ({ ...player, games_played: 0 })),
+      data: players.map((player) => ({
+        ...player,
+        games_played: 0,
+        last_game_date: null,
+      })),
     };
   }
 
   const { data: entries, error: entriesError } = await supabase
     .from("gameweek_players")
-    .select("player_id, team")
+    .select("player_id, team, gameweek_id")
     .in("gameweek_id", gameweekIds);
 
   if (entriesError) {
@@ -113,12 +118,24 @@ export const listPlayersWithGamesPlayed = async (
   }
 
   const gamesPlayedByPlayer = new Map<string, number>();
+  const gameDateById = new Map<string, string>();
+  (gameweeks ?? []).forEach((gameweek) => {
+    if (typeof gameweek.game_date === "string") {
+      gameDateById.set(gameweek.id, gameweek.game_date);
+    }
+  });
+  const lastGameDateByPlayer = new Map<string, string>();
   (entries ?? []).forEach((entry) => {
     if (entry.team === "subs") return;
     gamesPlayedByPlayer.set(
       entry.player_id,
       (gamesPlayedByPlayer.get(entry.player_id) ?? 0) + 1
     );
+    const gameDate = gameDateById.get(entry.gameweek_id);
+    const previousDate = lastGameDateByPlayer.get(entry.player_id);
+    if (gameDate && (!previousDate || gameDate > previousDate)) {
+      lastGameDateByPlayer.set(entry.player_id, gameDate);
+    }
   });
 
   return {
@@ -126,6 +143,7 @@ export const listPlayersWithGamesPlayed = async (
     data: players.map((player) => ({
       ...player,
       games_played: gamesPlayedByPlayer.get(player.id) ?? 0,
+      last_game_date: lastGameDateByPlayer.get(player.id) ?? null,
     })),
   };
 };
