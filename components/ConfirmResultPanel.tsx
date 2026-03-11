@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useSWRConfig } from "swr";
 import Modal from "@/components/Modal";
@@ -27,9 +27,16 @@ export default function ConfirmResultPanel({ gameweek }: ConfirmResultPanelProps
   const [winner, setWinner] = useState<"darks" | "whites" | "draw" | "">("");
   const [message, setMessage] = useState("");
   const [submitting, setSubmitting] = useState(false);
+  const [now, setNow] = useState(() => Date.now());
 
   const gameDateTime = getGameweekDateTime(gameweek.game_date, gameweek.game_time);
-  const canConfirm = Boolean(gameDateTime && Date.now() >= gameDateTime.getTime());
+  const canConfirm = Boolean(gameDateTime && now >= gameDateTime.getTime());
+
+  useEffect(() => {
+    if (!gameDateTime || now >= gameDateTime.getTime()) return;
+    const timeoutId = window.setTimeout(() => setNow(Date.now()), 1000);
+    return () => window.clearTimeout(timeoutId);
+  }, [gameDateTime, now]);
 
   if (!isUnlocked || !canConfirm) return null;
 
@@ -123,15 +130,15 @@ export default function ConfirmResultPanel({ gameweek }: ConfirmResultPanelProps
   };
 
   return (
-    <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+    <div className="ui-card p-4">
       <div className="flex items-center justify-between">
         <div>
-          <p className="text-xs uppercase tracking-wide text-slate-400">Organiser</p>
-          <p className="text-sm font-semibold text-slate-800">Confirm result</p>
+          <p className="ui-kicker">Organiser</p>
+          <p className="text-sm font-semibold text-[var(--color-text)]">Confirm result</p>
         </div>
         <button
           type="button"
-          className="rounded-xl bg-slate-900 px-4 py-2 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:opacity-60"
+          className="ui-btn ui-btn-primary"
           onClick={() => {
             setResultMode("score");
             setWinner("");
@@ -144,7 +151,7 @@ export default function ConfirmResultPanel({ gameweek }: ConfirmResultPanelProps
         </button>
       </div>
       {message ? (
-        <p className="mt-3 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-700">
+        <p className="ui-banner ui-banner-warning mt-3">
           {message}
         </p>
       ) : null}
@@ -158,7 +165,7 @@ export default function ConfirmResultPanel({ gameweek }: ConfirmResultPanelProps
         }}
         position="top"
       >
-        <div className="rounded-xl border border-slate-200 p-1">
+        <div className="ui-segment">
           <div className="grid grid-cols-2 gap-1">
             <button
               type="button"
@@ -166,10 +173,10 @@ export default function ConfirmResultPanel({ gameweek }: ConfirmResultPanelProps
                 setResultMode("score");
                 setMessage("");
               }}
-              className={`rounded-lg px-3 py-2 text-sm font-medium ${
+              className={`ui-segment-option ${
                 resultMode === "score"
-                  ? "bg-slate-900 text-white"
-                  : "text-slate-600 hover:bg-slate-50"
+                  ? "ui-segment-option-active"
+                  : ""
               }`}
             >
               By score
@@ -180,10 +187,10 @@ export default function ConfirmResultPanel({ gameweek }: ConfirmResultPanelProps
                 setResultMode("result");
                 setMessage("");
               }}
-              className={`rounded-lg px-3 py-2 text-sm font-medium ${
+              className={`ui-segment-option ${
                 resultMode === "result"
-                  ? "bg-slate-900 text-white"
-                  : "text-slate-600 hover:bg-slate-50"
+                  ? "ui-segment-option-active"
+                  : ""
               }`}
             >
               By result
@@ -193,31 +200,27 @@ export default function ConfirmResultPanel({ gameweek }: ConfirmResultPanelProps
 
         {resultMode === "score" ? (
           <>
-            <label className="mt-4 block text-sm font-medium text-slate-600">
-              Darks score
-            </label>
+            <label className="ui-label mt-4">Darks score</label>
             <input
               type="number"
               min={0}
               value={darksScore}
               onChange={(event) => setDarksScore(event.target.value)}
-              className="mt-2 w-full rounded-xl border border-slate-200 px-3 py-2 text-base"
+              className="ui-input mt-2"
             />
-            <label className="mt-3 block text-sm font-medium text-slate-600">
-              Whites score
-            </label>
+            <label className="ui-label mt-3">Whites score</label>
             <input
               type="number"
               min={0}
               value={whitesScore}
               onChange={(event) => setWhitesScore(event.target.value)}
-              className="mt-2 w-full rounded-xl border border-slate-200 px-3 py-2 text-base"
+              className="ui-input mt-2"
             />
           </>
         ) : (
           <fieldset className="mt-4 space-y-2">
-            <legend className="text-sm font-medium text-slate-600">Result</legend>
-            <label className="flex items-center gap-2 rounded-xl border border-slate-200 px-3 py-2 text-sm text-slate-700">
+            <legend className="ui-label">Result</legend>
+            <label className="flex items-center gap-2 rounded-xl border border-[var(--color-border)] px-3 py-2 text-sm text-[var(--color-text)]">
               <input
                 type="radio"
                 name="winner"
@@ -227,7 +230,7 @@ export default function ConfirmResultPanel({ gameweek }: ConfirmResultPanelProps
               />
               Darks won
             </label>
-            <label className="flex items-center gap-2 rounded-xl border border-slate-200 px-3 py-2 text-sm text-slate-700">
+            <label className="flex items-center gap-2 rounded-xl border border-[var(--color-border)] px-3 py-2 text-sm text-[var(--color-text)]">
               <input
                 type="radio"
                 name="winner"
@@ -237,7 +240,7 @@ export default function ConfirmResultPanel({ gameweek }: ConfirmResultPanelProps
               />
               Whites won
             </label>
-            <label className="flex items-center gap-2 rounded-xl border border-slate-200 px-3 py-2 text-sm text-slate-700">
+            <label className="flex items-center gap-2 rounded-xl border border-[var(--color-border)] px-3 py-2 text-sm text-[var(--color-text)]">
               <input
                 type="radio"
                 name="winner"
@@ -253,12 +256,12 @@ export default function ConfirmResultPanel({ gameweek }: ConfirmResultPanelProps
           type="button"
           onClick={submitResult}
           disabled={submitting}
-          className="mt-4 w-full rounded-xl bg-slate-900 px-4 py-2 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:opacity-60"
+          className="ui-btn ui-btn-primary mt-4 w-full"
         >
           Save result
         </button>
         {message ? (
-          <p className="mt-2 text-sm text-amber-600">{message}</p>
+          <p className="ui-banner ui-banner-warning mt-2">{message}</p>
         ) : null}
       </Modal>
     </div>

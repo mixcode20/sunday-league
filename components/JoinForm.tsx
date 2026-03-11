@@ -39,7 +39,7 @@ export default function JoinForm({ gameweekId, players }: JoinFormProps) {
         setMessage(endpoint === "join" ? "You're in!" : "You're out.");
         router.refresh();
       }
-    } catch (error) {
+    } catch {
       setMessage("Network error. Try again.");
     } finally {
       setLoading(false);
@@ -47,12 +47,10 @@ export default function JoinForm({ gameweekId, players }: JoinFormProps) {
   };
 
   return (
-    <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
-      <label className="text-sm font-medium text-slate-600">
-        Select your name
-      </label>
+    <div className="ui-card p-4">
+      <label className="ui-label">Select your name</label>
       <select
-        className="mt-2 w-full rounded-xl border border-slate-200 px-3 py-2 text-base"
+        className="ui-input mt-2"
         value={selectedPlayer}
         onChange={(event) => setSelectedPlayer(event.target.value)}
       >
@@ -68,7 +66,7 @@ export default function JoinForm({ gameweekId, players }: JoinFormProps) {
           type="button"
           disabled={loading}
           onClick={() => handleRequest("join")}
-          className="flex-1 rounded-xl bg-emerald-600 px-4 py-2 text-sm font-semibold text-white"
+          className="ui-btn flex-1 bg-[var(--color-primary)] text-white hover:bg-[#186650]"
         >
           Join
         </button>
@@ -76,13 +74,13 @@ export default function JoinForm({ gameweekId, players }: JoinFormProps) {
           type="button"
           disabled={loading}
           onClick={() => handleRequest("leave")}
-          className="flex-1 rounded-xl border border-slate-200 px-4 py-2 text-sm font-semibold text-slate-700"
+          className="ui-btn ui-btn-secondary flex-1"
         >
           Leave
         </button>
       </div>
       {message ? (
-        <p className="mt-2 text-sm text-slate-500">{message}</p>
+        <p className="mt-2 text-sm text-[var(--color-text-secondary)]">{message}</p>
       ) : null}
     </div>
   );

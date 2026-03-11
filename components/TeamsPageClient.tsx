@@ -2,11 +2,12 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import useSWR from "swr";
+import CreateGameweek from "@/components/CreateGameweek";
 import GameweekInfoStrip from "@/components/GameweekInfoStrip";
 import ConfirmResultPanel from "@/components/ConfirmResultPanel";
 import TeamsClient from "@/components/TeamsClient";
 import TeamsReadOnly from "@/components/TeamsReadOnly";
-import type { Gameweek, GameweekPlayer } from "@/lib/types";
+import type { Gameweek, GameweekPlayer, Player } from "@/lib/types";
 import { fetcher, debugPerfEnabled } from "@/lib/swr";
 import { buildEntryPositionMap, getSlotCounts } from "@/lib/slots";
 import { getGameweekWinner, winnerLabel } from "@/lib/utils";
@@ -14,6 +15,7 @@ import { getGameweekWinner, winnerLabel } from "@/lib/utils";
 type TeamsOverviewResponse = {
   gameweek: Gameweek | null;
   entries: GameweekPlayer[];
+  players: Player[];
 };
 
 export default function TeamsPageClient() {
@@ -59,6 +61,9 @@ export default function TeamsPageClient() {
       onError: (err) => {
         setNonBlockingError(formatFetchError(err));
       },
+      onSuccess: () => {
+        setNonBlockingError("");
+      },
     }
   );
 
@@ -68,13 +73,8 @@ export default function TeamsPageClient() {
     routeTimerArmed.current = false;
   }, [data]);
 
-  useEffect(() => {
-    if (data) {
-      setNonBlockingError("");
-    }
-  }, [data]);
-
-  const entries = data?.entries ?? [];
+  const entries = useMemo(() => data?.entries ?? [], [data?.entries]);
+  const players = useMemo(() => data?.players ?? [], [data?.players]);
   const { main: mainCount, subs: subsCount } = useMemo(() => {
     const { positionMap } = buildEntryPositionMap(entries);
     return getSlotCounts(positionMap);
@@ -82,7 +82,7 @@ export default function TeamsPageClient() {
 
   if (error && !data) {
     return (
-      <div className="rounded-2xl border border-rose-200 bg-rose-50 p-4 text-sm text-rose-700">
+      <div className="ui-banner ui-banner-danger">
         Failed to load teams. Please refresh.
       </div>
     );
@@ -91,9 +91,9 @@ export default function TeamsPageClient() {
   if (!data) {
     return (
       <div className="space-y-4">
-        <div className="h-16 rounded-2xl border border-slate-200 bg-white" />
-        <div className="h-24 rounded-2xl border border-slate-200 bg-white" />
-        <div className="h-64 rounded-2xl border border-slate-200 bg-white" />
+        <div className="ui-skeleton h-16" />
+        <div className="ui-skeleton h-24" />
+        <div className="ui-skeleton h-64" />
       </div>
     );
   }
@@ -104,8 +104,9 @@ export default function TeamsPageClient() {
   if (!gameweek) {
     return (
       <div className="space-y-4">
+        <CreateGameweek players={players} />
         <GameweekInfoStrip />
-        <div className="rounded-2xl border border-slate-200 bg-white p-4 text-sm text-slate-500">
+        <div className="ui-empty p-4 text-sm">
           No open gameweek yet. Unlock organiser mode to create one.
         </div>
       </div>
@@ -115,10 +116,11 @@ export default function TeamsPageClient() {
   return (
     <div className="space-y-4">
       {nonBlockingError ? (
-        <div className="rounded-2xl border border-amber-200 bg-amber-50 p-3 text-sm text-amber-700">
+        <div className="ui-banner ui-banner-warning">
           {nonBlockingError}
         </div>
       ) : null}
+      <CreateGameweek activeGameweekStatus={gameweek.status} players={players} />
       <GameweekInfoStrip
         gameweekId={gameweek.id}
         gameDate={gameweek.game_date}
@@ -131,7 +133,7 @@ export default function TeamsPageClient() {
       <ConfirmResultPanel gameweek={gameweek} />
 
       {gameweek.status === "locked" ? (
-        <div className="rounded-2xl border border-slate-200 bg-white p-4 text-sm text-slate-600 shadow-sm">
+        <div className="ui-card p-4 text-sm text-[var(--color-text-secondary)]">
           {typeof gameweek.darks_score === "number" &&
           typeof gameweek.whites_score === "number"
             ? `Final score: Darks ${gameweek.darks_score} - ${gameweek.whites_score} · Locked`

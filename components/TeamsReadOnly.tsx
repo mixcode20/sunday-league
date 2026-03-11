@@ -30,16 +30,16 @@ export default function TeamsReadOnly({ entries }: { entries: GameweekPlayer[] }
   const teamsSelected = grouped.darks.length + grouped.whites.length > 0;
 
   const renderSlots = (team: Team, title: string, accent: string, isDark?: boolean) => (
-    <div className={`rounded-2xl border border-slate-200 p-4 shadow-sm ${accent}`}>
+    <div className={`rounded-[1.35rem] border p-4 ${accent}`}>
       <div className="flex items-center justify-between">
         <h3
-          className={`text-xs font-semibold uppercase tracking-[0.2em] ${
-            isDark ? "text-slate-200" : "text-slate-500"
+          className={`text-xs font-semibold uppercase tracking-[0.18em] ${
+            isDark ? "text-white/80" : "text-[var(--color-text-secondary)]"
           }`}
         >
           {title}
         </h3>
-        <span className="text-xs text-slate-400">
+        <span className={`text-xs ${isDark ? "text-white/60" : "text-[var(--color-text-secondary)]"}`}>
           {grouped[team].length}/{TEAM_LIMITS[team]}
         </span>
       </div>
@@ -73,14 +73,20 @@ export default function TeamsReadOnly({ entries }: { entries: GameweekPlayer[] }
           return slots.map((entry, index) => (
             <div
               key={`${team}-${index}`}
-              className="flex min-h-[52px] items-center rounded-xl border border-dashed border-slate-200 bg-white px-3 py-2 text-sm"
+              className={`flex min-h-[52px] items-center rounded-xl border px-3 py-2 text-sm ${
+                isDark
+                  ? "border-white/12 bg-white/8 text-white"
+                  : "border-[var(--color-border)] bg-white text-[var(--color-text)]"
+              }`}
             >
               {entry ? (
-                <span className="font-medium text-slate-900">
+                <span className={`font-medium ${isDark ? "text-white" : "text-[var(--color-text)]"}`}>
                   {formatPlayerName(entry.players)}
                 </span>
               ) : (
-                <span className="text-xs text-slate-400">Pick</span>
+                <span className={`text-xs ${isDark ? "text-white/55" : "text-[var(--color-text-secondary)]"}`}>
+                  Pick
+                </span>
               )}
             </div>
           ));
@@ -92,13 +98,22 @@ export default function TeamsReadOnly({ entries }: { entries: GameweekPlayer[] }
   return (
     <div className="space-y-4">
       {!teamsSelected ? (
-        <p className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-500">
+        <p className="ui-banner">
           Teams have not yet been selected for this gameweek.
         </p>
       ) : null}
       <div className="grid grid-cols-2 gap-4">
-        {renderSlots("darks", "Darks", "bg-slate-900 text-white", true)}
-        {renderSlots("whites", "Whites", "bg-white border-slate-300")}
+        {renderSlots(
+          "darks",
+          "Darks",
+          "border-[rgba(15,61,52,0.16)] bg-[var(--color-primary-dark)] text-white",
+          true
+        )}
+        {renderSlots(
+          "whites",
+          "Whites",
+          "border-[var(--color-border)] bg-[rgba(255,255,255,0.9)]"
+        )}
       </div>
     </div>
   );

@@ -1,12 +1,22 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { getNextSundayISO } from "@/lib/utils";
 import { useOrganiserMode } from "@/components/OrganiserModeProvider";
 import Modal from "@/components/Modal";
+import type { GameweekStatus, Player } from "@/lib/types";
+import { formatPlayerName } from "@/lib/utils";
 
-export default function CreateGameweek() {
+type CreateGameweekProps = {
+  activeGameweekStatus?: GameweekStatus | null;
+  players?: Player[];
+};
+
+export default function CreateGameweek({
+  activeGameweekStatus = null,
+  players = [],
+}: CreateGameweekProps) {
   const router = useRouter();
   const { isUnlocked, organiserPin } = useOrganiserMode();
   const [date, setDate] = useState(getNextSundayISO());
@@ -15,8 +25,22 @@ export default function CreateGameweek() {
   const [message, setMessage] = useState("");
   const [isOpen, setIsOpen] = useState(false);
   const [customTime, setCustomTime] = useState("");
+  const [selectedPlayerIds, setSelectedPlayerIds] = useState<string[]>([]);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const quickPickTimes = ["9:00am", "9:15am", "9:30am", "9:45am", "10:00am"];
+  const hasActiveOpenGameweek = activeGameweekStatus === "open";
+  const hasCompletedGameweek = activeGameweekStatus === "locked";
+  const buttonLabel = hasCompletedGameweek ? "Create next gameweek" : "Create new game";
+  const orderedPlayers = useMemo(
+    () =>
+      [...players].sort((a, b) => {
+        const gamesPlayedDifference = (b.games_played ?? 0) - (a.games_played ?? 0);
+        if (gamesPlayedDifference !== 0) return gamesPlayedDifference;
+        return formatPlayerName(a).localeCompare(formatPlayerName(b));
+      }),
+    [players]
+  );
 
   const formatTimeFromInput = (value: string) => {
     if (!value) return "";
@@ -31,8 +55,26 @@ export default function CreateGameweek() {
   };
 
   const openModal = () => {
+    if (hasActiveOpenGameweek) {
+      setMessage("Submit the current gameweek result before creating the next one.");
+      return;
+    }
     setMessage("");
+    setSelectedPlayerIds([]);
     setIsOpen(true);
+  };
+
+  const closeModal = () => {
+    if (isSubmitting) return;
+    setIsOpen(false);
+  };
+
+  const togglePlayer = (playerId: string) => {
+    setSelectedPlayerIds((current) =>
+      current.includes(playerId)
+        ? current.filter((id) => id !== playerId)
+        : [...current, playerId]
+    );
   };
 
   const createGameweek = async () => {
@@ -42,6 +84,7 @@ export default function CreateGameweek() {
       return;
     }
     setMessage("");
+    setIsSubmitting(true);
     const response = await fetch("/api/gameweeks/create", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -50,9 +93,11 @@ export default function CreateGameweek() {
         time,
         location,
         pin: organiserPin,
+        playerIds: selectedPlayerIds,
       }),
     });
     const data = await response.json();
+    setIsSubmitting(false);
     if (!response.ok) {
       setMessage(data.error ?? "Failed to create gameweek.");
       return;
@@ -69,25 +114,35 @@ export default function CreateGameweek() {
         <button
           type="button"
           onClick={openModal}
-          className="w-full rounded-2xl bg-slate-900 px-4 py-3 text-sm font-semibold text-white shadow-sm"
+          disabled={hasActiveOpenGameweek}
+          className="ui-btn ui-btn-primary w-full disabled:cursor-not-allowed disabled:opacity-60"
         >
-          Create new game
+          {buttonLabel}
         </button>
+        {hasActiveOpenGameweek ? (
+          <p className="mt-2 text-sm text-[var(--color-text-secondary)]">
+            Submit the current gameweek result to unlock the next gameweek flow.
+          </p>
+        ) : hasCompletedGameweek ? (
+          <p className="mt-2 text-sm text-[var(--color-text-secondary)]">
+            The current gameweek is complete. Create the next one to start a new signup flow.
+          </p>
+        ) : null}
       </div>
       <Modal
         isOpen={isOpen}
-        title="Create new game"
-        onClose={() => setIsOpen(false)}
+        title={hasCompletedGameweek ? "Create next gameweek" : "Create new game"}
+        onClose={closeModal}
         position="top"
       >
-        <label className="text-sm font-medium text-slate-600">Date</label>
+        <label className="ui-label">Date</label>
         <input
           type="date"
           value={date}
           onChange={(event) => setDate(event.target.value)}
-          className="mt-2 w-full rounded-xl border border-slate-200 px-3 py-2 text-base"
+          className="ui-input mt-2"
         />
-        <label className="mt-3 text-sm font-medium text-slate-600">Time</label>
+        <label className="ui-label mt-3">Time</label>
         <div className="mt-2 flex flex-wrap gap-2">
           {quickPickTimes.map((option) => {
             const isSelected = time === option;
@@ -99,10 +154,10 @@ export default function CreateGameweek() {
                   setTime(option);
                   setCustomTime("");
                 }}
-                className={`rounded-full border px-3 py-1 text-sm font-medium ${
+                className={`ui-chip ${
                   isSelected
-                    ? "border-slate-900 bg-slate-900 text-white"
-                    : "border-slate-200 text-slate-700"
+                    ? "ui-chip-active"
+                    : ""
                 }`}
                 aria-pressed={isSelected}
               >
@@ -111,9 +166,7 @@ export default function CreateGameweek() {
             );
           })}
         </div>
-        <label className="mt-3 text-sm font-medium text-slate-600">
-          Custom time
-        </label>
+        <label className="ui-label mt-3">Custom time</label>
         <input
           type="time"
           value={customTime}
@@ -123,26 +176,69 @@ export default function CreateGameweek() {
             const formatted = formatTimeFromInput(nextValue);
             if (formatted) setTime(formatted);
           }}
-          className="mt-2 w-full rounded-xl border border-slate-200 px-3 py-2 text-base"
+          className="ui-input mt-2"
         />
-        <label className="mt-3 text-sm font-medium text-slate-600">
-          Location
-        </label>
+        <label className="ui-label mt-3">Location</label>
         <input
           type="text"
           value="Mill Hill"
           readOnly
-          className="mt-2 w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-base text-slate-700"
+          className="ui-input mt-2"
         />
+        <div className="mt-4 border-t border-[var(--color-border)] pt-4">
+          <div className="flex items-center justify-between gap-3">
+            <span className="ui-label m-0">
+              Add players now
+            </span>
+            <span className="text-xs text-[var(--color-text-secondary)]">
+              {selectedPlayerIds.length} selected
+            </span>
+          </div>
+          {players.length > 0 ? (
+            <div className="mt-3 max-h-56 space-y-2 overflow-y-auto rounded-xl border border-[var(--color-border)] p-2">
+              {orderedPlayers.map((player) => {
+                const checked = selectedPlayerIds.includes(player.id);
+                const gamesPlayed = player.games_played ?? 0;
+                return (
+                  <label
+                    key={player.id}
+                    className="flex cursor-pointer items-center justify-between gap-3 rounded-lg px-2 py-2 text-sm text-[var(--color-text)] hover:bg-[rgba(15,61,52,0.04)]"
+                  >
+                    <span className="flex items-center gap-3">
+                      <input
+                        type="checkbox"
+                        checked={checked}
+                        onChange={() => togglePlayer(player.id)}
+                        className="peer sr-only"
+                      />
+                      <span className="flex h-5 w-5 items-center justify-center rounded-full border border-[var(--color-border-strong)] bg-white peer-checked:border-[var(--color-primary-dark)] peer-checked:bg-[var(--color-primary-dark)]">
+                        <span className="h-2 w-2 rounded-full bg-white opacity-0 peer-checked:opacity-100" />
+                      </span>
+                      <span>{formatPlayerName(player)}</span>
+                    </span>
+                    <span className="text-xs text-[var(--color-text-secondary)]">
+                      {gamesPlayed} GP
+                    </span>
+                  </label>
+                );
+              })}
+            </div>
+          ) : (
+            <p className="mt-2 text-sm text-[var(--color-text-secondary)]">
+              No active players available to prefill.
+            </p>
+          )}
+        </div>
         <button
           type="button"
           onClick={createGameweek}
-          className="mt-4 w-full rounded-xl bg-slate-900 px-4 py-2 text-sm font-semibold text-white"
+          disabled={isSubmitting}
+          className="ui-btn ui-btn-primary mt-4 w-full disabled:cursor-not-allowed disabled:opacity-60"
         >
-          Create game
+          {isSubmitting ? "Creating..." : "Create game"}
         </button>
         {message ? (
-          <p className="mt-2 text-sm text-rose-500">{message}</p>
+          <p className="ui-banner ui-banner-danger mt-2">{message}</p>
         ) : null}
       </Modal>
     </>

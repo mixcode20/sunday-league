@@ -13,10 +13,10 @@ export default function SettingsButton({ onClick, isUnlocked }: SettingsButtonPr
     <button
       type="button"
       onClick={onClick}
-      className={`inline-flex h-11 w-11 items-center justify-center rounded-full transition ${
+      className={`ui-icon-btn ${
         isUnlocked
-          ? "bg-emerald-100 text-emerald-600 hover:bg-emerald-200"
-          : "bg-transparent text-slate-700 hover:bg-slate-100"
+          ? "border-[rgba(22,163,74,0.24)] bg-[rgba(22,163,74,0.08)] text-[var(--color-success)]"
+          : ""
       }`}
       aria-label={label}
       title={label}

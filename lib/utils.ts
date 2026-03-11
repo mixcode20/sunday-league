@@ -41,7 +41,7 @@ export const getNextSundayISO = () => {
   return nextSunday.toISOString().slice(0, 10);
 };
 
-export const normalizePlayerJoin = <T extends { players: any }>(entry: T) => {
+export const normalizePlayerJoin = <T extends { players: unknown }>(entry: T) => {
   const player = Array.isArray(entry.players) ? entry.players[0] : entry.players;
   return {
     ...entry,

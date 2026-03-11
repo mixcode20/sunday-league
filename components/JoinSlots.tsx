@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import type { GameweekPlayer, Player } from "@/lib/types";
 import Modal from "@/components/Modal";
@@ -31,6 +31,7 @@ export default function JoinSlots({
   const [creating, setCreating] = useState(false);
   const [newFirst, setNewFirst] = useState("");
   const [newLast, setNewLast] = useState("");
+  const [playerSearch, setPlayerSearch] = useState("");
   const [liveEntries, setLiveEntries] = useState<GameweekPlayer[]>(entries);
   const [openSlot, setOpenSlot] = useState<number | null>(null);
   const [pendingSlot, setPendingSlot] = useState<number | null>(null);
@@ -55,6 +56,12 @@ export default function JoinSlots({
   useEffect(() => {
     setLiveEntries(entries);
   }, [entries]);
+
+  useEffect(() => {
+    if (openSlot === null) {
+      setPlayerSearch("");
+    }
+  }, [openSlot]);
 
   useEffect(() => {
     if (!gameweekId || typeof window === "undefined") return;
@@ -100,14 +107,14 @@ export default function JoinSlots({
     return () => clearInterval(interval);
   }, [gameweekId]);
 
-  const persistSessionJoins = (
+  const persistSessionJoins = useCallback((
     next: Record<string, { position: number; joinedAt: number }>
   ) => {
     setSessionJoins(next);
     if (typeof window !== "undefined" && gameweekId) {
       sessionStorage.setItem(`joinSession:${gameweekId}`, JSON.stringify(next));
     }
-  };
+  }, [gameweekId]);
 
   const recordSessionJoin = (playerId: string, position: number) => {
     setSessionJoins((prev) => {
@@ -149,7 +156,7 @@ export default function JoinSlots({
     if (changed) {
       persistSessionJoins(next);
     }
-  }, [gameweekId, liveEntries, sessionJoins]);
+  }, [gameweekId, liveEntries, persistSessionJoins, sessionJoins]);
 
   useEffect(() => {
     if (Object.keys(optimisticByPosition).length === 0) return;
@@ -606,6 +613,9 @@ export default function JoinSlots({
     return ids;
   }, [liveEntries, optimisticByPosition]);
   const availablePlayers = players.filter((player) => !filledPlayerIds.has(player.id));
+  const filteredAvailablePlayers = availablePlayers.filter((player) =>
+    formatPlayerName(player).toLowerCase().includes(playerSearch.trim().toLowerCase())
+  );
 
   const openDropdown = (slotIndex: number) => {
     if (!isOpen || isSlotPending(slotIndex)) return;
@@ -689,16 +699,63 @@ export default function JoinSlots({
     await removeFromGame(mainEntry.player_id);
   };
 
+  const userIcon = (className: string) => (
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.7"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className={className}
+    >
+      <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+      <circle cx="12" cy="7" r="3.5" />
+    </svg>
+  );
+
+  const plusIcon = (className: string) => (
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className={className}
+    >
+      <path d="M12 5v14" />
+      <path d="M5 12h14" />
+    </svg>
+  );
+
+  const checkIcon = (className: string) => (
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2.4"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className={className}
+    >
+      <path d="m7 12.5 3.1 3.1L17 8.8" />
+    </svg>
+  );
+
   return (
     <div className="space-y-4">
       {players.length === 0 ? (
-        <div className="rounded-2xl border border-dashed border-slate-200 bg-white p-4 text-sm text-slate-500">
+        <div className="ui-empty p-4 text-sm">
           No players yet. Use “+ New player” to add the first name.
         </div>
       ) : null}
 
       {message ? (
-        <p className="rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-700">
+        <p className="ui-banner ui-banner-warning">
           {message}
         </p>
       ) : null}
@@ -723,35 +780,94 @@ export default function JoinSlots({
             return (
               <div
                 key={`main-${index}`}
-                className={`relative flex min-h-[56px] flex-col rounded-xl border p-3 text-xs shadow-sm ${
+                className={`relative flex min-h-[74px] flex-col rounded-[18px] border px-4 py-3 text-xs ${
                   entry?.remove_requested
-                    ? "border-rose-200 bg-rose-50 text-rose-600"
+                    ? "border-[rgba(229,72,77,0.18)] bg-[rgba(229,72,77,0.08)] text-[var(--color-danger)]"
                     : entry
-                      ? "border-emerald-200 bg-emerald-50 text-slate-700"
-                      : "border-slate-200 bg-white text-slate-600"
-                } ${entry ? "justify-between" : "justify-center"} ${
+                      ? "border-[rgba(31,122,99,0.18)] bg-[rgba(31,122,99,0.07)] text-[var(--color-text)]"
+                      : "border-[var(--color-border)] bg-white text-[var(--color-text-secondary)]"
+                } justify-center ${
                   isHighlighted ? "ring-2 ring-amber-400" : ""
                 } ${isPending ? "opacity-80" : ""}`}
               >
                 {entry ? (
                   <>
-                    <span
-                      className={`text-sm font-semibold ${
-                        entry.remove_requested ? "text-rose-600" : "text-slate-900"
-                      }`}
-                    >
-                      <span className="mr-2 text-xs text-slate-400">
+                    <div className="flex items-center gap-3">
+                      <span className="w-7 text-right text-[20px] font-medium leading-none text-[var(--color-text-secondary)]">
                         {index + 1}.
                       </span>
-                      {formatPlayerName(entry.players)}
-                    </span>
+                      <span
+                        className={`inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full ${
+                          entry.remove_requested
+                            ? "bg-[rgba(229,72,77,0.1)] text-[var(--color-danger)]"
+                            : "bg-[rgba(31,122,99,0.12)] text-[var(--color-primary-dark)]"
+                        }`}
+                      >
+                        {userIcon("h-5 w-5")}
+                      </span>
+                      <span
+                        className={`min-w-0 flex-1 truncate text-[18px] font-medium leading-none ${
+                          entry.remove_requested ? "text-[var(--color-danger)]" : "text-[var(--color-text)]"
+                        }`}
+                      >
+                        {formatPlayerName(entry.players)}
+                      </span>
+                      {isOpen && isUnlocked ? (
+                        <button
+                          type="button"
+                          onClick={() => handleOrganiserRemove(entry)}
+                          className="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-full border border-[rgba(229,72,77,0.18)] text-[var(--color-danger)]"
+                          aria-label="Remove from game"
+                          disabled={isSlotPending(entry.position)}
+                        >
+                          ×
+                        </button>
+                      ) : isOpen && entry.remove_requested ? (
+                        <button
+                          type="button"
+                          onClick={() => cancelRemovalRequest(entry.player_id)}
+                          className="shrink-0 text-xs font-semibold text-[var(--color-text-secondary)]"
+                          disabled={isSlotPending(entry.position)}
+                        >
+                          Cancel
+                        </button>
+                      ) : isOpen && canUndo ? (
+                        <button
+                          type="button"
+                          onClick={() => leavePlayer(entry.player_id)}
+                          className="shrink-0 text-xs font-semibold text-[var(--color-text-secondary)]"
+                          disabled={isSlotPending(entry.position)}
+                        >
+                          Undo
+                        </button>
+                      ) : isOpen && canRequestRemoval ? (
+                        <button
+                          type="button"
+                          onClick={() => requestRemoval(entry.player_id)}
+                          className="shrink-0 text-xs font-semibold text-[var(--color-danger)]"
+                          disabled={isSlotPending(entry.position)}
+                        >
+                          Remove me
+                        </button>
+                      ) : null}
+                      <span
+                        className={`inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full ${
+                          entry.remove_requested
+                            ? "border border-[rgba(229,72,77,0.18)] bg-white text-[var(--color-danger)]"
+                            : "bg-[var(--color-primary)] text-white"
+                        }`}
+                        aria-hidden="true"
+                      >
+                        {entry.remove_requested ? "!" : checkIcon("h-4 w-4")}
+                      </span>
+                    </div>
                     {isPending && isOptimistic ? (
-                      <span className="mt-2 text-[11px] font-semibold uppercase tracking-wide text-slate-400">
+                      <span className="mt-2 text-[11px] font-semibold uppercase tracking-wide text-[var(--color-text-secondary)]">
                         Claiming...
                       </span>
                     ) : null}
                     {entry.remove_requested ? (
-                      <span className="mt-2 text-[11px] font-semibold uppercase tracking-wide text-rose-500">
+                      <span className="mt-2 text-[11px] font-semibold uppercase tracking-wide text-[var(--color-danger)]">
                         Removal requested
                       </span>
                     ) : null}
@@ -762,59 +878,13 @@ export default function JoinSlots({
                             <button
                               type="button"
                               onClick={() => clearRemovalRequest(entry.player_id)}
-                              className="text-left text-xs font-semibold text-slate-600"
+                              className="text-left text-xs font-semibold text-[var(--color-text-secondary)]"
                               disabled={isSlotPending(entry.position)}
                             >
                               Clear request
                             </button>
-                            <button
-                              type="button"
-                              onClick={() => handleOrganiserRemove(entry)}
-                              className="inline-flex h-7 w-7 items-center justify-center rounded-full border border-rose-200 text-rose-500"
-                              aria-label="Remove from game"
-                              disabled={isSlotPending(entry.position)}
-                            >
-                              ×
-                            </button>
                           </div>
-                        ) : (
-                          <button
-                            type="button"
-                            onClick={() => handleOrganiserRemove(entry)}
-                            className="mt-2 inline-flex h-7 w-7 items-center justify-center rounded-full border border-rose-200 text-rose-500"
-                            aria-label="Remove from game"
-                            disabled={isSlotPending(entry.position)}
-                          >
-                            ×
-                          </button>
-                        )
-                      ) : entry.remove_requested ? (
-                        <button
-                          type="button"
-                          onClick={() => cancelRemovalRequest(entry.player_id)}
-                          className="mt-2 text-left text-xs font-semibold text-slate-600"
-                          disabled={isSlotPending(entry.position)}
-                        >
-                          Cancel
-                        </button>
-                      ) : canUndo ? (
-                        <button
-                          type="button"
-                          onClick={() => leavePlayer(entry.player_id)}
-                          className="mt-2 text-left text-xs font-semibold text-slate-600"
-                          disabled={isSlotPending(entry.position)}
-                        >
-                          Undo
-                        </button>
-                      ) : canRequestRemoval ? (
-                        <button
-                          type="button"
-                          onClick={() => requestRemoval(entry.player_id)}
-                          className="mt-2 text-left text-xs font-semibold text-rose-500"
-                          disabled={isSlotPending(entry.position)}
-                        >
-                          Remove me
-                        </button>
+                        ) : null
                       ) : null
                     ) : null}
                   </>
@@ -822,48 +892,30 @@ export default function JoinSlots({
                   <button
                     type="button"
                     onClick={() => openDropdown(index + 1)}
-                    className="flex w-full items-center justify-between gap-3 text-left text-slate-400"
+                    className="flex w-full items-center justify-between gap-3 text-left"
                     data-slot-trigger
                     aria-label="Add player"
                     disabled={isSlotPending(index + 1)}
                   >
-                    <span className="inline-flex items-center gap-2">
-                      <span className="text-xs text-slate-400">
+                    <span className="inline-flex min-w-0 items-center gap-3">
+                      <span className="w-7 text-right text-[20px] font-medium leading-none text-[var(--color-text-secondary)]">
                         {index + 1}.
                       </span>
-                      <svg
-                        xmlns="http://www.w3.org/2000/svg"
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        stroke="currentColor"
-                        strokeWidth="1.6"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        className="h-4 w-4"
-                      >
-                        <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
-                        <circle cx="12" cy="7" r="3.5" />
-                      </svg>
-                      Free space
+                      <span className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[rgba(15,61,52,0.08)] text-[var(--color-text-secondary)]">
+                        {userIcon("h-5 w-5")}
+                      </span>
+                      <span className="truncate text-[18px] font-medium leading-none text-[var(--color-text-secondary)]">
+                        Free Space
+                      </span>
                     </span>
-                    <svg
-                      xmlns="http://www.w3.org/2000/svg"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth="2"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      className="h-4 w-4"
-                    >
-                      <path d="M12 5v14" />
-                      <path d="M5 12h14" />
-                    </svg>
+                    <span className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-[var(--color-border)] bg-[rgba(15,61,52,0.04)] text-[var(--color-text-secondary)]">
+                      {plusIcon("h-4 w-4")}
+                    </span>
                   </button>
                 )}
 
                 {slotError ? (
-                  <p className="mt-2 text-[11px] font-semibold text-amber-600">
+                  <p className="mt-2 text-[11px] font-semibold text-[var(--color-warning)]">
                     {slotError}
                   </p>
                 ) : null}
@@ -873,7 +925,7 @@ export default function JoinSlots({
         </div>
 
         <div>
-          <p className="text-xs uppercase tracking-[0.2em] text-slate-400">Subs</p>
+          <p className="ui-kicker">Subs</p>
           <div className="mt-2 grid grid-cols-1 gap-3">
             {slotEntries.subsSlots.map((entry, index) => {
               const slotPosition = slotEntries.subPositions[index];
@@ -893,106 +945,115 @@ export default function JoinSlots({
               return (
                 <div
                   key={`sub-${slotPosition}`}
-                  className={`relative flex min-h-[56px] flex-col rounded-xl border border-dashed p-3 text-xs shadow-sm ${
+                  className={`relative flex min-h-[74px] flex-col rounded-[18px] border px-4 py-3 text-xs ${
                     entry?.remove_requested
-                      ? "border-rose-200 bg-rose-50 text-rose-600"
+                      ? "border-[rgba(229,72,77,0.18)] bg-[rgba(229,72,77,0.08)] text-[var(--color-danger)]"
                       : entry
-                        ? "border-emerald-200 bg-emerald-50 text-slate-700"
-                        : "border-slate-200 bg-white text-slate-600"
-                  } ${entry ? "justify-between" : "justify-center"} ${
+                        ? "border-[rgba(31,122,99,0.18)] bg-[rgba(31,122,99,0.07)] text-[var(--color-text)]"
+                        : "border-[var(--color-border)] bg-white text-[var(--color-text-secondary)]"
+                  } justify-center ${
                     isHighlighted ? "ring-2 ring-amber-400" : ""
                   } ${isPending ? "opacity-80" : ""}`}
                 >
                   {entry ? (
                     <>
-                      <span
-                        className={`text-sm font-semibold ${
-                          entry.remove_requested ? "text-rose-600" : "text-slate-900"
-                        }`}
-                      >
-                        <span className="mr-2 text-xs text-slate-400">
+                      <div className="flex items-center gap-3">
+                        <span className="w-7 text-right text-[20px] font-medium leading-none text-[var(--color-text-secondary)]">
                           {slotPosition}.
                         </span>
-                        {formatPlayerName(entry.players)}
-                      </span>
+                        <span
+                          className={`inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full ${
+                            entry.remove_requested
+                              ? "bg-[rgba(229,72,77,0.1)] text-[var(--color-danger)]"
+                              : "bg-[rgba(31,122,99,0.12)] text-[var(--color-primary-dark)]"
+                          }`}
+                        >
+                          {userIcon("h-5 w-5")}
+                        </span>
+                        <span
+                          className={`min-w-0 flex-1 truncate text-[18px] font-medium leading-none ${
+                            entry.remove_requested ? "text-[var(--color-danger)]" : "text-[var(--color-text)]"
+                          }`}
+                        >
+                          {formatPlayerName(entry.players)}
+                        </span>
+                        {isOpen && isUnlocked ? (
+                          <button
+                            type="button"
+                            onClick={() =>
+                              entry.position <= MAIN_CAPACITY
+                                ? handleOrganiserRemove(entry)
+                                : removeFromGame(entry.player_id)
+                            }
+                            className="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-full border border-[rgba(229,72,77,0.18)] text-[var(--color-danger)]"
+                            aria-label="Remove from game"
+                            disabled={isSlotPending(entry.position)}
+                          >
+                            ×
+                          </button>
+                        ) : isOpen && entry.remove_requested ? (
+                          <button
+                            type="button"
+                            onClick={() => cancelRemovalRequest(entry.player_id)}
+                            className="shrink-0 text-xs font-semibold text-[var(--color-text-secondary)]"
+                            disabled={isSlotPending(entry.position)}
+                          >
+                            Cancel
+                          </button>
+                        ) : isOpen && canUndo ? (
+                          <button
+                            type="button"
+                            onClick={() => leavePlayer(entry.player_id)}
+                            className="shrink-0 text-xs font-semibold text-[var(--color-text-secondary)]"
+                            disabled={isSlotPending(entry.position)}
+                          >
+                            Undo
+                          </button>
+                        ) : isOpen && canRequestRemoval ? (
+                          <button
+                            type="button"
+                            onClick={() => requestRemoval(entry.player_id)}
+                            className="shrink-0 text-xs font-semibold text-[var(--color-danger)]"
+                            disabled={isSlotPending(entry.position)}
+                          >
+                            Remove me
+                          </button>
+                        ) : null}
+                        <span
+                          className={`inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full ${
+                            entry.remove_requested
+                              ? "border border-[rgba(229,72,77,0.18)] bg-white text-[var(--color-danger)]"
+                              : "bg-[var(--color-primary)] text-white"
+                          }`}
+                          aria-hidden="true"
+                        >
+                          {entry.remove_requested ? "!" : checkIcon("h-4 w-4")}
+                        </span>
+                      </div>
                       {isPending && isOptimistic ? (
-                        <span className="mt-2 text-[11px] font-semibold uppercase tracking-wide text-slate-400">
+                        <span className="mt-2 text-[11px] font-semibold uppercase tracking-wide text-[var(--color-text-secondary)]">
                           Claiming...
                         </span>
                       ) : null}
                     {entry.remove_requested ? (
-                      <span className="mt-2 text-[11px] font-semibold uppercase tracking-wide text-rose-500">
+                      <span className="mt-2 text-[11px] font-semibold uppercase tracking-wide text-[var(--color-danger)]">
                         Removal requested
                       </span>
                     ) : null}
                     {isOpen ? (
                       isUnlocked ? (
                         entry.remove_requested ? (
-                            <div className="mt-2 flex items-center gap-2">
-                              <button
-                                type="button"
-                                onClick={() => clearRemovalRequest(entry.player_id)}
-                                className="text-left text-xs font-semibold text-slate-600"
-                                disabled={isSlotPending(entry.position)}
-                              >
-                                Clear request
-                              </button>
-                              <button
-                                type="button"
-                                onClick={() =>
-                                  entry.position <= MAIN_CAPACITY
-                                    ? handleOrganiserRemove(entry)
-                                    : removeFromGame(entry.player_id)
-                                }
-                                className="inline-flex h-7 w-7 items-center justify-center rounded-full border border-rose-200 text-rose-500"
-                                aria-label="Remove from game"
-                                disabled={isSlotPending(entry.position)}
-                              >
-                                ×
-                              </button>
-                            </div>
-                          ) : (
+                          <div className="mt-2 flex items-center gap-2">
                             <button
                               type="button"
-                              onClick={() =>
-                                entry.position <= MAIN_CAPACITY
-                                  ? handleOrganiserRemove(entry)
-                                  : removeFromGame(entry.player_id)
-                              }
-                              className="mt-2 inline-flex h-7 w-7 items-center justify-center rounded-full border border-rose-200 text-rose-500"
-                              aria-label="Remove from game"
+                              onClick={() => clearRemovalRequest(entry.player_id)}
+                              className="text-left text-xs font-semibold text-[var(--color-text-secondary)]"
                               disabled={isSlotPending(entry.position)}
                             >
-                              ×
+                              Clear request
                             </button>
-                          )
-                        ) : entry.remove_requested ? (
-                          <button
-                            type="button"
-                            onClick={() => cancelRemovalRequest(entry.player_id)}
-                            className="mt-2 text-left text-xs font-semibold text-slate-600"
-                            disabled={isSlotPending(entry.position)}
-                          >
-                            Cancel
-                          </button>
-                        ) : canUndo ? (
-                          <button
-                            type="button"
-                            onClick={() => leavePlayer(entry.player_id)}
-                            className="mt-2 text-left text-xs font-semibold text-slate-600"
-                            disabled={isSlotPending(entry.position)}
-                          >
-                            Undo
-                          </button>
-                        ) : canRequestRemoval ? (
-                          <button
-                            type="button"
-                            onClick={() => requestRemoval(entry.player_id)}
-                            className="mt-2 text-left text-xs font-semibold text-rose-500"
-                            disabled={isSlotPending(entry.position)}
-                          >
-                            Remove me
-                          </button>
+                          </div>
+                        ) : null
                         ) : null
                       ) : null}
                     </>
@@ -1000,48 +1061,30 @@ export default function JoinSlots({
                     <button
                       type="button"
                       onClick={() => openDropdown(slotPosition)}
-                      className="flex w-full items-center justify-between gap-3 text-left text-slate-400"
+                      className="flex w-full items-center justify-between gap-3 text-left"
                       data-slot-trigger
                       aria-label="Add player"
                       disabled={isSlotPending(slotPosition)}
                     >
-                      <span className="inline-flex items-center gap-2">
-                        <span className="text-xs text-slate-400">
+                      <span className="inline-flex min-w-0 items-center gap-3">
+                        <span className="w-7 text-right text-[20px] font-medium leading-none text-[var(--color-text-secondary)]">
                           {slotPosition}.
                         </span>
-                        <svg
-                          xmlns="http://www.w3.org/2000/svg"
-                          viewBox="0 0 24 24"
-                          fill="none"
-                          stroke="currentColor"
-                          strokeWidth="1.6"
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          className="h-4 w-4"
-                        >
-                          <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
-                          <circle cx="12" cy="7" r="3.5" />
-                        </svg>
-                        Free space
+                        <span className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[rgba(15,61,52,0.08)] text-[var(--color-text-secondary)]">
+                          {userIcon("h-5 w-5")}
+                        </span>
+                        <span className="truncate text-[18px] font-medium leading-none text-[var(--color-text-secondary)]">
+                          Free Space
+                        </span>
                       </span>
-                      <svg
-                        xmlns="http://www.w3.org/2000/svg"
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        stroke="currentColor"
-                        strokeWidth="2"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        className="h-4 w-4"
-                      >
-                        <path d="M12 5v14" />
-                        <path d="M5 12h14" />
-                      </svg>
+                      <span className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-[var(--color-border)] bg-[rgba(15,61,52,0.04)] text-[var(--color-text-secondary)]">
+                        {plusIcon("h-4 w-4")}
+                      </span>
                     </button>
                   )}
 
                   {slotError ? (
-                    <p className="mt-2 text-[11px] font-semibold text-amber-600">
+                    <p className="mt-2 text-[11px] font-semibold text-[var(--color-warning)]">
                       {slotError}
                     </p>
                   ) : null}
@@ -1056,48 +1099,60 @@ export default function JoinSlots({
         isOpen={openSlot !== null}
         title={openSlotTitle}
         onClose={() => setOpenSlot(null)}
-        position="center"
-        closeVariant="icon"
+        position="top"
       >
-        <button
-          type="button"
-          onClick={handleAddNew}
-          className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-sm font-semibold text-slate-900 hover:bg-slate-50"
-          disabled={openSlot === null ? true : isSlotPending(openSlot)}
-        >
-          + Add new player
-        </button>
-        <div className="mt-2 max-h-64 overflow-y-auto">
-          {availablePlayers.length > 0 ? (
-            availablePlayers.map((player) => (
-              <button
-                key={player.id}
-                type="button"
-                onClick={() => selectPlayer(player.id)}
-                className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-sm text-slate-700 hover:bg-slate-50"
-                disabled={openSlot === null ? true : isSlotPending(openSlot)}
-              >
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="1.6"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  className="h-4 w-4 text-slate-400"
+        <div className="border-t border-[var(--color-border)] pt-4">
+          <label className="sr-only" htmlFor="player-search">
+            Search players
+          </label>
+          <div className="relative">
+            <span className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-base text-[var(--color-text-secondary)]">
+              🔍
+            </span>
+            <input
+              id="player-search"
+              type="search"
+              value={playerSearch}
+              onChange={(event) => setPlayerSearch(event.target.value)}
+              className="ui-input pl-11 text-sm"
+              placeholder="Search players..."
+            />
+          </div>
+
+          <div className="mt-4 max-h-64 overflow-y-auto">
+            {filteredAvailablePlayers.length > 0 ? (
+              filteredAvailablePlayers.map((player) => (
+                <button
+                  key={player.id}
+                  type="button"
+                  onClick={() => selectPlayer(player.id)}
+                  className="flex w-full items-center rounded-lg px-1 py-2 text-left text-sm text-[var(--color-text)] hover:bg-[rgba(15,61,52,0.04)]"
+                  disabled={openSlot === null ? true : isSlotPending(openSlot)}
                 >
-                  <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
-                  <circle cx="12" cy="7" r="3.5" />
-                </svg>
-                {formatPlayerName(player)}
-              </button>
-            ))
-          ) : (
-            <div className="px-3 py-2 text-xs text-slate-400">
-              No available players
-            </div>
-          )}
+                  {formatPlayerName(player)}
+                </button>
+              ))
+            ) : availablePlayers.length > 0 ? (
+              <div className="px-1 py-2 text-xs text-[var(--color-text-secondary)]">
+                No players match your search
+              </div>
+            ) : (
+              <div className="px-1 py-2 text-xs text-[var(--color-text-secondary)]">
+                No available players
+              </div>
+            )}
+          </div>
+
+          <div className="mt-4 border-t border-[var(--color-border)] pt-4">
+            <button
+              type="button"
+              onClick={handleAddNew}
+              className="flex w-full items-center gap-2 rounded-lg px-1 py-2 text-sm font-semibold text-[var(--color-text)] hover:bg-[rgba(15,61,52,0.04)]"
+              disabled={openSlot === null ? true : isSlotPending(openSlot)}
+            >
+              + Add new player
+            </button>
+          </div>
         </div>
       </Modal>
 
@@ -1110,9 +1165,9 @@ export default function JoinSlots({
       >
         {subMovePrompt ? (
           <>
-            <p className="text-sm text-slate-600">
+            <p className="text-sm text-[var(--color-text-secondary)]">
               Fill the empty spot with Sub:{" "}
-              <span className="font-semibold text-slate-900">
+              <span className="font-semibold text-[var(--color-text)]">
                 {formatPlayerName(subMovePrompt.suggestedSub.players)}
               </span>
               ?
@@ -1121,14 +1176,14 @@ export default function JoinSlots({
               <button
                 type="button"
                 onClick={handleMovePromptYes}
-                className="rounded-xl bg-slate-900 px-4 py-2 text-sm font-semibold text-white"
+                className="ui-btn ui-btn-primary"
               >
                 Yes, move up
               </button>
               <button
                 type="button"
                 onClick={handleMovePromptNo}
-                className="rounded-xl border border-slate-200 px-4 py-2 text-sm font-semibold text-slate-700"
+                className="ui-btn ui-btn-secondary"
               >
                 No
               </button>
@@ -1138,26 +1193,24 @@ export default function JoinSlots({
       </Modal>
 
       <Modal isOpen={creating} title="Add new player" onClose={() => setCreating(false)}>
-        <label className="text-sm font-medium text-slate-600">First name</label>
+        <label className="ui-label">First name</label>
         <input
           type="text"
           value={newFirst}
           onChange={(event) => setNewFirst(event.target.value)}
-          className="mt-2 w-full rounded-xl border border-slate-200 px-3 py-2 text-base"
+          className="ui-input mt-2"
         />
-        <label className="mt-3 text-sm font-medium text-slate-600">
-          Last name (optional)
-        </label>
+        <label className="ui-label mt-3">Last name (optional)</label>
         <input
           type="text"
           value={newLast}
           onChange={(event) => setNewLast(event.target.value)}
-          className="mt-2 w-full rounded-xl border border-slate-200 px-3 py-2 text-base"
+          className="ui-input mt-2"
         />
         <button
           type="button"
           onClick={createPlayer}
-          className="mt-4 w-full rounded-xl bg-slate-900 px-4 py-2 text-sm font-semibold text-white"
+          className="ui-btn ui-btn-primary mt-4 w-full"
         >
           Save player
         </button>

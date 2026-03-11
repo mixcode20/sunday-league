@@ -2,12 +2,15 @@ import type { GameweekPlayer } from "@/lib/types";
 
 export const MAIN_SLOT_CAPACITY = 14;
 
-type SlotDiagnostics = {
-  invalidEntries: GameweekPlayer[];
-  duplicatePositions: number[];
-};
-
-export const buildEntryPositionMap = (entries: GameweekPlayer[]) => {
+export const buildEntryPositionMap = (
+  entries: GameweekPlayer[]
+): {
+  positionMap: Record<number, GameweekPlayer>;
+  diagnostics: {
+    invalidEntries: GameweekPlayer[];
+    duplicatePositions: number[];
+  };
+} => {
   const positionMap: Record<number, GameweekPlayer> = {};
   const invalidEntries: GameweekPlayer[] = [];
   const duplicatePositions: number[] = [];

@@ -9,6 +9,7 @@ export type Player = {
   first_name: string;
   last_name: string;
   archived: boolean;
+  games_played?: number;
 };
 
 export type Gameweek = {

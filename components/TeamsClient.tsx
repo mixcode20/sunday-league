@@ -58,16 +58,22 @@ export default function TeamsClient({ gameweek, entries, onRefresh }: TeamsClien
   );
   const teamsSelected = grouped.darks.length + grouped.whites.length > 0;
 
-  const formatErrorMessage = (data: any, fallback: string) => {
+  const formatErrorMessage = (data: unknown, fallback: string) => {
     if (!data) return fallback;
-    if (typeof data.error === "string") return data.error;
-    if (data.error && typeof data.error === "object") {
-      const message = data.error.message ?? fallback;
-      const details = data.error.details ? ` (${data.error.details})` : "";
-      const code = data.error.code ? ` [${data.error.code}]` : "";
-      return `${message}${code}${details}`;
+    if (typeof data === "object" && data !== null && "error" in data) {
+      const error = data.error;
+      if (typeof error === "string") return error;
+      if (error && typeof error === "object") {
+        const message = "message" in error ? String(error.message ?? fallback) : fallback;
+        const details =
+          "details" in error && error.details ? ` (${String(error.details)})` : "";
+        const code = "code" in error && error.code ? ` [${String(error.code)}]` : "";
+        return `${message}${code}${details}`;
+      }
     }
-    if (typeof data.message === "string") return data.message;
+    if (typeof data === "object" && data !== null && "message" in data) {
+      return String(data.message ?? fallback);
+    }
     return fallback;
   };
 
@@ -165,16 +171,16 @@ export default function TeamsClient({ gameweek, entries, onRefresh }: TeamsClien
     );
 
     return (
-      <div className={`rounded-2xl border border-slate-200 p-4 shadow-sm ${accent}`}>
+      <div className={`rounded-[1.35rem] border p-4 ${accent}`}>
         <div className="flex items-center justify-between">
           <h3
-            className={`text-xs font-semibold uppercase tracking-[0.2em] ${
-              isDark ? "text-slate-200" : "text-slate-500"
+            className={`text-xs font-semibold uppercase tracking-[0.18em] ${
+              isDark ? "text-white/80" : "text-[var(--color-text-secondary)]"
             }`}
           >
             {title}
           </h3>
-          <span className="text-xs text-slate-400">
+          <span className={`text-xs ${isDark ? "text-white/60" : "text-[var(--color-text-secondary)]"}`}>
             {grouped[team].length}/{TEAM_LIMITS[team]}
           </span>
         </div>
@@ -204,15 +210,15 @@ export default function TeamsClient({ gameweek, entries, onRefresh }: TeamsClien
                   event.preventDefault();
                 }}
                 onDrop={() => handleDrop(team, position, occupiedInfo)}
-                className={`flex min-h-[52px] items-center justify-between rounded-xl border border-dashed px-3 py-2 text-sm ${
+                className={`flex min-h-[52px] items-center justify-between rounded-xl border px-3 py-2 text-sm ${
                   team === "darks"
-                    ? "border-slate-700 bg-slate-950 text-slate-100"
-                    : "border-slate-200 bg-white text-slate-900"
+                    ? "border-white/12 bg-white/8 text-white"
+                    : "border-[var(--color-border)] bg-white text-[var(--color-text)]"
                 }`}
               >
                 {isEditable ? (
                   <select
-                    className="w-full rounded-lg border border-slate-200 px-2 py-2 text-sm"
+                    className="ui-input py-2 text-sm"
                     value={entry?.player_id ?? ""}
                     onChange={(event) => {
                       const value = event.target.value;
@@ -248,14 +254,16 @@ export default function TeamsClient({ gameweek, entries, onRefresh }: TeamsClien
                   <div
                     className={`w-full rounded-lg px-2 py-2 font-medium ${
                       team === "darks"
-                        ? "bg-slate-900 text-slate-100"
-                        : "bg-white text-slate-900"
+                        ? "text-white"
+                        : "text-[var(--color-text)]"
                     }`}
                   >
                     {formatPlayerName(entry.players)}
                   </div>
                 ) : (
-                  <span className="text-xs text-slate-400">-</span>
+                  <span className={`text-xs ${team === "darks" ? "text-white/55" : "text-[var(--color-text-secondary)]"}`}>
+                    -
+                  </span>
                 )}
               </div>
             );
@@ -267,30 +275,21 @@ export default function TeamsClient({ gameweek, entries, onRefresh }: TeamsClien
 
   return (
     <div className="space-y-4">
-      <div className="flex items-center justify-between">
-        <div>
-          <p className="text-xs uppercase tracking-wide text-slate-400">Gameweek</p>
-          <p className="text-base font-semibold text-slate-800">
-            {isLocked ? "Locked" : "Open"}
-          </p>
-        </div>
-      </div>
-
       {statusMessage ? (
-        <p className="rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-700">
+        <p className="ui-banner ui-banner-warning">
           {statusMessage}
         </p>
       ) : null}
 
       {!teamsSelected ? (
-        <p className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-500">
+        <p className="ui-banner">
           Teams have not yet been selected for this gameweek.
         </p>
       ) : null}
 
       {isUnlocked && !isLocked ? (
-        <div className="rounded-2xl border border-slate-200 bg-white p-4 text-sm text-slate-600 shadow-sm">
-          <p className="text-xs uppercase tracking-wide text-slate-400">
+        <div className="ui-card p-4 text-sm text-[var(--color-text-secondary)]">
+          <p className="ui-kicker">
             Organiser controls
           </p>
           <p className="mt-2">
@@ -300,12 +299,21 @@ export default function TeamsClient({ gameweek, entries, onRefresh }: TeamsClien
       ) : null}
 
       <div className="grid grid-cols-2 gap-4">
-        {renderTeamSlots("darks", "Darks", "bg-slate-900 text-white", true)}
-        {renderTeamSlots("whites", "Whites", "bg-white border-slate-300")}
+        {renderTeamSlots(
+          "darks",
+          "Darks",
+          "border-[rgba(15,61,52,0.16)] bg-[var(--color-primary-dark)] text-white",
+          true
+        )}
+        {renderTeamSlots(
+          "whites",
+          "Whites",
+          "border-[var(--color-border)] bg-[rgba(255,255,255,0.9)]"
+        )}
       </div>
 
-      <section className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
-        <p className="text-xs uppercase tracking-wide text-slate-400">
+      <section className="ui-card p-4">
+        <p className="ui-kicker">
           Players in this week
         </p>
         <div className="mt-3 grid gap-2 md:grid-cols-2">
@@ -313,13 +321,13 @@ export default function TeamsClient({ gameweek, entries, onRefresh }: TeamsClien
             playersThisWeek.map((entry) => (
               <div
                 key={entry.player_id}
-                className="rounded-xl border border-slate-100 bg-slate-50 px-3 py-2 text-sm"
+                className="rounded-xl border border-[rgba(229,231,235,0.9)] bg-[rgba(15,61,52,0.03)] px-3 py-2 text-sm"
               >
                 {formatPlayerName(entry.players)}
               </div>
             ))
           ) : (
-            <div className="rounded-xl border border-dashed border-slate-200 px-3 py-4 text-sm text-slate-400">
+            <div className="ui-empty px-3 py-4 text-sm">
               No players yet.
             </div>
           )}

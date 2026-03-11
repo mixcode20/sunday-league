@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { listPlayersWithGamesPlayed } from "@/lib/players";
 import { supabaseServer } from "@/lib/supabase";
 import { normalizePlayerJoin } from "@/lib/utils";
 
@@ -13,7 +14,7 @@ export async function GET() {
 
   const supabase = supabaseServer();
 
-  const [openResult, lockedResult] = await Promise.all([
+  const [openResult, lockedResult, playersResult] = await Promise.all([
     supabase.from("gameweeks").select("*").eq("status", "open").maybeSingle(),
     supabase
       .from("gameweeks")
@@ -22,11 +23,13 @@ export async function GET() {
       .order("game_date", { ascending: false })
       .limit(1)
       .maybeSingle(),
+    listPlayersWithGamesPlayed(supabase, { activeOnly: true }),
   ]);
 
   const openGameweek = openResult.data ?? null;
   const latestLocked = lockedResult.data ?? null;
   const gameweek = openGameweek ?? latestLocked;
+  const players = playersResult.data ?? [];
 
   const { data: entries, error: entriesError } = gameweek
     ? await supabase
@@ -53,5 +56,6 @@ export async function GET() {
   return NextResponse.json({
     gameweek,
     entries: normalizedEntries,
+    players,
   });
 }

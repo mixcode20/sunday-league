@@ -5,13 +5,14 @@ import { formatDate, getGameweekWinner, normalizePlayerJoin, winnerLabel } from 
 export default async function GameDetailPage({
   params,
 }: {
-  params: { gameweekId: string };
+  params: Promise<{ gameweekId: string }>;
 }) {
+  const { gameweekId } = await params;
   const supabase = supabaseServer();
   const { data: gameweek } = await supabase
     .from("gameweeks")
     .select("*")
-    .eq("id", params.gameweekId)
+    .eq("id", gameweekId)
     .single();
 
   if (!gameweek) {

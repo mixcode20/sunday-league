@@ -26,24 +26,24 @@ export default function Modal({
   const positionClass =
     position === "center"
       ? "items-center py-8"
-      : "items-start pt-24 pb-6";
+      : "items-start pt-20 pb-6";
 
   return (
     <div
-      className={`fixed inset-0 z-50 flex justify-center bg-black/50 px-4 ${positionClass}`}
+      className={`fixed inset-0 z-50 flex justify-center bg-[rgba(15,30,28,0.48)] px-4 backdrop-blur-[2px] ${positionClass}`}
       onClick={() => {
         if (closeOnBackdrop) onClose();
       }}
     >
       <div
-        className="w-full max-w-md rounded-2xl bg-white p-5 text-slate-900 shadow-xl"
+        className="w-full max-w-md rounded-[1.5rem] border border-[var(--color-border)] bg-white p-5 text-[var(--color-text)] shadow-[0_20px_40px_rgba(15,61,52,0.08)]"
         onClick={(event) => event.stopPropagation()}
       >
         <div className="mb-4 flex items-center justify-between">
-          <h2 className="text-lg font-semibold">{title}</h2>
+          <h2 className="text-lg font-semibold tracking-[-0.02em]">{title}</h2>
           {closeVariant === "icon" ? (
             <button
-              className="inline-flex h-8 w-8 items-center justify-center rounded-full border border-slate-200 text-base text-slate-600"
+              className="ui-icon-btn h-9 w-9 text-base"
               onClick={onClose}
               type="button"
               aria-label="Close"
@@ -52,7 +52,7 @@ export default function Modal({
             </button>
           ) : (
             <button
-              className="rounded-full border border-slate-200 px-2 py-1 text-sm"
+              className="ui-btn ui-btn-secondary min-h-0 rounded-full px-3 py-2 text-sm"
               onClick={onClose}
               type="button"
             >

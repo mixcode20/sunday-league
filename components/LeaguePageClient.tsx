@@ -38,7 +38,7 @@ export default function LeaguePageClient() {
 
   if (error) {
     return (
-      <div className="rounded-2xl border border-rose-200 bg-rose-50 p-4 text-sm text-rose-700">
+      <div className="ui-banner ui-banner-danger">
         Failed to load league table. Please refresh.
       </div>
     );
@@ -47,8 +47,8 @@ export default function LeaguePageClient() {
   if (!data) {
     return (
       <div className="space-y-4">
-        <div className="h-8 w-32 rounded-lg bg-slate-200" />
-        <div className="h-64 rounded-2xl border border-slate-200 bg-white" />
+        <div className="ui-skeleton h-8 w-32" />
+        <div className="ui-skeleton h-64" />
       </div>
     );
   }
@@ -57,9 +57,9 @@ export default function LeaguePageClient() {
     <div className="space-y-4">
       <LeagueTableClient rows={data.rows} />
       {data.playersCount === 0 ? (
-        <p className="text-sm text-slate-500">
+        <p className="text-sm text-[var(--color-text-secondary)]">
           No players yet. Add them in{" "}
-          <Link href="/admin/players" className="font-medium text-slate-900">
+          <Link href="/admin/players" className="font-medium text-[var(--color-primary-dark)]">
             player settings
           </Link>
           .

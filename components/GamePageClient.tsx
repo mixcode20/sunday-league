@@ -5,6 +5,7 @@ import useSWR from "swr";
 import CreateGameweek from "@/components/CreateGameweek";
 import JoinSlots from "@/components/JoinSlots";
 import GameweekInfoStrip from "@/components/GameweekInfoStrip";
+import ShareGameButton from "@/components/ShareGameButton";
 import type { Gameweek, GameweekPlayer, Player } from "@/lib/types";
 import { fetcher, debugPerfEnabled } from "@/lib/swr";
 import { buildEntryPositionMap, getSlotCounts } from "@/lib/slots";
@@ -41,7 +42,7 @@ export default function GamePageClient() {
     routeTimerArmed.current = false;
   }, [data]);
 
-  const normalizedEntries = data?.entries ?? [];
+  const normalizedEntries = useMemo(() => data?.entries ?? [], [data?.entries]);
   const { main: mainCount, subs: subsCount } = useMemo(() => {
     const { positionMap } = buildEntryPositionMap(normalizedEntries);
     return getSlotCounts(positionMap);
@@ -49,7 +50,7 @@ export default function GamePageClient() {
 
   if (error) {
     return (
-      <div className="rounded-2xl border border-rose-200 bg-rose-50 p-4 text-sm text-rose-700">
+      <div className="ui-banner ui-banner-danger">
         Failed to load gameweek. Please refresh.
       </div>
     );
@@ -61,7 +62,10 @@ export default function GamePageClient() {
 
   return (
     <div className="space-y-4">
-      <CreateGameweek />
+      <CreateGameweek
+        activeGameweekStatus={gameweek?.status ?? null}
+        players={players}
+      />
       <GameweekInfoStrip
         gameweekId={gameweek?.id ?? null}
         gameDate={gameweek?.game_date ?? null}
@@ -71,16 +75,20 @@ export default function GamePageClient() {
         subsCount={subsCount}
         onRefresh={() => mutate()}
       />
+      {openGameweek ? (
+        <ShareGameButton
+          gameweekId={openGameweek.id}
+          gameDate={openGameweek.game_date}
+          time={openGameweek.game_time ?? null}
+          location={openGameweek.location ?? null}
+        />
+      ) : null}
 
       <section className="flex flex-col gap-4">
-        <p className="text-xs uppercase tracking-wide text-slate-400">
-          {openGameweek ? "Open gameweek" : "Latest result"}
-        </p>
-
         {!data ? (
           <div className="space-y-3">
-            <div className="h-10 rounded-xl border border-slate-200 bg-white" />
-            <div className="h-48 rounded-2xl border border-dashed border-slate-200 bg-white" />
+            <div className="ui-skeleton h-10" />
+            <div className="ui-skeleton h-48" />
           </div>
         ) : gameweek && players.length > 0 ? (
           <JoinSlots
@@ -90,7 +98,7 @@ export default function GamePageClient() {
             entries={normalizedEntries}
           />
         ) : (
-          <div className="rounded-2xl border border-dashed border-slate-200 p-4 text-sm text-slate-500">
+          <div className="ui-empty p-4 text-sm">
             No open gameweek yet. Unlock organiser mode to create one.
           </div>
         )}

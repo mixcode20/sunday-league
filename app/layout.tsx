@@ -1,7 +1,13 @@
 import type { Metadata } from "next";
+import { Inter } from "next/font/google";
 import "./globals.css";
 import SiteNav from "@/components/SiteNav";
 import OrganiserModeProvider from "@/components/OrganiserModeProvider";
+
+const inter = Inter({
+  subsets: ["latin"],
+  variable: "--font-inter",
+});
 
 export const metadata: Metadata = {
   title: "Sunday Powerleague",
@@ -15,13 +21,11 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body className="antialiased">
+      <body className={`${inter.variable} antialiased`}>
         <OrganiserModeProvider>
-          <div className="min-h-screen bg-slate-50 text-slate-900">
+          <div className="app-shell">
             <SiteNav />
-            <main className="mx-auto w-full max-w-5xl px-4 py-6">
-              {children}
-            </main>
+            <main className="app-main">{children}</main>
           </div>
         </OrganiserModeProvider>
       </body>

@@ -131,16 +131,16 @@ export default function LeagueTableClient({ rows }: { rows: LeagueStatRow[] }) {
     <div className="space-y-3">
       {message ? (
         <div
-          className={`rounded-xl px-3 py-2 text-sm ${
+          className={`ui-banner ${
             message.type === "success"
-              ? "border border-emerald-200 bg-emerald-50 text-emerald-700"
-              : "border border-rose-200 bg-rose-50 text-rose-700"
+              ? "ui-banner-success"
+              : "ui-banner-danger"
           }`}
         >
           {message.text}
         </div>
       ) : null}
-      <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+      <div className="ui-table-shell">
         <table className="w-full table-fixed text-left text-xs">
           <colgroup>
             <col style={{ width: "40%" }} />
@@ -151,20 +151,22 @@ export default function LeagueTableClient({ rows }: { rows: LeagueStatRow[] }) {
             <col style={{ width: "9%" }} />
             <col style={{ width: "15%" }} />
           </colgroup>
-          <thead className="bg-slate-100 text-[11px] uppercase tracking-wide text-slate-500">
+          <thead className="text-[11px] uppercase tracking-[0.14em] text-white">
             <tr>
-              <th className="px-3 py-2">Player</th>
+              <th className="sticky top-0 z-10 rounded-tl-lg bg-[var(--color-primary-dark)] px-3 py-[0.85rem]">
+                Player
+              </th>
               {columns.map(([key, label]) => (
                 <th
                   key={key}
-                  className="relative cursor-pointer px-2 py-2 text-center align-middle"
+                  className="relative sticky top-0 z-10 cursor-pointer bg-[var(--color-primary-dark)] px-2 py-[0.85rem] text-center align-middle last:rounded-tr-lg"
                   onClick={() => toggleSort(key)}
                 >
                   <div className="flex items-center justify-center leading-tight">
                     <span>{label}</span>
                   </div>
                   {sortKey === key ? (
-                    <span className="pointer-events-none absolute bottom-0 left-1/2 -translate-x-1/2 text-[10px]">
+                    <span className="pointer-events-none absolute bottom-[0.2rem] left-1/2 -translate-x-1/2 text-[10px]">
                       {direction === "asc" ? "▲" : "▼"}
                     </span>
                   ) : null}
@@ -175,8 +177,8 @@ export default function LeagueTableClient({ rows }: { rows: LeagueStatRow[] }) {
           <tbody>
             {sorted.length > 0 ? (
               sorted.map((row) => (
-                <tr key={row.id} className="border-t border-slate-100">
-                  <td className="px-3 py-2 align-middle font-medium text-slate-800">
+                <tr key={row.id} className="border-t border-[rgba(229,231,235,0.9)]">
+                  <td className="px-3 py-3 align-middle font-medium text-[var(--color-text)]">
                     <div className="relative flex min-h-8 items-center pr-10">
                       <span>{row.name}</span>
                       {isUnlocked ? (
@@ -187,7 +189,7 @@ export default function LeagueTableClient({ rows }: { rows: LeagueStatRow[] }) {
                             setArchiveInput("");
                             setPlayerPendingArchive(row);
                           }}
-                          className="absolute right-0 top-1/2 inline-flex -translate-y-1/2 items-center justify-center rounded-full border border-rose-200 bg-rose-50 px-2.5 py-0.5 text-[11px] font-semibold text-rose-600 transition hover:border-rose-300 hover:bg-rose-100"
+                          className="absolute right-0 top-1/2 inline-flex -translate-y-1/2 items-center justify-center rounded-full border border-[rgba(229,72,77,0.18)] bg-[rgba(229,72,77,0.08)] px-2.5 py-0.5 text-[11px] font-semibold text-[var(--color-danger)] transition hover:bg-[rgba(229,72,77,0.14)]"
                           aria-label={`Archive ${row.name}`}
                         >
                           X
@@ -195,19 +197,19 @@ export default function LeagueTableClient({ rows }: { rows: LeagueStatRow[] }) {
                       ) : null}
                     </div>
                   </td>
-                  <td className="px-2 py-2 align-middle text-center text-slate-600">{row.gp}</td>
-                  <td className="px-2 py-2 align-middle text-center text-slate-600">{row.w}</td>
-                  <td className="px-2 py-2 align-middle text-center text-slate-600">{row.d}</td>
-                  <td className="px-2 py-2 align-middle text-center text-slate-600">{row.l}</td>
-                  <td className="px-2 py-2 align-middle text-center text-slate-600">{row.goalDifference}</td>
-                  <td className="px-2 py-2 align-middle text-center text-slate-600">
+                  <td className="px-2 py-3 align-middle text-center text-[var(--color-text-secondary)]">{row.gp}</td>
+                  <td className="px-2 py-3 align-middle text-center text-[var(--color-text-secondary)]">{row.w}</td>
+                  <td className="px-2 py-3 align-middle text-center text-[var(--color-text-secondary)]">{row.d}</td>
+                  <td className="px-2 py-3 align-middle text-center text-[var(--color-text-secondary)]">{row.l}</td>
+                  <td className="px-2 py-3 align-middle text-center text-[var(--color-text-secondary)]">{row.goalDifference}</td>
+                  <td className="px-2 py-3 align-middle text-center text-[var(--color-text-secondary)]">
                     {row.winPct.toFixed(0)}%
                   </td>
                 </tr>
               ))
             ) : (
               <tr>
-                <td colSpan={7} className="px-4 py-6 text-center text-slate-400">
+                <td colSpan={7} className="px-4 py-6 text-center text-[var(--color-text-secondary)]">
                   No locked results yet.
                 </td>
               </tr>
@@ -222,10 +224,10 @@ export default function LeagueTableClient({ rows }: { rows: LeagueStatRow[] }) {
         onClose={closeArchiveModal}
         position="top"
       >
-        <div className="space-y-4 text-sm text-slate-600">
+        <div className="space-y-4 text-sm text-[var(--color-text-secondary)]">
           <p>
             This will archive{" "}
-            <span className="font-semibold text-slate-900">
+            <span className="font-semibold text-[var(--color-text)]">
               {playerPendingArchive?.name}
             </span>{" "}
             and remove them from future selection.
@@ -234,19 +236,19 @@ export default function LeagueTableClient({ rows }: { rows: LeagueStatRow[] }) {
             They will no longer appear in active dropdowns and player lists, but historical
             gameweek entries, results, and league data will be preserved.
           </p>
-          <div className="rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-amber-800">
-            Type <span className="font-semibold text-amber-900">ARCHIVE</span> to confirm.
+          <div className="ui-banner ui-banner-warning">
+            Type <span className="font-semibold text-[var(--color-text)]">ARCHIVE</span> to confirm.
           </div>
           <input
             type="text"
             value={archiveInput}
             onChange={(event) => setArchiveInput(event.target.value)}
-            className="w-full rounded-xl border border-slate-200 px-3 py-2 text-base text-slate-900"
+            className="ui-input"
             placeholder="ARCHIVE"
             autoCapitalize="characters"
           />
           {message?.type === "error" ? (
-            <p className="rounded-xl border border-rose-200 bg-rose-50 px-3 py-2 text-rose-700">
+            <p className="ui-banner ui-banner-danger">
               {message.text}
             </p>
           ) : null}
@@ -254,7 +256,7 @@ export default function LeagueTableClient({ rows }: { rows: LeagueStatRow[] }) {
             type="button"
             onClick={handleArchivePlayer}
             disabled={isArchiving}
-            className="w-full rounded-xl bg-amber-600 px-4 py-2 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:opacity-60"
+            className="ui-btn ui-btn-danger w-full"
           >
             {isArchiving ? "Archiving..." : "Archive player"}
           </button>

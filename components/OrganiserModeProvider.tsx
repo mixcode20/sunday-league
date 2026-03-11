@@ -30,12 +30,43 @@ export default function OrganiserModeProvider({
 }: {
   children: React.ReactNode;
 }) {
-  const [isUnlocked, setIsUnlocked] = useState(false);
-  const [organiserPin, setOrganiserPin] = useState("");
-  const [unlockedAt, setUnlockedAt] = useState<number | null>(null);
+  const [session, setSession] = useState<{
+    isUnlocked: boolean;
+    organiserPin: string;
+    unlockedAt: number | null;
+  }>(() => {
+    if (typeof window === "undefined") {
+      return { isUnlocked: false, organiserPin: "", unlockedAt: null };
+    }
+    const stored = sessionStorage.getItem(SESSION_KEY);
+    if (!stored) {
+      return { isUnlocked: false, organiserPin: "", unlockedAt: null };
+    }
+    try {
+      const parsed = JSON.parse(stored) as { pin?: string; unlockedAt?: number };
+      if (typeof parsed.unlockedAt !== "number" || typeof parsed.pin !== "string") {
+        sessionStorage.removeItem(SESSION_KEY);
+        return { isUnlocked: false, organiserPin: "", unlockedAt: null };
+      }
+      const expiry = parsed.unlockedAt + LOCK_TIMEOUT_MS;
+      if (Date.now() >= expiry) {
+        sessionStorage.removeItem(SESSION_KEY);
+        return { isUnlocked: false, organiserPin: "", unlockedAt: null };
+      }
+      return {
+        isUnlocked: true,
+        organiserPin: parsed.pin,
+        unlockedAt: parsed.unlockedAt,
+      };
+    } catch {
+      sessionStorage.removeItem(SESSION_KEY);
+      return { isUnlocked: false, organiserPin: "", unlockedAt: null };
+    }
+  });
   const [modalOpen, setModalOpen] = useState(false);
   const [pinInput, setPinInput] = useState("");
   const [message, setMessage] = useState("");
+  const { isUnlocked, organiserPin, unlockedAt } = session;
 
   const expiresAt = useMemo(
     () => (unlockedAt ? unlockedAt + LOCK_TIMEOUT_MS : null),
@@ -43,9 +74,7 @@ export default function OrganiserModeProvider({
   );
 
   const lock = useCallback(() => {
-    setIsUnlocked(false);
-    setOrganiserPin("");
-    setUnlockedAt(null);
+    setSession({ isUnlocked: false, organiserPin: "", unlockedAt: null });
     setModalOpen(false);
     if (typeof window !== "undefined") {
       sessionStorage.removeItem(SESSION_KEY);
@@ -60,35 +89,8 @@ export default function OrganiserModeProvider({
   }, [isUnlocked]);
 
   useEffect(() => {
-    if (typeof window === "undefined") return;
-    const stored = sessionStorage.getItem(SESSION_KEY);
-    if (!stored) return;
-    try {
-      const parsed = JSON.parse(stored) as { pin?: string; unlockedAt?: number };
-      if (typeof parsed.unlockedAt !== "number" || typeof parsed.pin !== "string") {
-        sessionStorage.removeItem(SESSION_KEY);
-        return;
-      }
-      const expiry = parsed.unlockedAt + LOCK_TIMEOUT_MS;
-      if (Date.now() >= expiry) {
-        sessionStorage.removeItem(SESSION_KEY);
-        return;
-      }
-      setIsUnlocked(true);
-      setOrganiserPin(parsed.pin);
-      setUnlockedAt(parsed.unlockedAt);
-    } catch {
-      sessionStorage.removeItem(SESSION_KEY);
-    }
-  }, []);
-
-  useEffect(() => {
     if (!isUnlocked || !unlockedAt) return;
-    const remaining = unlockedAt + LOCK_TIMEOUT_MS - Date.now();
-    if (remaining <= 0) {
-      lock();
-      return;
-    }
+    const remaining = Math.max(unlockedAt + LOCK_TIMEOUT_MS - Date.now(), 0);
     const timeoutId = window.setTimeout(() => {
       lock();
     }, remaining);
@@ -108,9 +110,11 @@ export default function OrganiserModeProvider({
       return;
     }
     const unlockedTime = Date.now();
-    setIsUnlocked(true);
-    setOrganiserPin(pinInput);
-    setUnlockedAt(unlockedTime);
+    setSession({
+      isUnlocked: true,
+      organiserPin: pinInput,
+      unlockedAt: unlockedTime,
+    });
     setModalOpen(false);
     if (typeof window !== "undefined") {
       sessionStorage.setItem(
@@ -131,23 +135,26 @@ export default function OrganiserModeProvider({
         onClose={() => setModalOpen(false)}
         position="top"
       >
-        <label className="text-sm font-medium text-slate-600">PIN</label>
+        <label className="ui-label">PIN</label>
         <input
           type="password"
           value={pinInput}
           onChange={(event) => setPinInput(event.target.value)}
-          className="mt-2 w-full rounded-xl border border-slate-200 px-3 py-2 text-base"
+          inputMode="numeric"
+          pattern="[0-9]*"
+          autoComplete="one-time-code"
+          className="ui-input mt-2"
           placeholder="****"
         />
         <button
           type="button"
           onClick={verifyPin}
-          className="mt-4 w-full rounded-xl bg-slate-900 px-4 py-2 text-sm font-semibold text-white"
+          className="ui-btn ui-btn-primary mt-4 w-full"
         >
           Unlock
         </button>
         {message ? (
-          <p className="mt-2 text-sm text-rose-500">{message}</p>
+          <p className="ui-banner ui-banner-danger mt-2">{message}</p>
         ) : null}
       </Modal>
     </OrganiserContext.Provider>

@@ -3,7 +3,7 @@ import { supabaseServer } from "@/lib/supabase";
 import { isOrganiserPinConfigured, verifyOrganiserPin } from "@/lib/organiser";
 
 export async function POST(request: Request) {
-  const { date, time, location, pin } = await request.json();
+  const { date, time, location, pin, playerIds } = await request.json();
 
   if (!isOrganiserPinConfigured()) {
     return NextResponse.json(
@@ -36,7 +36,7 @@ export async function POST(request: Request) {
 
   if (openGameweek) {
     return NextResponse.json(
-      { error: "There is already an open gameweek." },
+      { error: "The current gameweek is still active. Submit its result before creating the next one." },
       { status: 409 }
     );
   }
@@ -47,6 +47,16 @@ export async function POST(request: Request) {
     typeof location === "string" && location.trim().length > 0
       ? location.trim()
       : "MH";
+  const selectedPlayerIds = Array.isArray(playerIds)
+    ? Array.from(
+        new Set(
+          playerIds.filter(
+            (playerId): playerId is string =>
+              typeof playerId === "string" && playerId.trim().length > 0
+          )
+        )
+      )
+    : [];
 
   const { data, error } = await supabase
     .from("gameweeks")
@@ -68,6 +78,54 @@ export async function POST(request: Request) {
       },
       { status: 500 }
     );
+  }
+
+  if (selectedPlayerIds.length > 0) {
+    const { data: players, error: playersError } = await supabase
+      .from("players")
+      .select("id, archived")
+      .in("id", selectedPlayerIds);
+
+    if (playersError) {
+      await supabase.from("gameweeks").delete().eq("id", data.id);
+      return NextResponse.json(
+        { error: playersError.message || "Failed to load selected players." },
+        { status: 500 }
+      );
+    }
+
+    const activePlayerIds = new Set(
+      (players ?? [])
+        .filter((player) => !player.archived)
+        .map((player) => player.id)
+    );
+
+    if (activePlayerIds.size !== selectedPlayerIds.length) {
+      await supabase.from("gameweeks").delete().eq("id", data.id);
+      return NextResponse.json(
+        { error: "One or more selected players are unavailable." },
+        { status: 409 }
+      );
+    }
+
+    const { error: seedError } = await supabase.from("gameweek_players").insert(
+      selectedPlayerIds.map((playerId, index) => ({
+        gameweek_id: data.id,
+        player_id: playerId,
+        team: "subs",
+        position: index + 1,
+      }))
+    );
+
+    if (seedError) {
+      await supabase.from("gameweeks").delete().eq("id", data.id);
+      return NextResponse.json(
+        {
+          error: seedError.message || "Failed to add selected players to the new gameweek.",
+        },
+        { status: 500 }
+      );
+    }
   }
 
   return NextResponse.json({ id: data.id });
