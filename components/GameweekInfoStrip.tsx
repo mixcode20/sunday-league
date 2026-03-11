@@ -7,6 +7,7 @@ import { buildEntryPositionMap, getSlotCounts } from "@/lib/slots";
 import { useOrganiserMode } from "@/components/OrganiserModeProvider";
 import Modal from "@/components/Modal";
 import ShareGameButton from "@/components/ShareGameButton";
+import type { GameweekPlayer } from "@/lib/types";
 
 type GameweekInfoStripProps = {
   gameweekId?: string | null;
@@ -15,6 +16,7 @@ type GameweekInfoStripProps = {
   location?: string | null;
   mainCount?: number;
   subsCount?: number;
+  entries?: GameweekPlayer[];
   onRefresh?: () => void;
   showShareButton?: boolean;
 };
@@ -42,6 +44,7 @@ export default function GameweekInfoStrip({
   location,
   mainCount = 0,
   subsCount = 0,
+  entries = [],
   onRefresh,
   showShareButton = false,
 }: GameweekInfoStripProps) {
@@ -52,6 +55,7 @@ export default function GameweekInfoStrip({
     subs: number;
     source: string;
   } | null>(null);
+  const [liveEntries, setLiveEntries] = useState<GameweekPlayer[] | null>(null);
   const [editOpen, setEditOpen] = useState(false);
   const [editDate, setEditDate] = useState(gameDate ?? "");
   const [editTime, setEditTime] = useState("");
@@ -72,6 +76,7 @@ export default function GameweekInfoStrip({
       if (!response.ok) return;
       const data = await response.json();
       if (Array.isArray(data.entries)) {
+        setLiveEntries(data.entries);
         const { positionMap } = buildEntryPositionMap(data.entries);
         const { main, subs } = getSlotCounts(positionMap);
         setLiveCounts({
@@ -190,21 +195,23 @@ export default function GameweekInfoStrip({
     liveCounts && liveCounts.source === countsSource
       ? liveCounts
       : { main: mainCount, subs: subsCount };
+  const shareEntries =
+    liveEntries && liveCounts?.source === countsSource ? liveEntries : entries;
   const totalPlayers = counts.main + counts.subs;
 
   return (
     <div className="w-full">
       <div className="ui-card overflow-hidden">
         <section>
-          <div className="relative flex items-center justify-center bg-[var(--color-primary-dark)] px-5 py-4 text-white sm:px-6">
-            <div className="text-center text-[1.2rem] font-semibold tracking-[-0.03em] text-white sm:text-[1.6rem]">
+          <div className="relative flex items-center justify-center bg-[#f5faf9] px-5 py-4 text-[var(--color-primary-dark)] sm:px-6">
+            <div className="text-center text-[1.2rem] font-semibold tracking-[-0.03em] text-[var(--color-primary-dark)] sm:text-[1.6rem]">
               {formatGameweekDate(gameDate)}
             </div>
             {isUnlocked ? (
               <button
                 type="button"
                 onClick={openEdit}
-                className="ui-btn absolute right-5 top-1/2 min-h-0 -translate-y-1/2 rounded-full border border-white/30 bg-white/10 px-4 py-2 text-[11px] uppercase tracking-[0.16em] text-white hover:bg-white/16 sm:right-6"
+                className="ui-btn absolute right-5 top-1/2 min-h-0 -translate-y-1/2 rounded-full border border-[var(--color-border)] bg-white px-4 py-2 text-[11px] uppercase tracking-[0.16em] text-[var(--color-text-secondary)] hover:bg-[var(--color-surface)] sm:right-6"
                 disabled={!gameweekId}
               >
                 Edit
@@ -228,18 +235,18 @@ export default function GameweekInfoStrip({
               </div>
             </div>
 
-            <div className="mt-6 rounded-[1rem] border border-[var(--color-border)] bg-[var(--color-surface)] px-4 py-3 shadow-[0_8px_20px_rgba(15,23,42,0.05)]">
-              <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2 text-sm font-medium text-[var(--color-text-secondary)] sm:text-base">
+            <div className="mt-6 rounded-[1rem] border border-[var(--color-border)] bg-[var(--color-surface)] px-4 py-[0.675rem] shadow-[0_8px_20px_rgba(15,23,42,0.05)]">
+              <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2 text-[0.8rem] font-medium text-[var(--color-text-secondary)] sm:text-[0.8rem]">
                 <div className="flex items-baseline gap-2">
                   <span>Players</span>
-                  <span className="text-xl font-semibold tracking-[-0.03em] text-[var(--color-text)] sm:text-2xl">
+                  <span className="text-base font-semibold tracking-[-0.03em] text-[var(--color-text)] sm:text-[1.6rem]">
                     {counts.main}
                     <span className="text-[var(--color-text-secondary)]"> / 14</span>
                   </span>
                 </div>
                 <div className="flex items-center gap-2">
                   <span>Subs</span>
-                  <span className="text-xl font-semibold tracking-[-0.03em] text-[var(--color-text)] sm:text-2xl">
+                  <span className="text-base font-semibold tracking-[-0.03em] text-[var(--color-text)] sm:text-[1.6rem]">
                     {counts.subs}
                   </span>
                   {totalPlayers > 14 ? (
@@ -258,6 +265,7 @@ export default function GameweekInfoStrip({
                   gameDate={gameDate}
                   time={time}
                   location={location}
+                  entries={shareEntries}
                 />
               </div>
             ) : null}

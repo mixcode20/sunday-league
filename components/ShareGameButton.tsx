@@ -1,7 +1,9 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { formatGameweekDate } from "@/lib/utils";
+import { MAIN_SLOT_CAPACITY } from "@/lib/slots";
+import type { GameweekPlayer } from "@/lib/types";
+import { formatGameweekDate, formatPlayerName } from "@/lib/utils";
 import { useOrganiserMode } from "@/components/OrganiserModeProvider";
 
 type ShareGameButtonProps = {
@@ -9,6 +11,7 @@ type ShareGameButtonProps = {
   gameDate: string;
   time?: string | null;
   location?: string | null;
+  entries?: GameweekPlayer[];
 };
 
 function ShareIcon() {
@@ -28,6 +31,7 @@ export default function ShareGameButton({
   gameDate,
   time,
   location,
+  entries = [],
 }: ShareGameButtonProps) {
   const { isUnlocked } = useOrganiserMode();
   const [message, setMessage] = useState("");
@@ -38,16 +42,31 @@ export default function ShareGameButton({
     const displayLocation =
       location === "MH" || !location ? "Mill Hill" : location;
     const gameUrl = `${origin}/`;
+    const sortedEntries = [...entries].sort((left, right) => left.position - right.position);
+    const playerLines = sortedEntries.map((entry) => {
+      const name = formatPlayerName(entry.players) || "Unknown player";
+      return entry.position > MAIN_SLOT_CAPACITY ? `${name} (sub)` : name;
+    });
+    const spacesLeft = Math.max(
+      MAIN_SLOT_CAPACITY -
+        sortedEntries.filter((entry) => entry.position <= MAIN_SLOT_CAPACITY).length,
+      0
+    );
 
     return [
       `Game is live for ${formatGameweekDate(gameDate)}`,
       "",
+      `Join here: ${gameUrl}`,
+      "",
       `Kick-off: ${time ?? "9:15am"}`,
       `Location: ${displayLocation}`,
       "",
-      `Join here: ${gameUrl}`,
+      "Players already in:",
+      ...(playerLines.length > 0 ? playerLines : ["None yet"]),
+      "",
+      `${spacesLeft} spaces left`,
     ].join("\n");
-  }, [gameDate, location, time]);
+  }, [entries, gameDate, location, time]);
 
   if (!isUnlocked || !gameweekId) return null;
 
@@ -77,10 +96,10 @@ export default function ShareGameButton({
       <button
         type="button"
         onClick={handleShare}
-        className="ui-btn ui-btn-secondary inline-flex w-full items-center justify-center gap-2"
+        className="ui-btn ui-btn-secondary ui-btn-secondary-strong inline-flex w-full items-center justify-center gap-2"
       >
         <ShareIcon />
-        Share game
+        Share to WhatsApp
       </button>
       {message ? (
         <p className="ui-banner ui-banner-warning">{message}</p>

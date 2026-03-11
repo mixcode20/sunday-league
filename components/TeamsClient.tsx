@@ -24,6 +24,11 @@ type DragInfo = {
   position: number;
 };
 
+type SlotMeta = {
+  team: Team;
+  position: number;
+};
+
 function ChevronDownIcon() {
   return (
     <svg viewBox="0 0 20 20" aria-hidden="true" className="h-4 w-4 fill-current">
@@ -66,6 +71,28 @@ export default function TeamsClient({ gameweek, entries, onRefresh }: TeamsClien
     () => [...entries].sort((a, b) => a.position - b.position),
     [entries]
   );
+  const slotMetaByKey = useMemo(() => {
+    const meta = new Map<string, SlotMeta>();
+    (Object.keys(TEAM_LIMITS) as Team[]).forEach((team) => {
+      if (team === "subs") return;
+      for (let position = 1; position <= TEAM_LIMITS[team]; position += 1) {
+        meta.set(`${team}-${position}`, { team, position });
+      }
+    });
+    return meta;
+  }, []);
+  const entryBySlotKey = useMemo(() => {
+    const mapped = new Map<string, GameweekPlayer>();
+    (["darks", "whites"] as Team[]).forEach((team) => {
+      grouped[team].forEach((entry) => {
+        const position = entry.team_position;
+        if (typeof position === "number" && position >= 1 && position <= TEAM_LIMITS[team]) {
+          mapped.set(`${team}-${position}`, entry);
+        }
+      });
+    });
+    return mapped;
+  }, [grouped]);
   const assignedTeamByPlayerId = useMemo(
     () =>
       new Map(
@@ -82,11 +109,30 @@ export default function TeamsClient({ gameweek, entries, onRefresh }: TeamsClien
 
     const handlePointerDown = (event: MouseEvent) => {
       if (slotMenuRef.current?.contains(event.target as Node)) return;
+      if (
+        event.target instanceof Element &&
+        event.target.closest(`[data-slot-trigger-key="${openSlotKey}"]`)
+      ) {
+        return;
+      }
       setOpenSlotKey(null);
     };
 
     document.addEventListener("mousedown", handlePointerDown);
     return () => document.removeEventListener("mousedown", handlePointerDown);
+  }, [openSlotKey]);
+
+  useEffect(() => {
+    if (!openSlotKey) return;
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        setOpenSlotKey(null);
+      }
+    };
+
+    document.addEventListener("keydown", handleKeyDown);
+    return () => document.removeEventListener("keydown", handleKeyDown);
   }, [openSlotKey]);
 
   const formatErrorMessage = (data: unknown, fallback: string) => {
@@ -245,15 +291,13 @@ export default function TeamsClient({ gameweek, entries, onRefresh }: TeamsClien
                 }`}
               >
                 {isEditable ? (
-                  <div
-                    ref={openSlotKey === slotKey ? slotMenuRef : null}
-                    className="relative w-full"
-                  >
+                  <div className="relative w-full">
                     <button
                       type="button"
                       onClick={() =>
                         setOpenSlotKey((current) => (current === slotKey ? null : slotKey))
                       }
+                      data-slot-trigger-key={slotKey}
                       className="flex w-full items-center justify-between gap-3 bg-transparent px-0 py-2 text-left text-sm text-inherit outline-none"
                     >
                       <span className="min-w-0 truncate">
@@ -269,66 +313,6 @@ export default function TeamsClient({ gameweek, entries, onRefresh }: TeamsClien
                         </span>
                       ) : null}
                     </button>
-                    {openSlotKey === slotKey ? (
-                      <div
-                        className="absolute left-1/2 top-[calc(100%+0.35rem)] z-20 w-[calc(100vw-1rem)] max-w-[calc(100vw-1rem)] -translate-x-1/2 overflow-hidden rounded-xl border border-[var(--color-border)] bg-white text-[var(--color-text)] shadow-[0_18px_35px_rgba(15,23,42,0.14)]"
-                      >
-                        {entry ? (
-                          <button
-                            type="button"
-                            onClick={() => {
-                              clearTeamSlot(entry.player_id);
-                              setOpenSlotKey(null);
-                            }}
-                            className="flex w-full items-center justify-between border-b border-[var(--color-border)] px-3 py-2 text-left text-sm text-[var(--color-text-secondary)] hover:bg-[rgba(15,61,52,0.05)]"
-                          >
-                            <span>Clear slot</span>
-                          </button>
-                        ) : null}
-                        {playersThisWeek
-                          .filter(
-                            (player) =>
-                              !player.players.archived || player.player_id === entry?.player_id
-                          )
-                          .map((player) => {
-                            const isCurrent = player.player_id === entry?.player_id;
-                            const assignedTeam = assignedTeamByPlayerId.get(player.player_id);
-                            const isTaken = Boolean(assignedTeam) && !isCurrent;
-                            const assignedLabel =
-                              assignedTeam === "darks"
-                                ? "Darks"
-                                : assignedTeam === "whites"
-                                  ? "Whites"
-                                  : "";
-
-                            return (
-                              <button
-                                key={player.player_id}
-                                type="button"
-                                disabled={isTaken}
-                                onClick={() => {
-                                  assignPlayer(player.player_id, team, position);
-                                  setOpenSlotKey(null);
-                                }}
-                                className={`flex w-full items-center justify-between gap-3 px-3 py-2 text-left text-sm ${
-                                  isTaken
-                                    ? "cursor-not-allowed text-[rgba(15,23,42,0.38)]"
-                                    : "text-[var(--color-text)] hover:bg-[rgba(15,61,52,0.05)]"
-                                }`}
-                              >
-                                <span className="min-w-0 truncate">
-                                  {formatPlayerName(player.players)}
-                                </span>
-                                {isTaken ? (
-                                  <span className="shrink-0 text-[11px] text-[var(--color-text-secondary)]">
-                                    {assignedLabel}
-                                  </span>
-                                ) : null}
-                              </button>
-                            );
-                          })}
-                      </div>
-                    ) : null}
                   </div>
                 ) : entry ? (
                   <div
@@ -352,6 +336,9 @@ export default function TeamsClient({ gameweek, entries, onRefresh }: TeamsClien
       </div>
     );
   };
+
+  const openSlotMeta = openSlotKey ? slotMetaByKey.get(openSlotKey) ?? null : null;
+  const openSlotEntry = openSlotKey ? entryBySlotKey.get(openSlotKey) ?? null : null;
 
   return (
     <div className="space-y-4">
@@ -391,6 +378,72 @@ export default function TeamsClient({ gameweek, entries, onRefresh }: TeamsClien
           "border-[var(--color-border)] bg-[rgba(255,255,255,0.9)]"
         )}
       </div>
+
+      {openSlotMeta ? (
+        <div className="fixed inset-x-0 bottom-3 z-40 px-2 sm:bottom-4 sm:px-4">
+          <div
+            ref={slotMenuRef}
+            className="mx-auto max-h-[min(70vh,32rem)] w-full max-w-3xl overflow-hidden rounded-2xl border border-[var(--color-border)] bg-white text-[var(--color-text)] shadow-[0_22px_48px_rgba(15,23,42,0.18)]"
+          >
+            {openSlotEntry ? (
+              <button
+                type="button"
+                onClick={() => {
+                  clearTeamSlot(openSlotEntry.player_id);
+                  setOpenSlotKey(null);
+                }}
+                className="flex w-full items-center justify-between border-b border-[var(--color-border)] px-4 py-3 text-left text-sm text-[var(--color-text-secondary)] hover:bg-[rgba(15,61,52,0.05)]"
+              >
+                <span>Clear slot</span>
+              </button>
+            ) : null}
+            <div className="max-h-[min(70vh,32rem)] overflow-y-auto">
+              {playersThisWeek
+                .filter(
+                  (player) =>
+                    !player.players.archived || player.player_id === openSlotEntry?.player_id
+                )
+                .map((player) => {
+                  const isCurrent = player.player_id === openSlotEntry?.player_id;
+                  const assignedTeam = assignedTeamByPlayerId.get(player.player_id);
+                  const isTaken = Boolean(assignedTeam) && !isCurrent;
+                  const assignedLabel =
+                    assignedTeam === "darks"
+                      ? "Darks"
+                      : assignedTeam === "whites"
+                        ? "Whites"
+                        : "";
+
+                  return (
+                    <button
+                      key={player.player_id}
+                      type="button"
+                      disabled={isTaken}
+                      onClick={() => {
+                        assignPlayer(player.player_id, openSlotMeta.team, openSlotMeta.position);
+                        setOpenSlotKey(null);
+                      }}
+                      className={`flex w-full items-center justify-between gap-3 px-4 py-3 text-left text-sm ${
+                        isTaken
+                          ? "cursor-not-allowed text-[rgba(15,23,42,0.38)]"
+                          : "text-[var(--color-text)] hover:bg-[rgba(15,61,52,0.05)]"
+                      }`}
+                    >
+                      <span className="min-w-0 truncate">
+                        {formatPlayerName(player.players)}
+                      </span>
+                      {isTaken ? (
+                        <span className="shrink-0 text-[11px] text-[var(--color-text-secondary)]">
+                          {assignedLabel}
+                        </span>
+                      ) : null}
+                    </button>
+                  );
+                })}
+            </div>
+          </div>
+        </div>
+      ) : null}
 
       <section className="ui-card p-4">
         <p className="ui-kicker">

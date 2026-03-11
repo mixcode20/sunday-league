@@ -79,6 +79,7 @@ export default function GamePageClient() {
         location={gameweek?.location ?? null}
         mainCount={mainCount}
         subsCount={subsCount}
+        entries={normalizedEntries}
         onRefresh={() => mutate()}
         showShareButton={Boolean(openGameweek)}
       />
