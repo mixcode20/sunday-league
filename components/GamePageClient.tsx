@@ -65,6 +65,13 @@ export default function GamePageClient() {
       <CreateGameweek
         activeGameweekStatus={gameweek?.status ?? null}
         players={players}
+        onCreated={async (gameweekId) => {
+          const refreshed = await mutate();
+          return (
+            refreshed?.openGameweek?.id === gameweekId ||
+            refreshed?.gameweek?.id === gameweekId
+          );
+        }}
       />
       <GameweekInfoStrip
         gameweekId={gameweek?.id ?? null}

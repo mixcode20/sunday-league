@@ -245,6 +245,12 @@
     color: white;
   }
 
+  .ui-chip-active:hover {
+    border-color: rgba(15, 61, 52, 0.2);
+    background: var(--color-primary-dark);
+    color: white;
+  }
+
   .ui-kicker {
     font-size: 0.72rem;
     font-weight: 600;

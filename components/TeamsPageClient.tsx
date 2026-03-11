@@ -100,11 +100,15 @@ export default function TeamsPageClient() {
 
   const gameweek = data.gameweek;
   const gameweekWinner = gameweek ? getGameweekWinner(gameweek) : null;
+  const handleGameweekCreated = async (gameweekId: string) => {
+    const refreshed = await mutate();
+    return refreshed?.gameweek?.id === gameweekId;
+  };
 
   if (!gameweek) {
     return (
       <div className="space-y-4">
-        <CreateGameweek players={players} />
+        <CreateGameweek players={players} onCreated={handleGameweekCreated} />
         <GameweekInfoStrip />
         <div className="ui-empty p-4 text-sm">
           No open gameweek yet. Unlock organiser mode to create one.
@@ -120,7 +124,11 @@ export default function TeamsPageClient() {
           {nonBlockingError}
         </div>
       ) : null}
-      <CreateGameweek activeGameweekStatus={gameweek.status} players={players} />
+      <CreateGameweek
+        activeGameweekStatus={gameweek.status}
+        players={players}
+        onCreated={handleGameweekCreated}
+      />
       <GameweekInfoStrip
         gameweekId={gameweek.id}
         gameDate={gameweek.game_date}

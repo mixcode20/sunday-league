@@ -1,6 +1,6 @@
 "use client";
 
-import { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
+import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
 import Modal from "@/components/Modal";
 
 type OrganiserContextValue = {
@@ -66,6 +66,7 @@ export default function OrganiserModeProvider({
   const [modalOpen, setModalOpen] = useState(false);
   const [pinInput, setPinInput] = useState("");
   const [message, setMessage] = useState("");
+  const pinInputRef = useRef<HTMLInputElement | null>(null);
   const { isUnlocked, organiserPin, unlockedAt } = session;
 
   const expiresAt = useMemo(
@@ -96,6 +97,15 @@ export default function OrganiserModeProvider({
     }, remaining);
     return () => window.clearTimeout(timeoutId);
   }, [isUnlocked, unlockedAt, lock]);
+
+  useEffect(() => {
+    if (!modalOpen) return;
+    const frameId = window.requestAnimationFrame(() => {
+      pinInputRef.current?.focus();
+      pinInputRef.current?.select();
+    });
+    return () => window.cancelAnimationFrame(frameId);
+  }, [modalOpen]);
 
   const verifyPin = async () => {
     setMessage("");
@@ -137,6 +147,7 @@ export default function OrganiserModeProvider({
       >
         <label className="ui-label">PIN</label>
         <input
+          ref={pinInputRef}
           type="password"
           value={pinInput}
           onChange={(event) => setPinInput(event.target.value)}
@@ -145,6 +156,7 @@ export default function OrganiserModeProvider({
           autoComplete="one-time-code"
           className="ui-input mt-2"
           placeholder="****"
+          autoFocus
         />
         <button
           type="button"

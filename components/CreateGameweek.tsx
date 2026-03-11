@@ -11,12 +11,15 @@ import { formatPlayerName } from "@/lib/utils";
 type CreateGameweekProps = {
   activeGameweekStatus?: GameweekStatus | null;
   players?: Player[];
+  onCreated?: (gameweekId: string) => Promise<boolean> | boolean;
 };
 
 export default function CreateGameweek({
   activeGameweekStatus = null,
   players = [],
+  onCreated,
 }: CreateGameweekProps) {
+  const pinnedPlayerId = "541f87de-b74d-43da-b97b-97d688968fb5";
   const customTimeOption = "Custom";
   const presetTimes = ["9:00am", "9:15am", "9:30am", "9:45am", "10:00am"];
   const quickPickTimes = [...presetTimes, customTimeOption];
@@ -25,7 +28,7 @@ export default function CreateGameweek({
   const [date, setDate] = useState(getNextSundayISO());
   const [time, setTime] = useState("9:15am");
   const [selectedTimeOption, setSelectedTimeOption] = useState("9:15am");
-  const [location] = useState("MH");
+  const [location, setLocation] = useState("Mill Hill");
   const [message, setMessage] = useState("");
   const [isOpen, setIsOpen] = useState(false);
   const [customTime, setCustomTime] = useState("");
@@ -37,6 +40,9 @@ export default function CreateGameweek({
   const orderedPlayers = useMemo(
     () =>
       [...players].sort((a, b) => {
+        const aPinned = a.id === pinnedPlayerId;
+        const bPinned = b.id === pinnedPlayerId;
+        if (aPinned !== bPinned) return aPinned ? -1 : 1;
         const gamesPlayedDifference = (b.games_played ?? 0) - (a.games_played ?? 0);
         if (gamesPlayedDifference !== 0) return gamesPlayedDifference;
         return formatPlayerName(a).localeCompare(formatPlayerName(b));
@@ -62,6 +68,11 @@ export default function CreateGameweek({
       return;
     }
     setMessage("");
+    setDate(getNextSundayISO());
+    setTime("9:15am");
+    setSelectedTimeOption("9:15am");
+    setCustomTime("");
+    setLocation("Mill Hill");
     setSelectedPlayerIds([]);
     setIsOpen(true);
   };
@@ -103,12 +114,24 @@ export default function CreateGameweek({
       }),
     });
     const data = await response.json();
-    setIsSubmitting(false);
     if (!response.ok) {
+      setIsSubmitting(false);
       setMessage(data.error ?? "Failed to create gameweek.");
       return;
     }
+    const createdGameweekId =
+      typeof data?.id === "string" && data.id.trim().length > 0 ? data.id : "";
+    if (createdGameweekId && onCreated) {
+      let isVisible = false;
+      for (let attempt = 0; attempt < 12; attempt += 1) {
+        // Wait until the page data includes the newly created open gameweek.
+        isVisible = await onCreated(createdGameweekId);
+        if (isVisible) break;
+        await new Promise((resolve) => window.setTimeout(resolve, 250));
+      }
+    }
     setIsOpen(false);
+    setIsSubmitting(false);
     router.refresh();
   };
 
@@ -128,10 +151,6 @@ export default function CreateGameweek({
         {hasActiveOpenGameweek ? (
           <p className="mt-2 text-center text-sm text-[var(--color-text-secondary)]">
             Unlocked after current game result
-          </p>
-        ) : hasCompletedGameweek ? (
-          <p className="mt-2 text-sm text-[var(--color-text-secondary)]">
-            The current gameweek is complete. Create the next one to start a new signup flow.
           </p>
         ) : null}
       </div>
@@ -202,11 +221,11 @@ export default function CreateGameweek({
               </>
             ) : null}
             <label className="ui-label mt-3">Location</label>
-            <input
-              type="text"
-              value="Mill Hill"
-              readOnly
-              className="ui-input mt-2"
+            <textarea
+              value={location}
+              onChange={(event) => setLocation(event.target.value)}
+              rows={2}
+              className="ui-input mt-2 min-h-[5.5rem] resize-none"
             />
             <div className="mt-4 border-t border-[var(--color-border)] pt-4">
               <div className="flex items-center justify-between gap-3">

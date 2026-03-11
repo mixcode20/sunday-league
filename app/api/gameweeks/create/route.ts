@@ -46,7 +46,7 @@ export async function POST(request: Request) {
   const safeLocation =
     typeof location === "string" && location.trim().length > 0
       ? location.trim()
-      : "MH";
+      : "Mill Hill";
   const selectedPlayerIds = Array.isArray(playerIds)
     ? Array.from(
         new Set(
