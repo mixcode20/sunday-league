@@ -153,13 +153,13 @@ export default function LeagueTableClient({ rows }: { rows: LeagueStatRow[] }) {
           </colgroup>
           <thead className="text-[11px] uppercase tracking-[0.14em] text-white">
             <tr>
-              <th className="sticky top-0 z-10 rounded-tl-lg bg-[var(--color-primary-dark)] px-3 py-[0.85rem]">
+              <th className="sticky top-[69px] z-10 rounded-tl-lg bg-[var(--color-primary-dark)] px-3 py-[0.85rem]">
                 Player
               </th>
               {columns.map(([key, label]) => (
                 <th
                   key={key}
-                  className="relative sticky top-0 z-10 cursor-pointer bg-[var(--color-primary-dark)] px-2 py-[0.85rem] text-center align-middle last:rounded-tr-lg"
+                  className="relative sticky top-[69px] z-10 cursor-pointer bg-[var(--color-primary-dark)] px-2 py-[0.85rem] text-center align-middle last:rounded-tr-lg"
                   onClick={() => toggleSort(key)}
                 >
                   <div className="flex items-center justify-center leading-tight">

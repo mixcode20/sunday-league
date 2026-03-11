@@ -784,7 +784,7 @@ export default function JoinSlots({
                   entry?.remove_requested
                     ? "border-[rgba(229,72,77,0.18)] bg-[rgba(229,72,77,0.08)] text-[var(--color-danger)]"
                     : entry
-                      ? "border-[rgba(31,122,99,0.18)] bg-[rgba(31,122,99,0.07)] text-[var(--color-text)]"
+                      ? "border-[#d5dfdc] bg-[#eef3f1] text-[var(--color-text)]"
                       : "border-[var(--color-border)] bg-white text-[var(--color-text-secondary)]"
                 } justify-center ${
                   isHighlighted ? "ring-2 ring-amber-400" : ""
@@ -949,7 +949,7 @@ export default function JoinSlots({
                     entry?.remove_requested
                       ? "border-[rgba(229,72,77,0.18)] bg-[rgba(229,72,77,0.08)] text-[var(--color-danger)]"
                       : entry
-                        ? "border-[rgba(31,122,99,0.18)] bg-[rgba(31,122,99,0.07)] text-[var(--color-text)]"
+                        ? "border-[#d5dfdc] bg-[#eef3f1] text-[var(--color-text)]"
                         : "border-[var(--color-border)] bg-white text-[var(--color-text-secondary)]"
                   } justify-center ${
                     isHighlighted ? "ring-2 ring-amber-400" : ""

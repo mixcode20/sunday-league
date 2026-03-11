@@ -235,18 +235,18 @@ export default function GameweekInfoStrip({
               </div>
             </div>
 
-            <div className="mt-6 rounded-[1rem] border border-[var(--color-border)] bg-[var(--color-surface)] px-4 py-[0.675rem] shadow-[0_8px_20px_rgba(15,23,42,0.05)]">
-              <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2 text-[0.8rem] font-medium text-[var(--color-text-secondary)] sm:text-[0.8rem]">
+            <div className="mt-6 rounded-[1rem] border border-[var(--color-border)] bg-[var(--color-surface)] px-4 py-[0.54rem] shadow-[0_8px_20px_rgba(15,23,42,0.05)]">
+              <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-1.5 text-[0.64rem] font-medium text-[var(--color-text-secondary)] sm:text-[0.64rem]">
                 <div className="flex items-baseline gap-2">
                   <span>Players</span>
-                  <span className="text-base font-semibold tracking-[-0.03em] text-[var(--color-text)] sm:text-[1.6rem]">
+                  <span className="text-[0.8rem] font-semibold tracking-[-0.03em] text-[var(--color-text)] sm:text-[1.28rem]">
                     {counts.main}
                     <span className="text-[var(--color-text-secondary)]"> / 14</span>
                   </span>
                 </div>
                 <div className="flex items-center gap-2">
                   <span>Subs</span>
-                  <span className="text-base font-semibold tracking-[-0.03em] text-[var(--color-text)] sm:text-[1.6rem]">
+                  <span className="text-[0.8rem] font-semibold tracking-[-0.03em] text-[var(--color-text)] sm:text-[1.28rem]">
                     {counts.subs}
                   </span>
                   {totalPlayers > 14 ? (

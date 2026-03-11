@@ -339,6 +339,12 @@ export default function TeamsClient({ gameweek, entries, onRefresh }: TeamsClien
 
   const openSlotMeta = openSlotKey ? slotMetaByKey.get(openSlotKey) ?? null : null;
   const openSlotEntry = openSlotKey ? entryBySlotKey.get(openSlotKey) ?? null : null;
+  const openSlotTitle =
+    openSlotMeta?.team === "darks"
+      ? "Select Darks"
+      : openSlotMeta?.team === "whites"
+        ? "Select Whites"
+        : "";
 
   return (
     <div className="space-y-4">
@@ -380,11 +386,16 @@ export default function TeamsClient({ gameweek, entries, onRefresh }: TeamsClien
       </div>
 
       {openSlotMeta ? (
-        <div className="fixed inset-x-0 bottom-3 z-40 px-2 sm:bottom-4 sm:px-4">
+        <div className="fixed inset-x-0 top-[20vh] z-40 px-2 sm:px-4">
           <div
             ref={slotMenuRef}
             className="mx-auto max-h-[min(70vh,32rem)] w-full max-w-3xl overflow-hidden rounded-2xl border border-[var(--color-border)] bg-white text-[var(--color-text)] shadow-[0_22px_48px_rgba(15,23,42,0.18)]"
           >
+            <div className="border-b border-[var(--color-border)] px-4 py-3">
+              <h3 className="text-sm font-semibold uppercase tracking-[0.12em] text-[var(--color-text)]">
+                {openSlotTitle}
+              </h3>
+            </div>
             {openSlotEntry ? (
               <button
                 type="button"
