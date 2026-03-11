@@ -16,7 +16,7 @@ export default function SettingsButton({ onClick, isUnlocked }: SettingsButtonPr
       className={`ui-icon-btn ${
         isUnlocked
           ? "border-[rgba(22,163,74,0.24)] bg-[rgba(22,163,74,0.08)] text-[var(--color-success)]"
-          : ""
+          : "border-transparent bg-transparent"
       }`}
       aria-label={label}
       title={label}
