@@ -189,10 +189,10 @@ export default function LeagueTableClient({ rows }: { rows: LeagueStatRow[] }) {
                             setArchiveInput("");
                             setPlayerPendingArchive(row);
                           }}
-                          className="absolute right-0 top-1/2 inline-flex -translate-y-1/2 items-center justify-center rounded-full border border-[rgba(229,72,77,0.18)] bg-[rgba(229,72,77,0.08)] px-2.5 py-0.5 text-[11px] font-semibold text-[var(--color-danger)] transition hover:bg-[rgba(229,72,77,0.14)]"
+                          className="absolute right-0 top-1/2 inline-flex h-7 w-7 -translate-y-1/2 items-center justify-center rounded-full border border-[rgba(229,72,77,0.18)] text-[var(--color-danger)]"
                           aria-label={`Archive ${row.name}`}
                         >
-                          X
+                          ×
                         </button>
                       ) : null}
                     </div>

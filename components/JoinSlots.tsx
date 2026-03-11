@@ -780,7 +780,7 @@ export default function JoinSlots({
             return (
               <div
                 key={`main-${index}`}
-                className={`relative flex min-h-[74px] flex-col rounded-[18px] border px-4 py-3 text-xs ${
+                className={`relative flex min-h-[60px] flex-col rounded-[14px] border px-4 py-2 text-xs ${
                   entry?.remove_requested
                     ? "border-[rgba(229,72,77,0.18)] bg-[rgba(229,72,77,0.08)] text-[var(--color-danger)]"
                     : entry
@@ -792,21 +792,21 @@ export default function JoinSlots({
               >
                 {entry ? (
                   <>
-                    <div className="flex items-center gap-3">
-                      <span className="w-7 text-right text-[20px] font-medium leading-none text-[var(--color-text-secondary)]">
+                    <div className="flex items-center gap-2.5">
+                      <span className="w-7 text-right text-base font-medium leading-none text-[var(--color-text-secondary)]">
                         {index + 1}.
                       </span>
                       <span
-                        className={`inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full ${
+                        className={`inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-full ${
                           entry.remove_requested
                             ? "bg-[rgba(229,72,77,0.1)] text-[var(--color-danger)]"
                             : "bg-[rgba(31,122,99,0.12)] text-[var(--color-primary-dark)]"
                         }`}
                       >
-                        {userIcon("h-5 w-5")}
+                        {userIcon("h-4 w-4")}
                       </span>
                       <span
-                        className={`min-w-0 flex-1 truncate text-[18px] font-medium leading-none ${
+                        className={`min-w-0 flex-1 truncate text-[14px] font-medium leading-none ${
                           entry.remove_requested ? "text-[var(--color-danger)]" : "text-[var(--color-text)]"
                         }`}
                       >
@@ -851,14 +851,14 @@ export default function JoinSlots({
                         </button>
                       ) : null}
                       <span
-                        className={`inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full ${
+                        className={`inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-full ${
                           entry.remove_requested
                             ? "border border-[rgba(229,72,77,0.18)] bg-white text-[var(--color-danger)]"
                             : "bg-[var(--color-primary)] text-white"
                         }`}
                         aria-hidden="true"
                       >
-                        {entry.remove_requested ? "!" : checkIcon("h-4 w-4")}
+                        {entry.remove_requested ? "!" : checkIcon("h-[13px] w-[13px]")}
                       </span>
                     </div>
                     {isPending && isOptimistic ? (
@@ -898,18 +898,18 @@ export default function JoinSlots({
                     disabled={isSlotPending(index + 1)}
                   >
                     <span className="inline-flex min-w-0 items-center gap-3">
-                      <span className="w-7 text-right text-[20px] font-medium leading-none text-[var(--color-text-secondary)]">
+                      <span className="w-7 text-right text-base font-medium leading-none text-[var(--color-text-secondary)]">
                         {index + 1}.
                       </span>
-                      <span className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[rgba(15,61,52,0.08)] text-[var(--color-text-secondary)]">
-                        {userIcon("h-5 w-5")}
+                      <span className="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-[rgba(15,61,52,0.08)] text-[var(--color-text-secondary)]">
+                        {userIcon("h-4 w-4")}
                       </span>
-                      <span className="truncate text-[18px] font-medium leading-none text-[var(--color-text-secondary)]">
+                      <span className="truncate text-[14px] font-medium leading-none text-[var(--color-text-secondary)]">
                         Free Space
                       </span>
                     </span>
-                    <span className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-[var(--color-border)] bg-[rgba(15,61,52,0.04)] text-[var(--color-text-secondary)]">
-                      {plusIcon("h-4 w-4")}
+                    <span className="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-full border border-[var(--color-border)] bg-[rgba(15,61,52,0.04)] text-[var(--color-text-secondary)]">
+                      {plusIcon("h-[13px] w-[13px]")}
                     </span>
                   </button>
                 )}
@@ -945,7 +945,7 @@ export default function JoinSlots({
               return (
                 <div
                   key={`sub-${slotPosition}`}
-                  className={`relative flex min-h-[74px] flex-col rounded-[18px] border px-4 py-3 text-xs ${
+                  className={`relative flex min-h-[60px] flex-col rounded-[14px] border px-4 py-2 text-xs ${
                     entry?.remove_requested
                       ? "border-[rgba(229,72,77,0.18)] bg-[rgba(229,72,77,0.08)] text-[var(--color-danger)]"
                       : entry
@@ -957,21 +957,21 @@ export default function JoinSlots({
                 >
                   {entry ? (
                     <>
-                      <div className="flex items-center gap-3">
-                        <span className="w-7 text-right text-[20px] font-medium leading-none text-[var(--color-text-secondary)]">
+                      <div className="flex items-center gap-2.5">
+                        <span className="w-7 text-right text-base font-medium leading-none text-[var(--color-text-secondary)]">
                           {slotPosition}.
                         </span>
                         <span
-                          className={`inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full ${
+                          className={`inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-full ${
                             entry.remove_requested
                               ? "bg-[rgba(229,72,77,0.1)] text-[var(--color-danger)]"
                               : "bg-[rgba(31,122,99,0.12)] text-[var(--color-primary-dark)]"
                           }`}
                         >
-                          {userIcon("h-5 w-5")}
+                          {userIcon("h-4 w-4")}
                         </span>
                         <span
-                          className={`min-w-0 flex-1 truncate text-[18px] font-medium leading-none ${
+                          className={`min-w-0 flex-1 truncate text-[14px] font-medium leading-none ${
                             entry.remove_requested ? "text-[var(--color-danger)]" : "text-[var(--color-text)]"
                           }`}
                         >
@@ -1020,14 +1020,14 @@ export default function JoinSlots({
                           </button>
                         ) : null}
                         <span
-                          className={`inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full ${
+                          className={`inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-full ${
                             entry.remove_requested
                               ? "border border-[rgba(229,72,77,0.18)] bg-white text-[var(--color-danger)]"
                               : "bg-[var(--color-primary)] text-white"
                           }`}
                           aria-hidden="true"
                         >
-                          {entry.remove_requested ? "!" : checkIcon("h-4 w-4")}
+                          {entry.remove_requested ? "!" : checkIcon("h-[13px] w-[13px]")}
                         </span>
                       </div>
                       {isPending && isOptimistic ? (
@@ -1035,25 +1035,25 @@ export default function JoinSlots({
                           Claiming...
                         </span>
                       ) : null}
-                    {entry.remove_requested ? (
-                      <span className="mt-2 text-[11px] font-semibold uppercase tracking-wide text-[var(--color-danger)]">
-                        Removal requested
-                      </span>
-                    ) : null}
-                    {isOpen ? (
-                      isUnlocked ? (
-                        entry.remove_requested ? (
-                          <div className="mt-2 flex items-center gap-2">
-                            <button
-                              type="button"
-                              onClick={() => clearRemovalRequest(entry.player_id)}
-                              className="text-left text-xs font-semibold text-[var(--color-text-secondary)]"
-                              disabled={isSlotPending(entry.position)}
-                            >
-                              Clear request
-                            </button>
-                          </div>
-                        ) : null
+                      {entry.remove_requested ? (
+                        <span className="mt-2 text-[11px] font-semibold uppercase tracking-wide text-[var(--color-danger)]">
+                          Removal requested
+                        </span>
+                      ) : null}
+                      {isOpen ? (
+                        isUnlocked ? (
+                          entry.remove_requested ? (
+                            <div className="mt-2 flex items-center gap-2">
+                              <button
+                                type="button"
+                                onClick={() => clearRemovalRequest(entry.player_id)}
+                                className="text-left text-xs font-semibold text-[var(--color-text-secondary)]"
+                                disabled={isSlotPending(entry.position)}
+                              >
+                                Clear request
+                              </button>
+                            </div>
+                          ) : null
                         ) : null
                       ) : null}
                     </>
@@ -1067,18 +1067,18 @@ export default function JoinSlots({
                       disabled={isSlotPending(slotPosition)}
                     >
                       <span className="inline-flex min-w-0 items-center gap-3">
-                        <span className="w-7 text-right text-[20px] font-medium leading-none text-[var(--color-text-secondary)]">
+                        <span className="w-7 text-right text-base font-medium leading-none text-[var(--color-text-secondary)]">
                           {slotPosition}.
                         </span>
-                        <span className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[rgba(15,61,52,0.08)] text-[var(--color-text-secondary)]">
-                          {userIcon("h-5 w-5")}
+                        <span className="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-[rgba(15,61,52,0.08)] text-[var(--color-text-secondary)]">
+                          {userIcon("h-4 w-4")}
                         </span>
-                        <span className="truncate text-[18px] font-medium leading-none text-[var(--color-text-secondary)]">
+                        <span className="truncate text-[14px] font-medium leading-none text-[var(--color-text-secondary)]">
                           Free Space
                         </span>
                       </span>
-                      <span className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-[var(--color-border)] bg-[rgba(15,61,52,0.04)] text-[var(--color-text-secondary)]">
-                        {plusIcon("h-4 w-4")}
+                      <span className="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-full border border-[var(--color-border)] bg-[rgba(15,61,52,0.04)] text-[var(--color-text-secondary)]">
+                        {plusIcon("h-[13px] w-[13px]")}
                       </span>
                     </button>
                   )}

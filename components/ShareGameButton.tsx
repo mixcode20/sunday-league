@@ -96,7 +96,7 @@ export default function ShareGameButton({
       <button
         type="button"
         onClick={handleShare}
-        className="ui-btn ui-btn-secondary ui-btn-secondary-strong inline-flex w-full items-center justify-center gap-2"
+        className="ui-btn ui-btn-primary inline-flex w-full items-center justify-center gap-2"
       >
         <ShareIcon />
         Share to WhatsApp

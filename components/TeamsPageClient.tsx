@@ -108,8 +108,8 @@ export default function TeamsPageClient() {
   if (!gameweek) {
     return (
       <div className="space-y-4">
-        <CreateGameweek players={players} onCreated={handleGameweekCreated} />
         <GameweekInfoStrip />
+        <CreateGameweek players={players} onCreated={handleGameweekCreated} />
         <div className="ui-empty p-4 text-sm">
           No open gameweek yet. Unlock organiser mode to create one.
         </div>
@@ -124,11 +124,6 @@ export default function TeamsPageClient() {
           {nonBlockingError}
         </div>
       ) : null}
-      <CreateGameweek
-        activeGameweekStatus={gameweek.status}
-        players={players}
-        onCreated={handleGameweekCreated}
-      />
       <GameweekInfoStrip
         gameweekId={gameweek.id}
         gameDate={gameweek.game_date}
@@ -137,6 +132,11 @@ export default function TeamsPageClient() {
         mainCount={mainCount}
         subsCount={subsCount}
         onRefresh={() => mutate()}
+      />
+      <CreateGameweek
+        activeGameweekStatus={gameweek.status}
+        players={players}
+        onCreated={handleGameweekCreated}
       />
       <ConfirmResultPanel gameweek={gameweek} />
 

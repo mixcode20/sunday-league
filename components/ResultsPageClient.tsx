@@ -139,7 +139,7 @@ export default function ResultsPageClient() {
             prefetch
             className={`ui-icon-btn text-2xl leading-none ${
               olderId
-                ? ""
+                ? "border-[rgba(31,122,99,0.18)] bg-[rgba(31,122,99,0.06)] text-[var(--color-primary-dark)]"
                 : "pointer-events-none opacity-40"
             }`}
             aria-disabled={!olderId}
@@ -157,7 +157,7 @@ export default function ResultsPageClient() {
             prefetch
             className={`ui-icon-btn text-2xl leading-none ${
               newerId
-                ? ""
+                ? "border-[rgba(31,122,99,0.18)] bg-[rgba(31,122,99,0.06)] text-[var(--color-primary-dark)]"
                 : "pointer-events-none opacity-40"
             }`}
             aria-disabled={!newerId}
@@ -176,15 +176,13 @@ export default function ResultsPageClient() {
             </div>
 
             <div className="flex items-start justify-center gap-3 pt-0.5 text-4xl font-semibold tracking-[-0.05em] text-[var(--color-text-secondary)] sm:gap-5 sm:text-6xl">
-              {summary.hasScore ? (
-                <>
-                  <span>{summary.darksValue}</span>
-                  <span>-</span>
-                  <span>{summary.whitesValue}</span>
-                </>
-              ) : (
-                <span>vs</span>
-              )}
+              <span className="inline-block min-w-[1ch] text-center">
+                {summary.darksValue ?? ""}
+              </span>
+              <span>-</span>
+              <span className="inline-block min-w-[1ch] text-center">
+                {summary.whitesValue ?? ""}
+              </span>
             </div>
 
             <div className="relative pb-6 text-right">

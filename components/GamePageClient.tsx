@@ -61,17 +61,6 @@ export default function GamePageClient() {
 
   return (
     <div className="space-y-4">
-      <CreateGameweek
-        activeGameweekStatus={gameweek?.status ?? null}
-        players={players}
-        onCreated={async (gameweekId) => {
-          const refreshed = await mutate();
-          return (
-            refreshed?.openGameweek?.id === gameweekId ||
-            refreshed?.gameweek?.id === gameweekId
-          );
-        }}
-      />
       <GameweekInfoStrip
         gameweekId={gameweek?.id ?? null}
         gameDate={gameweek?.game_date ?? null}
@@ -82,6 +71,17 @@ export default function GamePageClient() {
         entries={normalizedEntries}
         onRefresh={() => mutate()}
         showShareButton={Boolean(openGameweek)}
+      />
+      <CreateGameweek
+        activeGameweekStatus={gameweek?.status ?? null}
+        players={players}
+        onCreated={async (gameweekId) => {
+          const refreshed = await mutate();
+          return (
+            refreshed?.openGameweek?.id === gameweekId ||
+            refreshed?.gameweek?.id === gameweekId
+          );
+        }}
       />
 
       <section className="flex flex-col gap-4">
