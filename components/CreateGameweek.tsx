@@ -17,18 +17,20 @@ export default function CreateGameweek({
   activeGameweekStatus = null,
   players = [],
 }: CreateGameweekProps) {
+  const customTimeOption = "Custom";
+  const presetTimes = ["9:00am", "9:15am", "9:30am", "9:45am", "10:00am"];
+  const quickPickTimes = [...presetTimes, customTimeOption];
   const router = useRouter();
   const { isUnlocked, organiserPin } = useOrganiserMode();
   const [date, setDate] = useState(getNextSundayISO());
   const [time, setTime] = useState("9:15am");
+  const [selectedTimeOption, setSelectedTimeOption] = useState("9:15am");
   const [location] = useState("MH");
   const [message, setMessage] = useState("");
   const [isOpen, setIsOpen] = useState(false);
   const [customTime, setCustomTime] = useState("");
   const [selectedPlayerIds, setSelectedPlayerIds] = useState<string[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
-
-  const quickPickTimes = ["9:00am", "9:15am", "9:30am", "9:45am", "10:00am"];
   const hasActiveOpenGameweek = activeGameweekStatus === "open";
   const hasCompletedGameweek = activeGameweekStatus === "locked";
   const buttonLabel = hasCompletedGameweek ? "Create next gameweek" : "Create new game";
@@ -83,6 +85,10 @@ export default function CreateGameweek({
       setMessage("Date is required.");
       return;
     }
+    if (selectedTimeOption === customTimeOption && !formatTimeFromInput(customTime)) {
+      setMessage("Custom time is required.");
+      return;
+    }
     setMessage("");
     setIsSubmitting(true);
     const response = await fetch("/api/gameweeks/create", {
@@ -120,8 +126,8 @@ export default function CreateGameweek({
           {buttonLabel}
         </button>
         {hasActiveOpenGameweek ? (
-          <p className="mt-2 text-sm text-[var(--color-text-secondary)]">
-            Submit the current gameweek result to unlock the next gameweek flow.
+          <p className="mt-2 text-center text-sm text-[var(--color-text-secondary)]">
+            Unlocked after current game result
           </p>
         ) : hasCompletedGameweek ? (
           <p className="mt-2 text-sm text-[var(--color-text-secondary)]">
@@ -135,111 +141,130 @@ export default function CreateGameweek({
         onClose={closeModal}
         position="top"
       >
-        <label className="ui-label">Date</label>
-        <input
-          type="date"
-          value={date}
-          onChange={(event) => setDate(event.target.value)}
-          className="ui-input mt-2"
-        />
-        <label className="ui-label mt-3">Time</label>
-        <div className="mt-2 flex flex-wrap gap-2">
-          {quickPickTimes.map((option) => {
-            const isSelected = time === option;
-            return (
-              <button
-                key={option}
-                type="button"
-                onClick={() => {
-                  setTime(option);
-                  setCustomTime("");
-                }}
-                className={`ui-chip ${
-                  isSelected
-                    ? "ui-chip-active"
-                    : ""
-                }`}
-                aria-pressed={isSelected}
-              >
-                {option}
-              </button>
-            );
-          })}
-        </div>
-        <label className="ui-label mt-3">Custom time</label>
-        <input
-          type="time"
-          value={customTime}
-          onChange={(event) => {
-            const nextValue = event.target.value;
-            setCustomTime(nextValue);
-            const formatted = formatTimeFromInput(nextValue);
-            if (formatted) setTime(formatted);
-          }}
-          className="ui-input mt-2"
-        />
-        <label className="ui-label mt-3">Location</label>
-        <input
-          type="text"
-          value="Mill Hill"
-          readOnly
-          className="ui-input mt-2"
-        />
-        <div className="mt-4 border-t border-[var(--color-border)] pt-4">
-          <div className="flex items-center justify-between gap-3">
-            <span className="ui-label m-0">
-              Add players now
-            </span>
-            <span className="text-xs text-[var(--color-text-secondary)]">
-              {selectedPlayerIds.length} selected
-            </span>
-          </div>
-          {players.length > 0 ? (
-            <div className="mt-3 max-h-56 space-y-2 overflow-y-auto rounded-xl border border-[var(--color-border)] p-2">
-              {orderedPlayers.map((player) => {
-                const checked = selectedPlayerIds.includes(player.id);
-                const gamesPlayed = player.games_played ?? 0;
+        <div className="relative">
+          {isSubmitting ? (
+            <div className="absolute inset-0 z-10 flex items-center justify-center rounded-[1rem] bg-white/88 text-center backdrop-blur-[2px]">
+              <div>
+                <p className="text-sm font-semibold uppercase tracking-[0.16em] text-[var(--color-primary-dark)]">
+                  Creating new gameweek
+                </p>
+              </div>
+            </div>
+          ) : null}
+          <div aria-hidden={isSubmitting} className={isSubmitting ? "pointer-events-none opacity-40" : ""}>
+            <label className="ui-label">Date</label>
+            <input
+              type="date"
+              value={date}
+              onChange={(event) => setDate(event.target.value)}
+              className="ui-input mt-2"
+            />
+            <label className="ui-label mt-3">Time</label>
+            <div className="mt-2 flex flex-wrap gap-2">
+              {quickPickTimes.map((option) => {
+                const isSelected = selectedTimeOption === option;
                 return (
-                  <label
-                    key={player.id}
-                    className="flex cursor-pointer items-center justify-between gap-3 rounded-lg px-2 py-2 text-sm text-[var(--color-text)] hover:bg-[rgba(15,61,52,0.04)]"
+                  <button
+                    key={option}
+                    type="button"
+                    onClick={() => {
+                      setSelectedTimeOption(option);
+                      if (option === customTimeOption) return;
+                      setTime(option);
+                      setCustomTime("");
+                    }}
+                    className={`ui-chip ${
+                      isSelected
+                        ? "ui-chip-active"
+                        : ""
+                    }`}
+                    aria-pressed={isSelected}
                   >
-                    <span className="flex items-center gap-3">
-                      <input
-                        type="checkbox"
-                        checked={checked}
-                        onChange={() => togglePlayer(player.id)}
-                        className="peer sr-only"
-                      />
-                      <span className="flex h-5 w-5 items-center justify-center rounded-full border border-[var(--color-border-strong)] bg-white peer-checked:border-[var(--color-primary-dark)] peer-checked:bg-[var(--color-primary-dark)]">
-                        <span className="h-2 w-2 rounded-full bg-white opacity-0 peer-checked:opacity-100" />
-                      </span>
-                      <span>{formatPlayerName(player)}</span>
-                    </span>
-                    <span className="text-xs text-[var(--color-text-secondary)]">
-                      {gamesPlayed} GP
-                    </span>
-                  </label>
+                    {option}
+                  </button>
                 );
               })}
             </div>
-          ) : (
-            <p className="mt-2 text-sm text-[var(--color-text-secondary)]">
-              No active players available to prefill.
-            </p>
-          )}
+            {selectedTimeOption === customTimeOption ? (
+              <>
+                <label className="ui-label mt-3">Custom time</label>
+                <input
+                  type="time"
+                  value={customTime}
+                  onChange={(event) => {
+                    const nextValue = event.target.value;
+                    setCustomTime(nextValue);
+                    const formatted = formatTimeFromInput(nextValue);
+                    if (formatted) setTime(formatted);
+                  }}
+                  className="ui-input mt-2"
+                />
+              </>
+            ) : null}
+            <label className="ui-label mt-3">Location</label>
+            <input
+              type="text"
+              value="Mill Hill"
+              readOnly
+              className="ui-input mt-2"
+            />
+            <div className="mt-4 border-t border-[var(--color-border)] pt-4">
+              <div className="flex items-center justify-between gap-3">
+                <span className="ui-label m-0">
+                  Add players now
+                </span>
+                <span className="text-xs text-[var(--color-text-secondary)]">
+                  {selectedPlayerIds.length} selected
+                </span>
+              </div>
+              {players.length > 0 ? (
+                <div className="mt-3 max-h-56 space-y-2 overflow-y-auto rounded-xl border border-[var(--color-border)] p-2">
+                  {orderedPlayers.map((player) => {
+                    const checked = selectedPlayerIds.includes(player.id);
+                    const gamesPlayed = player.games_played ?? 0;
+                    return (
+                      <label
+                        key={player.id}
+                        className="flex cursor-pointer items-center justify-between gap-3 rounded-lg px-2 py-2 text-sm text-[var(--color-text)] hover:bg-[rgba(15,61,52,0.04)]"
+                      >
+                        <span className="flex items-center gap-3">
+                          <input
+                            type="checkbox"
+                            checked={checked}
+                            onChange={() => togglePlayer(player.id)}
+                            className="peer sr-only"
+                          />
+                          <span className="flex h-5 w-5 items-center justify-center rounded-full border border-[var(--color-border-strong)] bg-white peer-checked:border-[var(--color-primary-dark)] peer-checked:bg-[var(--color-primary-dark)]">
+                            <span className="h-2 w-2 rounded-full bg-white opacity-0 peer-checked:opacity-100" />
+                          </span>
+                          <span>{formatPlayerName(player)}</span>
+                        </span>
+                        <span className="text-xs text-[var(--color-text-secondary)]">
+                          {gamesPlayed} GP
+                        </span>
+                      </label>
+                    );
+                  })}
+                </div>
+              ) : (
+                <p className="mt-2 text-sm text-[var(--color-text-secondary)]">
+                  No active players available to prefill.
+                </p>
+              )}
+            </div>
+            <button
+              type="button"
+              onClick={createGameweek}
+              disabled={isSubmitting}
+              className="ui-btn ui-btn-primary mt-4 w-full disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              {isSubmitting ? "Creating..." : "Create game"}
+            </button>
+            {message ? (
+              <p className="ui-banner ui-banner-danger mt-2">{message}</p>
+            ) : null}
+          </div>
         </div>
-        <button
-          type="button"
-          onClick={createGameweek}
-          disabled={isSubmitting}
-          className="ui-btn ui-btn-primary mt-4 w-full disabled:cursor-not-allowed disabled:opacity-60"
-        >
-          {isSubmitting ? "Creating..." : "Create game"}
-        </button>
-        {message ? (
-          <p className="ui-banner ui-banner-danger mt-2">{message}</p>
-        ) : null}
       </Modal>
     </>
   );

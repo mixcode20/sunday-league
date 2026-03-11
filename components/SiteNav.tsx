@@ -58,7 +58,7 @@ export default function SiteNav() {
                     key={item.href}
                     href={item.href}
                     prefetch
-                    className={`rounded-full px-4 py-2.5 font-medium transition ${
+                    className={`rounded-full px-[0.9rem] py-2.5 font-medium transition ${
                       isActive
                         ? "bg-[var(--color-primary-dark)] text-white shadow-[0_8px_18px_rgba(15,61,52,0.18)]"
                         : isGameOrTeamsActive
@@ -79,7 +79,7 @@ export default function SiteNav() {
                   key={item.href}
                   href={item.href}
                   prefetch
-                  className={`rounded-full px-4 py-2.5 font-medium transition ${
+                  className={`rounded-full px-[0.9rem] py-2.5 font-medium transition ${
                     isActive
                       ? "bg-[var(--color-primary-dark)] text-white"
                       : "text-[var(--color-text-secondary)] hover:bg-white hover:text-[var(--color-primary-dark)]"
