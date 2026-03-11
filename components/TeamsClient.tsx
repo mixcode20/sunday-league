@@ -24,6 +24,14 @@ type DragInfo = {
   position: number;
 };
 
+function ChevronDownIcon() {
+  return (
+    <svg viewBox="0 0 20 20" aria-hidden="true" className="h-4 w-4 fill-current">
+      <path d="M5.23 7.21a.75.75 0 0 1 1.06.02L10 11.12l3.71-3.89a.75.75 0 1 1 1.08 1.04l-4.25 4.45a.75.75 0 0 1-1.08 0L5.21 8.27a.75.75 0 0 1 .02-1.06Z" />
+    </svg>
+  );
+}
+
 export default function TeamsClient({ gameweek, entries, onRefresh }: TeamsClientProps) {
   const router = useRouter();
   const { isUnlocked, organiserPin } = useOrganiserMode();
@@ -246,15 +254,24 @@ export default function TeamsClient({ gameweek, entries, onRefresh }: TeamsClien
                       onClick={() =>
                         setOpenSlotKey((current) => (current === slotKey ? null : slotKey))
                       }
-                      className="flex w-full items-center bg-transparent px-0 py-2 text-left text-sm text-inherit outline-none"
+                      className="flex w-full items-center justify-between gap-3 bg-transparent px-0 py-2 text-left text-sm text-inherit outline-none"
                     >
                       <span className="min-w-0 truncate">
                         {entry ? formatPlayerName(entry.players) : "Select player"}
                       </span>
+                      {!entry ? (
+                        <span
+                          className={`shrink-0 ${
+                            team === "darks" ? "text-white/65" : "text-[var(--color-text-secondary)]"
+                          }`}
+                        >
+                          <ChevronDownIcon />
+                        </span>
+                      ) : null}
                     </button>
                     {openSlotKey === slotKey ? (
                       <div
-                        className="absolute left-0 right-0 top-[calc(100%+0.35rem)] z-20 w-full overflow-hidden rounded-xl border border-[var(--color-border)] bg-white text-[var(--color-text)] shadow-[0_18px_35px_rgba(15,23,42,0.14)]"
+                        className="absolute left-1/2 top-[calc(100%+0.35rem)] z-20 w-[calc(100vw-1rem)] max-w-[calc(100vw-1rem)] -translate-x-1/2 overflow-hidden rounded-xl border border-[var(--color-border)] bg-white text-[var(--color-text)] shadow-[0_18px_35px_rgba(15,23,42,0.14)]"
                       >
                         {entry ? (
                           <button
@@ -353,7 +370,7 @@ export default function TeamsClient({ gameweek, entries, onRefresh }: TeamsClien
       {isUnlocked && !isLocked ? (
         <div className="ui-card p-4 text-sm text-[var(--color-text-secondary)]">
           <p className="ui-kicker">
-            Organiser controls
+            Organiser
           </p>
           <p className="mt-2">
             Fill empty slots from the dropdowns or drag players to swap teams.

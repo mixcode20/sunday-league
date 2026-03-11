@@ -3,7 +3,7 @@
 import { useEffect, useRef } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
-import useSWR from "swr";
+import useSWR, { preload } from "swr";
 import TeamsReadOnly from "@/components/TeamsReadOnly";
 import type { Gameweek, GameweekPlayer } from "@/lib/types";
 import { formatGameweekDate, getGameweekWinner } from "@/lib/utils";
@@ -56,6 +56,7 @@ export default function ResultsPageClient() {
   const gameweekId = searchParams.get("gameweekId");
   const routeTimerArmed = useRef(false);
   const routeLabel = "route:results";
+  const previousGameweekId = useRef<string | null>(gameweekId);
 
   useEffect(() => {
     if (!debugPerfEnabled || routeTimerArmed.current) return;
@@ -63,17 +64,38 @@ export default function ResultsPageClient() {
     routeTimerArmed.current = true;
   }, []);
 
+  useEffect(() => {
+    if (!debugPerfEnabled) return;
+    if (previousGameweekId.current === gameweekId) return;
+    console.time(routeLabel);
+    routeTimerArmed.current = true;
+    previousGameweekId.current = gameweekId;
+  }, [gameweekId]);
+
   const key = gameweekId
     ? `/api/results/overview?gameweekId=${gameweekId}`
     : "/api/results/overview";
   const { data, error } = useSWR<ResultsOverviewResponse>(key, fetcher, {
-    revalidateOnFocus: true,
+    keepPreviousData: true,
+    revalidateOnFocus: false,
   });
 
   useEffect(() => {
     if (!debugPerfEnabled || !data || !routeTimerArmed.current) return;
     console.timeEnd(routeLabel);
     routeTimerArmed.current = false;
+  }, [data]);
+
+  useEffect(() => {
+    if (!data) return;
+
+    if (data.olderId) {
+      preload(`/api/results/overview?gameweekId=${data.olderId}`, fetcher);
+    }
+
+    if (data.newerId) {
+      preload(`/api/results/overview?gameweekId=${data.newerId}`, fetcher);
+    }
   }, [data]);
 
   if (error) {

@@ -6,6 +6,7 @@ import { formatGameweekDate } from "@/lib/utils";
 import { buildEntryPositionMap, getSlotCounts } from "@/lib/slots";
 import { useOrganiserMode } from "@/components/OrganiserModeProvider";
 import Modal from "@/components/Modal";
+import ShareGameButton from "@/components/ShareGameButton";
 
 type GameweekInfoStripProps = {
   gameweekId?: string | null;
@@ -15,6 +16,7 @@ type GameweekInfoStripProps = {
   mainCount?: number;
   subsCount?: number;
   onRefresh?: () => void;
+  showShareButton?: boolean;
 };
 
 function LocationIcon() {
@@ -41,6 +43,7 @@ export default function GameweekInfoStrip({
   mainCount = 0,
   subsCount = 0,
   onRefresh,
+  showShareButton = false,
 }: GameweekInfoStripProps) {
   const router = useRouter();
   const { isUnlocked, organiserPin } = useOrganiserMode();
@@ -247,6 +250,17 @@ export default function GameweekInfoStrip({
                 </div>
               </div>
             </div>
+
+            {showShareButton && gameweekId ? (
+              <div className="mt-4">
+                <ShareGameButton
+                  gameweekId={gameweekId}
+                  gameDate={gameDate}
+                  time={time}
+                  location={location}
+                />
+              </div>
+            ) : null}
           </div>
         </section>
       </div>

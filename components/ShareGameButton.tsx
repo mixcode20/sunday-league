@@ -40,11 +40,13 @@ export default function ShareGameButton({
     const gameUrl = `${origin}/`;
 
     return [
-      `Game is live for ${formatGameweekDate(gameDate)}.`,
-      `Kick-off: ${time ?? "9:15am"}.`,
-      `Location: ${displayLocation}.`,
+      `Game is live for ${formatGameweekDate(gameDate)}`,
+      "",
+      `Kick-off: ${time ?? "9:15am"}`,
+      `Location: ${displayLocation}`,
+      "",
       `Join here: ${gameUrl}`,
-    ].join(" ");
+    ].join("\n");
   }, [gameDate, location, time]);
 
   if (!isUnlocked || !gameweekId) return null;
@@ -75,7 +77,7 @@ export default function ShareGameButton({
       <button
         type="button"
         onClick={handleShare}
-        className="ui-btn ui-btn-primary inline-flex w-full items-center justify-center gap-2"
+        className="ui-btn ui-btn-secondary inline-flex w-full items-center justify-center gap-2"
       >
         <ShareIcon />
         Share game

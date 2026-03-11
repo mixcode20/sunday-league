@@ -15,13 +15,48 @@ export async function GET(request: Request) {
   const gameweekId = searchParams.get("gameweekId");
 
   const supabase = supabaseServer();
-  const { data: gameweeks } = await supabase
-    .from("gameweeks")
-    .select("id, game_date, darks_score, whites_score, result_mode, winner, status")
-    .eq("status", "locked")
-    .order("game_date", { ascending: false });
+  const gameweekFields =
+    "id, game_date, darks_score, whites_score, result_mode, winner, status";
 
-  if (!gameweeks || gameweeks.length === 0) {
+  const fetchLatestLockedGameweek = async () =>
+    supabase
+      .from("gameweeks")
+      .select(gameweekFields)
+      .eq("status", "locked")
+      .order("game_date", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
+  const fetchOlderGameweek = async (gameDate: string) =>
+    supabase
+      .from("gameweeks")
+      .select("id")
+      .eq("status", "locked")
+      .lt("game_date", gameDate)
+      .order("game_date", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
+  const fetchNewerGameweek = async (gameDate: string) =>
+    supabase
+      .from("gameweeks")
+      .select("id")
+      .eq("status", "locked")
+      .gt("game_date", gameDate)
+      .order("game_date", { ascending: true })
+      .limit(1)
+      .maybeSingle();
+
+  const { data: currentGameweek } = gameweekId
+    ? await supabase
+        .from("gameweeks")
+        .select(gameweekFields)
+        .eq("id", gameweekId)
+        .eq("status", "locked")
+        .maybeSingle()
+    : await fetchLatestLockedGameweek();
+
+  if (!currentGameweek) {
     if (debugPerf) {
       console.timeEnd("api:results:overview");
     }
@@ -33,22 +68,16 @@ export async function GET(request: Request) {
     });
   }
 
-  const currentIndex = gameweekId
-    ? Math.max(
-        gameweeks.findIndex((gameweek) => gameweek.id === gameweekId),
-        0
-      )
-    : 0;
-  const currentGameweek = gameweeks[currentIndex] ?? gameweeks[0];
-  const older = gameweeks[currentIndex + 1] ?? null;
-  const newer = currentIndex > 0 ? gameweeks[currentIndex - 1] : null;
-
-  const { data: entries } = await supabase
-    .from("gameweek_players")
-    .select("*, players(id, first_name, last_name, archived)")
-    .eq("gameweek_id", currentGameweek.id)
-    .order("team", { ascending: true })
-    .order("position", { ascending: true });
+  const [{ data: older }, { data: newer }, { data: entries }] = await Promise.all([
+    fetchOlderGameweek(currentGameweek.game_date),
+    fetchNewerGameweek(currentGameweek.game_date),
+    supabase
+      .from("gameweek_players")
+      .select("*, players(id, first_name, last_name, archived)")
+      .eq("gameweek_id", currentGameweek.id)
+      .order("team", { ascending: true })
+      .order("position", { ascending: true }),
+  ]);
 
   const normalizedEntries = (entries ?? []).map(normalizePlayerJoin);
 

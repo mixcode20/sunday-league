@@ -5,7 +5,6 @@ import useSWR from "swr";
 import CreateGameweek from "@/components/CreateGameweek";
 import JoinSlots from "@/components/JoinSlots";
 import GameweekInfoStrip from "@/components/GameweekInfoStrip";
-import ShareGameButton from "@/components/ShareGameButton";
 import type { Gameweek, GameweekPlayer, Player } from "@/lib/types";
 import { fetcher, debugPerfEnabled } from "@/lib/swr";
 import { buildEntryPositionMap, getSlotCounts } from "@/lib/slots";
@@ -81,15 +80,8 @@ export default function GamePageClient() {
         mainCount={mainCount}
         subsCount={subsCount}
         onRefresh={() => mutate()}
+        showShareButton={Boolean(openGameweek)}
       />
-      {openGameweek ? (
-        <ShareGameButton
-          gameweekId={openGameweek.id}
-          gameDate={openGameweek.game_date}
-          time={openGameweek.game_time ?? null}
-          location={openGameweek.location ?? null}
-        />
-      ) : null}
 
       <section className="flex flex-col gap-4">
         {!data ? (
