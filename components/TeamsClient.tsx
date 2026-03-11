@@ -246,26 +246,15 @@ export default function TeamsClient({ gameweek, entries, onRefresh }: TeamsClien
                       onClick={() =>
                         setOpenSlotKey((current) => (current === slotKey ? null : slotKey))
                       }
-                      className="flex w-full items-center justify-between gap-3 bg-transparent px-0 py-2 text-left text-sm text-inherit outline-none"
+                      className="flex w-full items-center bg-transparent px-0 py-2 text-left text-sm text-inherit outline-none"
                     >
                       <span className="min-w-0 truncate">
                         {entry ? formatPlayerName(entry.players) : "Select player"}
                       </span>
-                      <span
-                        className={`shrink-0 text-[10px] uppercase tracking-[0.18em] ${
-                          team === "darks" ? "text-white/60" : "text-[var(--color-text-secondary)]"
-                        }`}
-                      >
-                        {openSlotKey === slotKey ? "Close" : entry ? "Change" : "Open"}
-                      </span>
                     </button>
                     {openSlotKey === slotKey ? (
                       <div
-                        className={`absolute left-0 right-0 top-[calc(100%+0.35rem)] z-20 overflow-hidden rounded-xl border shadow-[0_18px_35px_rgba(15,23,42,0.14)] ${
-                          team === "darks"
-                            ? "border-white/12 bg-[rgba(7,27,23,0.98)] text-white"
-                            : "border-[var(--color-border)] bg-white text-[var(--color-text)]"
-                        }`}
+                        className="absolute left-0 right-0 top-[calc(100%+0.35rem)] z-20 w-full overflow-hidden rounded-xl border border-[var(--color-border)] bg-white text-[var(--color-text)] shadow-[0_18px_35px_rgba(15,23,42,0.14)]"
                       >
                         {entry ? (
                           <button
@@ -274,11 +263,7 @@ export default function TeamsClient({ gameweek, entries, onRefresh }: TeamsClien
                               clearTeamSlot(entry.player_id);
                               setOpenSlotKey(null);
                             }}
-                            className={`flex w-full items-center justify-between px-3 py-2 text-left text-sm ${
-                              team === "darks"
-                                ? "border-b border-white/10 text-white/82 hover:bg-white/8"
-                                : "border-b border-[var(--color-border)] text-[var(--color-text-secondary)] hover:bg-[rgba(15,61,52,0.05)]"
-                            }`}
+                            className="flex w-full items-center justify-between border-b border-[var(--color-border)] px-3 py-2 text-left text-sm text-[var(--color-text-secondary)] hover:bg-[rgba(15,61,52,0.05)]"
                           >
                             <span>Clear slot</span>
                           </button>
@@ -310,25 +295,15 @@ export default function TeamsClient({ gameweek, entries, onRefresh }: TeamsClien
                                 }}
                                 className={`flex w-full items-center justify-between gap-3 px-3 py-2 text-left text-sm ${
                                   isTaken
-                                    ? team === "darks"
-                                      ? "cursor-not-allowed text-white/35"
-                                      : "cursor-not-allowed text-[rgba(15,23,42,0.38)]"
-                                    : team === "darks"
-                                      ? "text-white hover:bg-white/8"
-                                      : "text-[var(--color-text)] hover:bg-[rgba(15,61,52,0.05)]"
+                                    ? "cursor-not-allowed text-[rgba(15,23,42,0.38)]"
+                                    : "text-[var(--color-text)] hover:bg-[rgba(15,61,52,0.05)]"
                                 }`}
                               >
                                 <span className="min-w-0 truncate">
                                   {formatPlayerName(player.players)}
                                 </span>
                                 {isTaken ? (
-                                  <span
-                                    className={`shrink-0 text-[11px] ${
-                                      team === "darks"
-                                        ? "text-white/45"
-                                        : "text-[var(--color-text-secondary)]"
-                                    }`}
-                                  >
+                                  <span className="shrink-0 text-[11px] text-[var(--color-text-secondary)]">
                                     {assignedLabel}
                                   </span>
                                 ) : null}

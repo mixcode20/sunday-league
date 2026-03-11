@@ -221,16 +221,16 @@ export default function CreateGameweek({
               </>
             ) : null}
             <label className="ui-label mt-3">Location</label>
-            <textarea
+            <input
+              type="text"
               value={location}
               onChange={(event) => setLocation(event.target.value)}
-              rows={2}
-              className="ui-input mt-2 min-h-[5.5rem] resize-none"
+              className="ui-input mt-2"
             />
             <div className="mt-4 border-t border-[var(--color-border)] pt-4">
               <div className="flex items-center justify-between gap-3">
                 <span className="ui-label m-0">
-                  Add players now
+                  Add confirmed players
                 </span>
                 <span className="text-xs text-[var(--color-text-secondary)]">
                   {selectedPlayerIds.length} selected
