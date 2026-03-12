@@ -909,13 +909,13 @@ export default function JoinSlots({
                         {formatPlayerName(entry.players)}
                       </span>
                       {isOpen && isUnlocked ? (
-                        <button
-                          type="button"
-                          onClick={() => handleOrganiserRemove(entry)}
-                          className="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-full border border-[rgba(229,72,77,0.18)] text-[var(--color-danger)]"
-                          aria-label="Remove from game"
-                          disabled={isSlotPending(entry.position)}
-                        >
+                          <button
+                            type="button"
+                            onClick={() => handleOrganiserRemove(entry)}
+                            className="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-full border border-[var(--color-danger)] bg-[var(--color-danger)] text-sm font-semibold leading-none text-white shadow-[0_6px_16px_rgba(229,72,77,0.22)]"
+                            aria-label="Remove from game"
+                            disabled={isSlotPending(entry.position)}
+                          >
                           ×
                         </button>
                       ) : isOpen && canCancelRemoval ? (
@@ -1084,7 +1084,7 @@ export default function JoinSlots({
                                 ? handleOrganiserRemove(entry)
                                 : removeFromGame(entry.player_id)
                             }
-                            className="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-full border border-[rgba(229,72,77,0.18)] text-[var(--color-danger)]"
+                            className="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-full border border-[var(--color-danger)] bg-[var(--color-danger)] text-sm font-semibold leading-none text-white shadow-[0_6px_16px_rgba(229,72,77,0.22)]"
                             aria-label="Remove from game"
                             disabled={isSlotPending(entry.position)}
                           >
