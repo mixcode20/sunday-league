@@ -50,22 +50,23 @@ export default function TeamsReadOnly({
   const teamsSelected = grouped.darks.length + grouped.whites.length > 0;
 
   const renderSlots = (team: Team, title: string, accent: string, isDark?: boolean) => (
-    <div className={`rounded-[1.35rem] border p-4 ${accent}`}>
-      <div className="flex min-h-[40px] items-center justify-between gap-3">
+    <div className={`relative rounded-[1.35rem] border p-4 ${accent}`}>
+      {winner === team ? (
+        <div className="absolute right-4 top-[11px]" aria-label={`${title} winners`}>
+          <TrophyIcon />
+        </div>
+      ) : null}
+      <div className="flex min-h-[30px] items-start justify-between gap-3">
         <h3
-          className={`text-xs font-semibold uppercase tracking-[0.18em] ${
+          className={`pt-0.5 text-xs font-semibold uppercase tracking-[0.18em] ${
             isDark ? "text-white/80" : "text-[var(--color-text-secondary)]"
           }`}
         >
           {title}
         </h3>
         {showCounts ? (
-          <span className={`text-xs ${isDark ? "text-white/60" : "text-[var(--color-text-secondary)]"}`}>
+          <span className={`pt-0.5 text-xs ${isDark ? "text-white/60" : "text-[var(--color-text-secondary)]"}`}>
             {grouped[team].length}/{TEAM_LIMITS[team]}
-          </span>
-        ) : winner === team ? (
-          <span className="flex h-7 items-center justify-center" aria-label={`${title} winners`}>
-            <TrophyIcon />
           </span>
         ) : (
           <span className="block h-7 w-7" aria-hidden="true" />

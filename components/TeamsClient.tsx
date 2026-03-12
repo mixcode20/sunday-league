@@ -56,6 +56,14 @@ function PlusIcon() {
   );
 }
 
+function MinusIcon() {
+  return (
+    <svg viewBox="0 0 20 20" aria-hidden="true" className="h-4 w-4 fill-current">
+      <path d="M5 9.25a.75.75 0 0 0 0 1.5h10a.75.75 0 0 0 0-1.5H5Z" />
+    </svg>
+  );
+}
+
 export default function TeamsClient({ gameweek, entries, onRefresh }: TeamsClientProps) {
   const router = useRouter();
   const { isUnlocked, organiserPin } = useOrganiserMode();
@@ -439,9 +447,9 @@ export default function TeamsClient({ gameweek, entries, onRefresh }: TeamsClien
     () =>
       visiblePlayers.filter((player) => {
         const assignedTeam = assignedTeamByPlayerId.get(player.player_id);
-        return !assignedTeam || player.player_id === openSlotEntry?.player_id;
+        return !assignedTeam;
       }),
-    [assignedTeamByPlayerId, openSlotEntry?.player_id, visiblePlayers]
+    [assignedTeamByPlayerId, visiblePlayers]
   );
   const darksPlayers = useMemo(
     () =>
@@ -544,15 +552,42 @@ export default function TeamsClient({ gameweek, entries, onRefresh }: TeamsClien
     );
   };
 
+  const currentSlotSection = openSlotEntry ? (
+    <section>
+      <div className="border-y border-[rgba(226,232,240,0.82)] bg-[rgba(248,250,252,0.92)] px-4 py-2">
+        <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-[var(--color-text-secondary)]">
+          Current Slot
+        </p>
+      </div>
+      <button
+        type="button"
+        onClick={async () => {
+          await clearTeamSlot(openSlotEntry.player_id);
+          closeSelector();
+        }}
+        className="flex w-full items-center gap-3 border-b border-[rgba(226,232,240,0.82)] bg-white px-4 py-3 text-left hover:bg-[rgba(15,61,52,0.05)]"
+      >
+        <PlayerAvatar />
+        <span className="min-w-0 flex-1 truncate text-base text-[var(--color-text)]">
+          {formatPlayerName(openSlotEntry.players)}
+        </span>
+        <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[rgba(148,163,184,0.18)] text-[var(--color-text-secondary)]">
+          <MinusIcon />
+        </span>
+      </button>
+    </section>
+  ) : null;
+
   const orderedSections = openSlotMeta
     ? openSlotMeta.team === "whites"
       ? [
+          currentSlotSection,
+          renderSection("Available", availablePlayers, { selectable: true }),
           renderSection("In Whites", whitesPlayers, {
             badge: "Whites",
             disabled: true,
             selectable: false,
           }),
-          renderSection("Available", availablePlayers, { selectable: true }),
           renderSection("In Darks", darksPlayers, {
             badge: "Darks",
             disabled: true,
@@ -560,12 +595,13 @@ export default function TeamsClient({ gameweek, entries, onRefresh }: TeamsClien
           }),
         ]
       : [
+          currentSlotSection,
+          renderSection("Available", availablePlayers, { selectable: true }),
           renderSection("In Darks", darksPlayers, {
             badge: "Darks",
             disabled: true,
             selectable: false,
           }),
-          renderSection("Available", availablePlayers, { selectable: true }),
           renderSection("In Whites", whitesPlayers, {
             badge: "Whites",
             disabled: true,
@@ -649,20 +685,6 @@ export default function TeamsClient({ gameweek, entries, onRefresh }: TeamsClien
                 </div>
               ) : null}
             </div>
-            {openSlotEntry ? (
-              <div className="flex justify-end border-t border-[rgba(226,232,240,0.82)] px-4 py-4">
-                <button
-                  type="button"
-                  onClick={async () => {
-                    await clearTeamSlot(openSlotEntry.player_id);
-                    closeSelector();
-                  }}
-                  className="ui-btn ui-btn-secondary min-h-0 rounded-xl px-4 py-3 text-sm"
-                >
-                  Clear Slot
-                </button>
-              </div>
-            ) : null}
           </div>
         </div>
       ) : null}
@@ -676,9 +698,24 @@ export default function TeamsClient({ gameweek, entries, onRefresh }: TeamsClien
             playersThisWeek.map((entry) => (
               <div
                 key={entry.player_id}
-                className="rounded-xl border border-[rgba(229,231,235,0.9)] bg-[rgba(15,61,52,0.03)] px-3 py-2 text-sm"
+                className="flex items-center justify-between gap-3 rounded-xl border border-[rgba(229,231,235,0.9)] bg-[rgba(15,61,52,0.03)] px-3 py-2 text-sm"
               >
-                {formatPlayerName(entry.players)}
+                <span className="min-w-0 flex-1 truncate">
+                  {formatPlayerName(entry.players)}
+                </span>
+                {assignedTeamByPlayerId.get(entry.player_id) === "darks" ? (
+                  <span className="shrink-0 rounded-full border border-[rgba(15,61,52,0.18)] bg-[var(--color-primary-dark)] px-2.5 py-1 text-center text-[11px] font-medium uppercase tracking-[0.12em] text-white min-w-[76px]">
+                    Darks
+                  </span>
+                ) : assignedTeamByPlayerId.get(entry.player_id) === "whites" ? (
+                  <span className="shrink-0 rounded-full border border-[rgba(203,213,225,0.95)] bg-[rgba(255,255,255,0.95)] px-2.5 py-1 text-center text-[11px] font-medium uppercase tracking-[0.12em] text-[var(--color-text-secondary)] min-w-[76px]">
+                    Whites
+                  </span>
+                ) : (
+                  <span className="shrink-0 min-w-[76px] text-center text-sm text-[var(--color-text-secondary)]">
+                    -
+                  </span>
+                )}
               </div>
             ))
           ) : (

@@ -662,9 +662,31 @@ export default function JoinSlots({
     Object.values(optimisticByPosition).forEach((entry) => ids.add(entry.player_id));
     return ids;
   }, [liveEntries, optimisticByPosition]);
-  const availablePlayers = players.filter((player) => !filledPlayerIds.has(player.id));
-  const filteredAvailablePlayers = availablePlayers.filter((player) =>
-    formatPlayerName(player).toLowerCase().includes(playerSearch.trim().toLowerCase())
+  const availablePlayers = useMemo(
+    () =>
+      players
+        .filter((player) => !filledPlayerIds.has(player.id))
+        .sort((a, b) => {
+          const lastSeenComparison = (b.last_game_date ?? "").localeCompare(a.last_game_date ?? "");
+          if (lastSeenComparison !== 0) {
+            return lastSeenComparison;
+          }
+
+          const gamesPlayedComparison = (b.games_played ?? 0) - (a.games_played ?? 0);
+          if (gamesPlayedComparison !== 0) {
+            return gamesPlayedComparison;
+          }
+
+          return formatPlayerName(a).localeCompare(formatPlayerName(b));
+        }),
+    [filledPlayerIds, players]
+  );
+  const filteredAvailablePlayers = useMemo(
+    () =>
+      availablePlayers.filter((player) =>
+        formatPlayerName(player).toLowerCase().includes(playerSearch.trim().toLowerCase())
+      ),
+    [availablePlayers, playerSearch]
   );
 
   const openDropdown = (slotIndex: number) => {
@@ -1196,7 +1218,7 @@ export default function JoinSlots({
             />
           </div>
 
-          <div className="mt-4 min-h-0 flex-1 overflow-y-auto">
+          <div className="mt-4 min-h-0 flex-1 overflow-y-auto pb-24">
             {filteredAvailablePlayers.length > 0 ? (
               filteredAvailablePlayers.map((player) => (
                 <button
@@ -1235,14 +1257,15 @@ export default function JoinSlots({
             )}
           </div>
 
-          <div className="mt-4 shrink-0 border-t border-[var(--color-border)] pt-4">
+          <div className="sticky bottom-0 mt-4 shrink-0 border-t border-[var(--color-border)] bg-white/95 pt-4 backdrop-blur">
             <button
               type="button"
               onClick={handleAddNew}
-              className="flex w-full items-center gap-2 rounded-lg px-1 py-2 text-sm font-semibold text-[var(--color-text)]"
+              className="flex w-full items-center justify-center gap-2 rounded-[16px] border border-[rgba(15,61,52,0.1)] bg-[var(--color-primary-dark)] px-4 py-3 text-sm font-semibold text-white shadow-[0_10px_24px_rgba(15,61,52,0.18)]"
               disabled={openSlot === null ? true : isSlotPending(openSlot)}
             >
-              + Add new player
+              {plusIcon("h-[14px] w-[14px]")}
+              Add new player
             </button>
           </div>
         </div>
