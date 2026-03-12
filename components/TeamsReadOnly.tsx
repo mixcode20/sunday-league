@@ -22,9 +22,11 @@ function TrophyIcon() {
 export default function TeamsReadOnly({
   entries,
   winner,
+  showCounts = true,
 }: {
   entries: GameweekPlayer[];
   winner?: Winner | null;
+  showCounts?: boolean;
 }) {
   const grouped: Record<Team, GameweekPlayer[]> = {
     darks: [],
@@ -50,23 +52,24 @@ export default function TeamsReadOnly({
   const renderSlots = (team: Team, title: string, accent: string, isDark?: boolean) => (
     <div className={`rounded-[1.35rem] border p-4 ${accent}`}>
       <div className="flex min-h-[48px] items-start justify-between gap-3">
-        <div className="flex flex-col gap-1.5">
-          {winner === team ? (
-            <div className="flex justify-start">
-              <TrophyIcon />
-            </div>
-          ) : null}
-          <h3
-            className={`text-xs font-semibold uppercase tracking-[0.18em] ${
-              isDark ? "text-white/80" : "text-[var(--color-text-secondary)]"
-            }`}
-          >
-            {title}
-          </h3>
-        </div>
-        <span className={`pt-0.5 text-xs ${isDark ? "text-white/60" : "text-[var(--color-text-secondary)]"}`}>
-          {grouped[team].length}/{TEAM_LIMITS[team]}
-        </span>
+        <h3
+          className={`pt-0.5 text-xs font-semibold uppercase tracking-[0.18em] ${
+            isDark ? "text-white/80" : "text-[var(--color-text-secondary)]"
+          }`}
+        >
+          {title}
+        </h3>
+        {showCounts ? (
+          <span className={`pt-0.5 text-xs ${isDark ? "text-white/60" : "text-[var(--color-text-secondary)]"}`}>
+            {grouped[team].length}/{TEAM_LIMITS[team]}
+          </span>
+        ) : winner === team ? (
+          <span className="flex min-h-[28px] items-center justify-center" aria-label={`${title} winners`}>
+            <TrophyIcon />
+          </span>
+        ) : (
+          <span className="block min-h-[28px] w-7" aria-hidden="true" />
+        )}
       </div>
       <div className="mt-3 space-y-3">
         {(() => {

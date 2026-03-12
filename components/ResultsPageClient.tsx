@@ -197,7 +197,7 @@ export default function ResultsPageClient() {
         </div>
       </section>
 
-      <TeamsReadOnly entries={normalized} winner={summary.winner} />
+      <TeamsReadOnly entries={normalized} winner={summary.winner} showCounts={false} />
     </div>
   );
 }
