@@ -60,7 +60,7 @@ export default async function GameDetailPage({
         )}
       </section>
 
-      <TeamsReadOnly entries={normalizedEntries} />
+      <TeamsReadOnly entries={normalizedEntries} winner={winner} />
     </div>
   );
 }

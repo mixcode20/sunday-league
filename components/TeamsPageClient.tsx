@@ -126,6 +126,7 @@ export default function TeamsPageClient() {
         gameDate={gameweek.game_date}
         time={gameweek.game_time ?? null}
         location={gameweek.location ?? null}
+        paymentLink={gameweek.payment_link ?? null}
         mainCount={mainCount}
         subsCount={subsCount}
         onRefresh={() => mutate()}
@@ -149,7 +150,7 @@ export default function TeamsPageClient() {
       {gameweek.status === "open" ? (
         <TeamsClient gameweek={gameweek} entries={entries} onRefresh={() => mutate()} />
       ) : (
-        <TeamsReadOnly entries={entries} />
+        <TeamsReadOnly entries={entries} winner={gameweekWinner} />
       )}
     </div>
   );

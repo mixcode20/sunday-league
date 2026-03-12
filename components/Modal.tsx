@@ -27,6 +27,14 @@ export default function Modal({
     position === "center"
       ? "items-center py-8"
       : "items-start pt-20 pb-6";
+  const panelClass =
+    position === "center"
+      ? "w-full max-w-md rounded-[1.5rem] border border-[var(--color-border)] bg-white p-5 text-[var(--color-text)] shadow-[0_20px_40px_rgba(15,61,52,0.08)]"
+      : "flex w-full max-w-md max-h-[calc(100dvh-6.5rem)] flex-col rounded-[1.5rem] border border-[var(--color-border)] bg-white p-5 text-[var(--color-text)] shadow-[0_20px_40px_rgba(15,61,52,0.08)]";
+  const contentClass =
+    position === "center"
+      ? "max-h-[70vh] overflow-y-auto pr-1"
+      : "min-h-0 flex-1 overflow-y-auto pr-1";
 
   return (
     <div
@@ -36,7 +44,7 @@ export default function Modal({
       }}
     >
       <div
-        className="w-full max-w-md rounded-[1.5rem] border border-[var(--color-border)] bg-white p-5 text-[var(--color-text)] shadow-[0_20px_40px_rgba(15,61,52,0.08)]"
+        className={panelClass}
         onClick={(event) => event.stopPropagation()}
       >
         <div className="mb-4 flex items-center justify-between">
@@ -60,7 +68,7 @@ export default function Modal({
             </button>
           )}
         </div>
-        <div className="max-h-[70vh] overflow-y-auto pr-1">{children}</div>
+        <div className={contentClass}>{children}</div>
       </div>
     </div>
   );

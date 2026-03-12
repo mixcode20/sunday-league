@@ -18,6 +18,7 @@ export type Gameweek = {
   game_date: string;
   game_time: string;
   location: string;
+  payment_link?: string | null;
   status: GameweekStatus;
   darks_score: number | null;
   whites_score: number | null;

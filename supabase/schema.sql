@@ -16,6 +16,7 @@ create table if not exists gameweeks (
   game_date date not null,
   game_time text not null default '9:15am',
   location text not null default 'MH',
+  payment_link text,
   status text not null check (status in ('open', 'locked')),
   darks_score integer check (darks_score >= 0),
   whites_score integer check (whites_score >= 0),

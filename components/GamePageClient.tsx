@@ -66,6 +66,7 @@ export default function GamePageClient() {
         gameDate={gameweek?.game_date ?? null}
         time={gameweek?.game_time ?? null}
         location={gameweek?.location ?? null}
+        paymentLink={gameweek?.payment_link ?? null}
         mainCount={mainCount}
         subsCount={subsCount}
         entries={normalizedEntries}

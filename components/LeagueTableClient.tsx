@@ -174,11 +174,11 @@ export default function LeagueTableClient({ rows }: { rows: LeagueStatRow[] }) {
               ))}
             </tr>
           </thead>
-          <tbody>
+          <tbody className="bg-[rgba(126,217,87,0.06)]">
             {sorted.length > 0 ? (
               sorted.map((row) => (
                 <tr key={row.id} className="border-t border-[rgba(229,231,235,0.9)]">
-                  <td className="px-3 py-3 align-middle font-medium text-[var(--color-text)]">
+                  <td className="px-3 py-2.5 align-middle font-medium text-[var(--color-text)]">
                     <div className="relative flex min-h-8 items-center pr-10">
                       <span>{row.name}</span>
                       {isUnlocked ? (
@@ -197,12 +197,12 @@ export default function LeagueTableClient({ rows }: { rows: LeagueStatRow[] }) {
                       ) : null}
                     </div>
                   </td>
-                  <td className="px-2 py-3 align-middle text-center text-[var(--color-text-secondary)]">{row.gp}</td>
-                  <td className="px-2 py-3 align-middle text-center text-[var(--color-text-secondary)]">{row.w}</td>
-                  <td className="px-2 py-3 align-middle text-center text-[var(--color-text-secondary)]">{row.d}</td>
-                  <td className="px-2 py-3 align-middle text-center text-[var(--color-text-secondary)]">{row.l}</td>
-                  <td className="px-2 py-3 align-middle text-center text-[var(--color-text-secondary)]">{row.goalDifference}</td>
-                  <td className="px-2 py-3 align-middle text-center text-[var(--color-text-secondary)]">
+                  <td className="px-2 py-2.5 align-middle text-center text-[var(--color-text-secondary)]">{row.gp}</td>
+                  <td className="px-2 py-2.5 align-middle text-center text-[var(--color-text-secondary)]">{row.w}</td>
+                  <td className="px-2 py-2.5 align-middle text-center text-[var(--color-text-secondary)]">{row.d}</td>
+                  <td className="px-2 py-2.5 align-middle text-center text-[var(--color-text-secondary)]">{row.l}</td>
+                  <td className="px-2 py-2.5 align-middle text-center text-[var(--color-text-secondary)]">{row.goalDifference}</td>
+                  <td className="px-2 py-2.5 align-middle text-center text-[var(--color-text-secondary)]">
                     {row.winPct.toFixed(0)}%
                   </td>
                 </tr>

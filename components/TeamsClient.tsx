@@ -4,7 +4,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useOrganiserMode } from "@/components/OrganiserModeProvider";
 import type { Gameweek, GameweekPlayer, Team } from "@/lib/types";
-import { formatPlayerName } from "@/lib/utils";
+import { formatGameweekDate, formatPlayerName } from "@/lib/utils";
 
 type TeamsClientProps = {
   gameweek: Gameweek;
@@ -44,6 +44,26 @@ function PlayerAvatar() {
         <path d="M10 10a3.25 3.25 0 1 0 0-6.5A3.25 3.25 0 0 0 10 10Zm0 1.5c-3.16 0-5.75 1.82-5.75 4.06 0 .24.2.44.44.44h10.62c.24 0 .44-.2.44-.44 0-2.24-2.59-4.06-5.75-4.06Z" />
       </svg>
     </span>
+  );
+}
+
+function PlusIcon() {
+  return (
+    <svg viewBox="0 0 20 20" aria-hidden="true" className="h-4 w-4 fill-current">
+      <path d="M10 4.25a.75.75 0 0 1 .75.75v4.25H15a.75.75 0 0 1 0 1.5h-4.25V15a.75.75 0 0 1-1.5 0v-4.25H5a.75.75 0 0 1 0-1.5h4.25V5a.75.75 0 0 1 .75-.75Z" />
+    </svg>
+  );
+}
+
+function ShareIcon() {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      aria-hidden="true"
+      className="h-4 w-4 fill-current"
+    >
+      <path d="M18 16.08c-.76 0-1.44.3-1.96.77l-7.13-4.15a3.3 3.3 0 0 0 0-1.4l7.12-4.15A2.99 2.99 0 1 0 15 5a3 3 0 0 0 .05.54L7.93 9.7a3 3 0 1 0 0 4.6l7.12 4.16A3 3 0 1 0 18 16.08Z" />
+    </svg>
   );
 }
 
@@ -113,6 +133,50 @@ export default function TeamsClient({ gameweek, entries, onRefresh }: TeamsClien
     [entries]
   );
   const teamsSelected = grouped.darks.length + grouped.whites.length > 0;
+  const teamsComplete =
+    grouped.darks.length === TEAM_LIMITS.darks &&
+    grouped.whites.length === TEAM_LIMITS.whites;
+  const orderedDarks = useMemo(
+    () =>
+      [...grouped.darks].sort((left, right) => {
+        const leftPosition = left.team_position ?? Number.MAX_SAFE_INTEGER;
+        const rightPosition = right.team_position ?? Number.MAX_SAFE_INTEGER;
+        if (leftPosition !== rightPosition) return leftPosition - rightPosition;
+        return left.position - right.position;
+      }),
+    [grouped.darks]
+  );
+  const orderedWhites = useMemo(
+    () =>
+      [...grouped.whites].sort((left, right) => {
+        const leftPosition = left.team_position ?? Number.MAX_SAFE_INTEGER;
+        const rightPosition = right.team_position ?? Number.MAX_SAFE_INTEGER;
+        if (leftPosition !== rightPosition) return leftPosition - rightPosition;
+        return left.position - right.position;
+      }),
+    [grouped.whites]
+  );
+  const sendTeamsText = useMemo(() => {
+    if (!teamsComplete) return "";
+
+    const darksList = orderedDarks.map((entry) => formatPlayerName(entry.players));
+    const whitesList = orderedWhites.map((entry) => formatPlayerName(entry.players));
+
+    return [
+      `Teams selected for ${formatGameweekDate(gameweek.game_date)} 🚨`,
+      "",
+      "*KICKING OFF 9:15*",
+      "",
+      "Darks:",
+      ...darksList,
+      "",
+      "Whites:",
+      ...whitesList,
+      "",
+      "Payment link:",
+      gameweek.payment_link?.trim() || "",
+    ].join("\n");
+  }, [gameweek.game_date, gameweek.payment_link, orderedDarks, orderedWhites, teamsComplete]);
 
   useEffect(() => {
     if (!openSlotKey) return;
@@ -216,6 +280,24 @@ export default function TeamsClient({ gameweek, entries, onRefresh }: TeamsClien
       await assignPlayer(occupied.playerId, dragged.team, dragged.position, true);
     }
     setDragged(null);
+  };
+
+  const shareMessage = async (text: string) => {
+    if (!text) return;
+
+    try {
+      const whatsappUrl = `https://wa.me/?text=${encodeURIComponent(text)}`;
+      const popup = window.open(whatsappUrl, "_blank", "noopener,noreferrer");
+      if (popup) return;
+    } catch {
+      // Fall back to copying the share text below.
+    }
+
+    try {
+      await navigator.clipboard.writeText(text);
+    } catch {
+      // Ignore failures here; the share button should not surface a warning state.
+    }
   };
 
   const renderTeamSlots = (
@@ -416,19 +498,31 @@ export default function TeamsClient({ gameweek, entries, onRefresh }: TeamsClien
           closeSelector();
         }}
         className={`flex w-full items-center gap-3 border-b border-[rgba(226,232,240,0.82)] px-4 py-3 text-left ${
-          selectable ? "bg-white hover:bg-[rgba(15,61,52,0.05)]" : "bg-white"
-        } ${selectable ? "hover:bg-[rgba(15,61,52,0.05)]" : "cursor-not-allowed opacity-80"}`}
+          selectable
+            ? "bg-white hover:bg-[rgba(15,61,52,0.05)]"
+            : "cursor-not-allowed bg-[rgba(248,250,252,0.96)] opacity-100"
+        }`}
       >
-        <PlayerAvatar />
-        <span className="min-w-0 flex-1 truncate text-base text-[var(--color-text)]">
+        <span className={selectable ? "" : "opacity-55 grayscale"}>
+          <PlayerAvatar />
+        </span>
+        <span
+          className={`min-w-0 flex-1 truncate text-base ${
+            selectable ? "text-[var(--color-text)]" : "text-[rgba(100,116,139,0.95)]"
+          }`}
+        >
           {formatPlayerName(player.players)}
         </span>
-        {options?.badge ? (
+        {selectable ? (
+          <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[rgba(15,61,52,0.1)] text-[var(--color-primary-dark)]">
+            <PlusIcon />
+          </span>
+        ) : options?.badge ? (
           <span
             className={`shrink-0 rounded-full border px-3 py-1 text-xs font-medium ${
               options.badge === "Darks"
-                ? "border-[rgba(15,61,52,0.28)] bg-[var(--color-primary-dark)] text-white"
-                : "border-[rgba(203,213,225,0.9)] bg-[rgba(248,250,252,0.9)] text-[var(--color-text-secondary)]"
+                ? "border-[rgba(203,213,225,0.9)] bg-[rgba(226,232,240,0.75)] text-[rgba(100,116,139,0.95)]"
+                : "border-[rgba(203,213,225,0.9)] bg-[rgba(248,250,252,0.9)] text-[rgba(100,116,139,0.95)]"
             }`}
           >
             {options.badge}
@@ -457,6 +551,36 @@ export default function TeamsClient({ gameweek, entries, onRefresh }: TeamsClien
     );
   };
 
+  const orderedSections = openSlotMeta
+    ? openSlotMeta.team === "whites"
+      ? [
+          renderSection("In Whites", whitesPlayers, {
+            badge: "Whites",
+            disabled: true,
+            selectable: false,
+          }),
+          renderSection("Available", availablePlayers, { selectable: true }),
+          renderSection("In Darks", darksPlayers, {
+            badge: "Darks",
+            disabled: true,
+            selectable: false,
+          }),
+        ]
+      : [
+          renderSection("In Darks", darksPlayers, {
+            badge: "Darks",
+            disabled: true,
+            selectable: false,
+          }),
+          renderSection("Available", availablePlayers, { selectable: true }),
+          renderSection("In Whites", whitesPlayers, {
+            badge: "Whites",
+            disabled: true,
+            selectable: false,
+          }),
+        ]
+    : [];
+
   return (
     <div className="space-y-4">
       {statusMessage ? (
@@ -469,17 +593,6 @@ export default function TeamsClient({ gameweek, entries, onRefresh }: TeamsClien
         <p className="ui-banner">
           Teams have not yet been selected for this gameweek.
         </p>
-      ) : null}
-
-      {isUnlocked && !isLocked ? (
-        <div className="ui-card p-4 text-sm text-[var(--color-text-secondary)]">
-          <p className="ui-kicker">
-            Organiser
-          </p>
-          <p className="mt-2">
-            Fill empty slots from the dropdowns or drag players to swap teams.
-          </p>
-        </div>
       ) : null}
 
       <div className="grid grid-cols-2 gap-4">
@@ -496,11 +609,22 @@ export default function TeamsClient({ gameweek, entries, onRefresh }: TeamsClien
         )}
       </div>
 
+      {isUnlocked && !isLocked && teamsComplete ? (
+        <button
+          type="button"
+          onClick={() => void shareMessage(sendTeamsText)}
+          className="ui-btn ui-btn-primary inline-flex w-full items-center justify-center gap-2"
+        >
+          <ShareIcon />
+          Send teams
+        </button>
+      ) : null}
+
       {openSlotMeta ? (
         <div className="fixed inset-0 z-40 flex justify-center bg-[rgba(15,30,28,0.34)] px-4 pt-[10vh] backdrop-blur-[2px]">
           <div
             ref={slotMenuRef}
-            className="w-full max-w-md overflow-hidden rounded-[1.5rem] border border-[var(--color-border)] bg-white text-[var(--color-text)] shadow-[0_20px_40px_rgba(15,61,52,0.12)]"
+            className="flex max-h-[88vh] w-full max-w-md flex-col overflow-hidden rounded-[1.5rem] border border-[var(--color-border)] bg-white text-[var(--color-text)] shadow-[0_20px_40px_rgba(15,61,52,0.12)]"
           >
             <div
               className={`flex items-center justify-between border-b border-[rgba(226,232,240,0.82)] px-5 py-4 ${
@@ -524,26 +648,16 @@ export default function TeamsClient({ gameweek, entries, onRefresh }: TeamsClien
                 Close
               </button>
             </div>
-            <div className="max-h-[min(52vh,28rem)] overflow-y-auto">
-              {renderSection("Available", availablePlayers, { selectable: true })}
-              {renderSection("In Darks", darksPlayers, {
-                badge: "Darks",
-                disabled: true,
-                selectable: false,
-              })}
-              {renderSection("In Whites", whitesPlayers, {
-                badge: "Whites",
-                disabled: true,
-                selectable: false,
-              })}
+            <div className="flex-1 overflow-y-auto">
+              {orderedSections}
               {availablePlayers.length === 0 && darksPlayers.length === 0 && whitesPlayers.length === 0 ? (
                 <div className="px-4 py-8 text-center text-sm text-[var(--color-text-secondary)]">
                   No players available.
                 </div>
               ) : null}
             </div>
-            <div className="flex justify-end border-t border-[rgba(226,232,240,0.82)] px-4 py-4">
-              {openSlotEntry ? (
+            {openSlotEntry ? (
+              <div className="flex justify-end border-t border-[rgba(226,232,240,0.82)] px-4 py-4">
                 <button
                   type="button"
                   onClick={async () => {
@@ -554,8 +668,8 @@ export default function TeamsClient({ gameweek, entries, onRefresh }: TeamsClien
                 >
                   Clear Slot
                 </button>
-              ) : null}
-            </div>
+              </div>
+            ) : null}
           </div>
         </div>
       ) : null}

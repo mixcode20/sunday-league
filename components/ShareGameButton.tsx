@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo } from "react";
 import { MAIN_SLOT_CAPACITY } from "@/lib/slots";
 import type { GameweekPlayer } from "@/lib/types";
 import { formatGameweekDate, formatPlayerName } from "@/lib/utils";
@@ -34,7 +34,6 @@ export default function ShareGameButton({
   entries = [],
 }: ShareGameButtonProps) {
   const { isUnlocked } = useOrganiserMode();
-  const [message, setMessage] = useState("");
 
   const shareText = useMemo(() => {
     if (typeof window === "undefined") return "";
@@ -68,15 +67,26 @@ export default function ShareGameButton({
     ].join("\n");
   }, [entries, gameDate, location, time]);
 
+  const nudgeText = useMemo(() => {
+    const mainEntries = entries.filter(
+      (entry) => entry.position <= MAIN_SLOT_CAPACITY
+    ).length;
+    const spacesLeft = Math.max(MAIN_SLOT_CAPACITY - mainEntries, 0);
+    const spacesLabel = spacesLeft === 1 ? "space" : "spaces";
+
+    return [
+      `Still ${spacesLeft} ${spacesLabel} for this game`,
+      formatGameweekDate(gameDate),
+    ].join("\n\n");
+  }, [entries, gameDate]);
+
   if (!isUnlocked || !gameweekId) return null;
 
-  const handleShare = async () => {
-    if (!shareText) return;
-
-    setMessage("");
+  const shareMessage = async (text: string) => {
+    if (!text) return;
 
     try {
-      const whatsappUrl = `https://wa.me/?text=${encodeURIComponent(shareText)}`;
+      const whatsappUrl = `https://wa.me/?text=${encodeURIComponent(text)}`;
       const popup = window.open(whatsappUrl, "_blank", "noopener,noreferrer");
       if (popup) return;
     } catch {
@@ -84,10 +94,9 @@ export default function ShareGameButton({
     }
 
     try {
-      await navigator.clipboard.writeText(shareText);
-      setMessage("WhatsApp could not be opened. The message was copied instead.");
+      await navigator.clipboard.writeText(text);
     } catch {
-      setMessage("Failed to open WhatsApp.");
+      // Ignore failures here; the share button should not surface a warning state.
     }
   };
 
@@ -95,15 +104,20 @@ export default function ShareGameButton({
     <div className="space-y-2">
       <button
         type="button"
-        onClick={handleShare}
+        onClick={() => void shareMessage(shareText)}
         className="ui-btn ui-btn-primary inline-flex w-full items-center justify-center gap-2"
       >
         <ShareIcon />
         Share to WhatsApp
       </button>
-      {message ? (
-        <p className="ui-banner ui-banner-warning">{message}</p>
-      ) : null}
+      <button
+        type="button"
+        onClick={() => void shareMessage(nudgeText)}
+        className="ui-btn ui-btn-secondary inline-flex w-full items-center justify-center gap-2"
+      >
+        <ShareIcon />
+        Nudge group
+      </button>
     </div>
   );
 }

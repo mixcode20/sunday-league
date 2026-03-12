@@ -14,6 +14,7 @@ type GameweekInfoStripProps = {
   gameDate?: string | null;
   time?: string | null;
   location?: string | null;
+  paymentLink?: string | null;
   mainCount?: number;
   subsCount?: number;
   entries?: GameweekPlayer[];
@@ -42,6 +43,7 @@ export default function GameweekInfoStrip({
   gameDate,
   time,
   location,
+  paymentLink,
   mainCount = 0,
   subsCount = 0,
   entries = [],
@@ -60,6 +62,7 @@ export default function GameweekInfoStrip({
   const [editDate, setEditDate] = useState(gameDate ?? "");
   const [editTime, setEditTime] = useState("");
   const [editLocation, setEditLocation] = useState(location ?? "");
+  const [editPaymentLink, setEditPaymentLink] = useState(paymentLink ?? "");
   const [message, setMessage] = useState("");
   const [deleteConfirm, setDeleteConfirm] = useState("");
   const countsSource = `${gameweekId ?? "none"}:${mainCount}:${subsCount}`;
@@ -132,6 +135,7 @@ export default function GameweekInfoStrip({
     setEditDate(gameDate ?? "");
     setEditTime(timeForInput);
     setEditLocation(location ?? "");
+    setEditPaymentLink(paymentLink ?? "");
     setEditOpen(true);
   };
 
@@ -150,6 +154,7 @@ export default function GameweekInfoStrip({
         date: editDate,
         time: formattedTime,
         location: editLocation,
+        paymentLink: editPaymentLink,
         pin: organiserPin,
       }),
     });
@@ -300,6 +305,14 @@ export default function GameweekInfoStrip({
           value={editLocation}
           onChange={(event) => setEditLocation(event.target.value)}
           className="ui-input mt-2"
+        />
+        <label className="ui-label mt-3">Payment link</label>
+        <input
+          type="text"
+          value={editPaymentLink}
+          onChange={(event) => setEditPaymentLink(event.target.value)}
+          className="ui-input mt-2"
+          placeholder="https://"
         />
         <button
           type="button"

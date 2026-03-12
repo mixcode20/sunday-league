@@ -1,4 +1,4 @@
-import type { GameweekPlayer, Team } from "@/lib/types";
+import type { GameweekPlayer, Team, Winner } from "@/lib/types";
 import { formatPlayerName } from "@/lib/utils";
 
 const TEAM_LIMITS: Record<Team, number> = {
@@ -7,7 +7,25 @@ const TEAM_LIMITS: Record<Team, number> = {
   subs: 4,
 };
 
-export default function TeamsReadOnly({ entries }: { entries: GameweekPlayer[] }) {
+function TrophyIcon() {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      aria-hidden="true"
+      className="h-7 w-7 fill-[#c69214] drop-shadow-[0_4px_10px_rgba(198,146,20,0.28)]"
+    >
+      <path d="M6.5 3.25h11v2h2.25a.75.75 0 0 1 .75.75v1.5a5.25 5.25 0 0 1-4.78 5.23 6.17 6.17 0 0 1-2.97 2.79v2.48h3.5a.75.75 0 0 1 .75.75v2H7v-2a.75.75 0 0 1 .75-.75h3.5v-2.48a6.17 6.17 0 0 1-2.97-2.79A5.25 5.25 0 0 1 3.5 7.5V6a.75.75 0 0 1 .75-.75H6.5v-2Zm0 4H5v.25a3.75 3.75 0 0 0 2.18 3.39A6.13 6.13 0 0 1 6.5 8.1V7.25Zm11 0v.85c0 .98-.24 1.93-.68 2.79A3.75 3.75 0 0 0 19 7.5v-.25h-1.5Z" />
+    </svg>
+  );
+}
+
+export default function TeamsReadOnly({
+  entries,
+  winner,
+}: {
+  entries: GameweekPlayer[];
+  winner?: Winner | null;
+}) {
   const grouped: Record<Team, GameweekPlayer[]> = {
     darks: [],
     whites: [],
@@ -31,15 +49,22 @@ export default function TeamsReadOnly({ entries }: { entries: GameweekPlayer[] }
 
   const renderSlots = (team: Team, title: string, accent: string, isDark?: boolean) => (
     <div className={`rounded-[1.35rem] border p-4 ${accent}`}>
-      <div className="flex items-center justify-between">
-        <h3
-          className={`text-xs font-semibold uppercase tracking-[0.18em] ${
-            isDark ? "text-white/80" : "text-[var(--color-text-secondary)]"
-          }`}
-        >
-          {title}
-        </h3>
-        <span className={`text-xs ${isDark ? "text-white/60" : "text-[var(--color-text-secondary)]"}`}>
+      <div className="flex min-h-[48px] items-start justify-between gap-3">
+        <div className="flex flex-col gap-1.5">
+          {winner === team ? (
+            <div className="flex justify-start">
+              <TrophyIcon />
+            </div>
+          ) : null}
+          <h3
+            className={`text-xs font-semibold uppercase tracking-[0.18em] ${
+              isDark ? "text-white/80" : "text-[var(--color-text-secondary)]"
+            }`}
+          >
+            {title}
+          </h3>
+        </div>
+        <span className={`pt-0.5 text-xs ${isDark ? "text-white/60" : "text-[var(--color-text-secondary)]"}`}>
           {grouped[team].length}/{TEAM_LIMITS[team]}
         </span>
       </div>

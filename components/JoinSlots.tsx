@@ -17,7 +17,7 @@ import {
   serializeSelfRemovalCookie,
   type SelfRemovalGrantMap,
 } from "@/lib/selfRemovalCookie";
-import { formatCompactDate, formatPlayerName } from "@/lib/utils";
+import { formatPlayerName } from "@/lib/utils";
 
 type JoinSlotsProps = {
   isOpen: boolean;
@@ -63,6 +63,12 @@ export default function JoinSlots({
   const debugJoinFlow =
     typeof window !== "undefined" &&
     process.env.NEXT_PUBLIC_DEBUG_JOIN_FLOW === "true";
+  const formatLastSeenDate = (dateString?: string | null) => {
+    if (!dateString) return "--/--/--";
+    const match = dateString.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+    if (!match) return "--/--/--";
+    return `${match[3]}/${match[2]}/${match[1].slice(2)}`;
+  };
 
   useEffect(() => {
     setLiveEntries(entries);
@@ -1191,31 +1197,31 @@ export default function JoinSlots({
             />
           </div>
 
-          <div className="mt-4 max-h-64 overflow-y-auto">
+          <div className="mt-4 overflow-y-auto">
             {filteredAvailablePlayers.length > 0 ? (
               filteredAvailablePlayers.map((player) => (
                 <button
                   key={player.id}
                   type="button"
                   onClick={() => selectPlayer(player.id)}
-                  className="mb-2 flex w-full items-center gap-3 rounded-[16px] border border-[rgba(15,61,52,0.09)] bg-[linear-gradient(180deg,rgba(255,255,255,0.98),rgba(245,250,249,0.96))] px-3 py-3 text-left text-sm text-[var(--color-text)] shadow-[0_10px_20px_rgba(15,61,52,0.05)] transition hover:border-[rgba(31,122,99,0.24)] hover:bg-[rgba(126,217,87,0.08)]"
+                  className="mb-2 flex w-full items-center gap-3 rounded-[16px] border border-[#d6ddda] bg-[#eef1ef] px-4 py-3 text-left text-sm text-[var(--color-text)] transition hover:border-[#bcc8c3] hover:bg-[#e6ebe8]"
                   disabled={openSlot === null ? true : isSlotPending(openSlot)}
                 >
-                  <span className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[rgba(31,122,99,0.12)] text-[var(--color-primary-dark)]">
-                    {userIcon("h-[18px] w-[18px]")}
-                  </span>
-                  <span className="min-w-0 flex-1">
-                    <span className="block truncate text-[14px] font-semibold text-[var(--color-text)]">
+                  <span className="min-w-0 flex flex-1 items-center gap-2.5">
+                    <span className="truncate text-[14px] font-semibold text-[var(--color-text)]">
                       {formatPlayerName(player)}
                     </span>
-                    <span className="mt-1 flex flex-wrap gap-2 text-[11px] font-medium uppercase tracking-[0.08em] text-[var(--color-text-secondary)]">
+                    <span className="inline-flex shrink-0 flex-wrap items-center gap-2 text-[11px] font-medium text-[var(--color-text-secondary)]">
                       <span className="rounded-full bg-white px-2.5 py-1 ring-1 ring-[rgba(15,61,52,0.08)]">
                         {(player.games_played ?? 0)} GP
                       </span>
                       <span className="rounded-full bg-white px-2.5 py-1 ring-1 ring-[rgba(15,61,52,0.08)]">
-                        Last {formatCompactDate(player.last_game_date)}
+                        Last seen {formatLastSeenDate(player.last_game_date)}
                       </span>
                     </span>
+                  </span>
+                  <span className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-[#c7d0cb] bg-white text-[var(--color-text-secondary)]">
+                    {plusIcon("h-[14px] w-[14px]")}
                   </span>
                 </button>
               ))
@@ -1234,7 +1240,7 @@ export default function JoinSlots({
             <button
               type="button"
               onClick={handleAddNew}
-              className="flex w-full items-center gap-2 rounded-lg px-1 py-2 text-sm font-semibold text-[var(--color-text)] hover:bg-[rgba(15,61,52,0.04)]"
+              className="flex w-full items-center gap-2 rounded-lg px-1 py-2 text-sm font-semibold text-[var(--color-text)]"
               disabled={openSlot === null ? true : isSlotPending(openSlot)}
             >
               + Add new player

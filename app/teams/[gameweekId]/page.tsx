@@ -1,6 +1,6 @@
 import TeamsReadOnly from "@/components/TeamsReadOnly";
 import { supabaseServer } from "@/lib/supabase";
-import { formatDate, normalizePlayerJoin } from "@/lib/utils";
+import { formatDate, getGameweekWinner, normalizePlayerJoin } from "@/lib/utils";
 
 export default async function TeamsHistoryPage({
   params,
@@ -36,6 +36,7 @@ export default async function TeamsHistoryPage({
     .order("position", { ascending: true });
 
   const normalizedEntries = (entries ?? []).map(normalizePlayerJoin);
+  const winner = getGameweekWinner(gameweek);
 
   return (
     <div className="space-y-6">
@@ -50,7 +51,7 @@ export default async function TeamsHistoryPage({
           Status: {gameweek.status}
         </p>
       </section>
-      <TeamsReadOnly entries={normalizedEntries} />
+      <TeamsReadOnly entries={normalizedEntries} winner={winner} />
     </div>
   );
 }

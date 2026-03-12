@@ -7,7 +7,7 @@ export async function POST(
   context: { params: Promise<{ gameweekId: string }> }
 ) {
   const { gameweekId } = await context.params;
-  const { date, time, location, pin } = await request.json();
+  const { date, time, location, paymentLink, pin } = await request.json();
 
   if (!isOrganiserPinConfigured()) {
     return NextResponse.json(
@@ -36,6 +36,10 @@ export async function POST(
     typeof location === "string" && location.trim().length > 0
       ? location.trim()
       : "MH";
+  const safePaymentLink =
+    typeof paymentLink === "string" && paymentLink.trim().length > 0
+      ? paymentLink.trim()
+      : null;
 
   const supabase = supabaseServer();
   const { data: existing, error: lookupError } = await supabase
@@ -61,6 +65,7 @@ export async function POST(
       game_date: date,
       game_time: safeTime,
       location: safeLocation,
+      payment_link: safePaymentLink,
     })
     .eq("id", gameweekId);
 
