@@ -16,6 +16,23 @@ type ResultsOverviewResponse = {
   newerId: string | null;
 };
 
+function ChevronIcon({ direction }: { direction: "left" | "right" }) {
+  return (
+    <svg
+      viewBox="0 0 20 20"
+      aria-hidden="true"
+      className="h-4 w-4"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2.25"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      <path d={direction === "left" ? "M11.5 5.5 7 10l4.5 4.5" : "M8.5 5.5 13 10l-4.5 4.5"} />
+    </svg>
+  );
+}
+
 const winnerPin = (winner: Gameweek["winner"], team: "darks" | "whites") => {
   if (winner !== team) {
     return "absolute bottom-0 left-0 inline-flex items-center rounded-full border border-transparent bg-transparent px-3 py-1 text-[0.65rem] font-semibold uppercase tracking-[0.18em] text-transparent shadow-none";
@@ -131,73 +148,73 @@ export default function ResultsPageClient() {
   const summary = buildSummary(currentGameweek);
 
   return (
-    <div className="space-y-6">
-      <section className="ui-card overflow-hidden pt-6">
-        <div className="flex items-center justify-between gap-3 px-6">
-          <Link
-            href={olderId ? `/history?gameweekId=${olderId}` : "#"}
-            prefetch
-            className={`ui-icon-btn text-2xl leading-none ${
-              olderId
-                ? "border-[rgba(31,122,99,0.18)] bg-[rgba(31,122,99,0.06)] text-[var(--color-primary-dark)]"
-                : "pointer-events-none opacity-40"
-            }`}
-            aria-disabled={!olderId}
-          >
-            ‹
-          </Link>
-          <div className="text-center">
-            <p className="ui-kicker">Results</p>
-            <h2 className="text-xl font-semibold tracking-[-0.02em] text-[var(--color-primary-dark)] sm:text-2xl">
-              {formatGameweekDate(currentGameweek.game_date)}
-            </h2>
-          </div>
-          <Link
-            href={newerId ? `/history?gameweekId=${newerId}` : "#"}
-            prefetch
-            className={`ui-icon-btn text-2xl leading-none ${
-              newerId
-                ? "border-[rgba(31,122,99,0.18)] bg-[rgba(31,122,99,0.06)] text-[var(--color-primary-dark)]"
-                : "pointer-events-none opacity-40"
-            }`}
-            aria-disabled={!newerId}
-          >
-            ›
-          </Link>
+    <section className="ui-card overflow-hidden pt-6">
+      <div className="flex items-center justify-between gap-3 px-6">
+        <Link
+          href={olderId ? `/history?gameweekId=${olderId}` : "#"}
+          prefetch
+          className={`ui-icon-btn ${
+            olderId
+              ? "border-[rgba(31,122,99,0.18)] bg-[rgba(31,122,99,0.06)] text-[var(--color-primary-dark)]"
+              : "pointer-events-none border-transparent text-[var(--color-text-secondary)] opacity-40"
+          }`}
+          aria-disabled={!olderId}
+        >
+          <ChevronIcon direction="left" />
+        </Link>
+        <div className="text-center">
+          <p className="ui-kicker">Results</p>
+          <h2 className="text-xl font-semibold tracking-[-0.02em] text-[var(--color-primary-dark)] sm:text-2xl">
+            {formatGameweekDate(currentGameweek.game_date)}
+          </h2>
         </div>
+        <Link
+          href={newerId ? `/history?gameweekId=${newerId}` : "#"}
+          prefetch
+          className={`ui-icon-btn ${
+            newerId
+              ? "border-[rgba(31,122,99,0.18)] bg-[rgba(31,122,99,0.06)] text-[var(--color-primary-dark)]"
+              : "pointer-events-none border-transparent text-[var(--color-text-secondary)] opacity-40"
+          }`}
+          aria-disabled={!newerId}
+        >
+          <ChevronIcon direction="right" />
+        </Link>
+      </div>
 
-        <div className="mt-6 border-t border-[rgba(31,122,99,0.1)] bg-[rgba(31,122,99,0.05)] px-4 pb-6 pt-5 sm:px-6">
-          <div className="grid grid-cols-[1fr_auto_1fr] items-start gap-2 sm:gap-5">
-            <div className="relative pb-6 text-left">
-              <div className="text-3xl font-semibold tracking-[-0.04em] text-[var(--color-primary-dark)] sm:text-5xl">
-                Darks
-              </div>
-              <span className={winnerPin(summary.winner, "darks")}>Winners</span>
+      <div className="mt-6 border-t border-[rgba(31,122,99,0.1)] bg-[rgba(31,122,99,0.05)] px-4 pb-6 pt-5 sm:px-6">
+        <div className="grid grid-cols-[1fr_auto_1fr] items-start gap-2 sm:gap-5">
+          <div className="relative pb-6 text-left">
+            <div className="text-3xl font-semibold tracking-[-0.04em] text-[var(--color-primary-dark)] sm:text-5xl">
+              Darks
             </div>
+            <span className={winnerPin(summary.winner, "darks")}>Winners</span>
+          </div>
 
-            <div className="flex items-start justify-center gap-3 pt-0.5 text-4xl font-semibold tracking-[-0.05em] text-[var(--color-text-secondary)] sm:gap-5 sm:text-6xl">
-              <span className="inline-block min-w-[1ch] text-center">
-                {summary.darksValue ?? ""}
-              </span>
-              <span>-</span>
-              <span className="inline-block min-w-[1ch] text-center">
-                {summary.whitesValue ?? ""}
-              </span>
-            </div>
+          <div className="flex items-start justify-center gap-3 pt-0.5 text-4xl font-semibold tracking-[-0.05em] text-[var(--color-text-secondary)] sm:gap-5 sm:text-6xl">
+            <span className="inline-block min-w-[1ch] text-center">
+              {summary.darksValue ?? ""}
+            </span>
+            <span>-</span>
+            <span className="inline-block min-w-[1ch] text-center">
+              {summary.whitesValue ?? ""}
+            </span>
+          </div>
 
-            <div className="relative pb-6 text-right">
-              <div className="text-3xl font-semibold tracking-[-0.04em] text-[var(--color-primary-dark)] sm:text-5xl">
-                Whites
-              </div>
-              <span className={`${winnerPin(summary.winner, "whites")} left-auto right-0`}>
-                Winners
-              </span>
+          <div className="relative pb-6 text-right">
+            <div className="text-3xl font-semibold tracking-[-0.04em] text-[var(--color-primary-dark)] sm:text-5xl">
+              Whites
             </div>
+            <span className={`${winnerPin(summary.winner, "whites")} left-auto right-0`}>
+              Winners
+            </span>
           </div>
         </div>
-      </section>
+      </div>
 
-      <TeamsReadOnly entries={normalized} winner={summary.winner} showCounts={false} />
-    </div>
+      <div className="bg-[rgba(31,122,99,0.05)] px-4 pb-5 pt-[10px] sm:px-6 sm:pb-6 sm:pt-[14px]">
+        <TeamsReadOnly entries={normalized} winner={summary.winner} showCounts={false} />
+      </div>
+    </section>
   );
 }
