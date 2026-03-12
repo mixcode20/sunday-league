@@ -8,10 +8,10 @@ import { useOrganiserMode } from "@/components/OrganiserModeProvider";
 import { buildEntryPositionMap, getSubSlotPositions, MAIN_SLOT_CAPACITY } from "@/lib/slots";
 import { debugPerfEnabled } from "@/lib/swr";
 import {
-  getGrantedPlayerId,
   getSelfRemovalCookieMaxAgeSeconds,
   getSelfRemovalCookieName,
   grantSelfRemovalAccess,
+  hasSelfRemovalAccess,
   parseSelfRemovalCookie,
   revokeSelfRemovalAccess,
   serializeSelfRemovalCookie,
@@ -700,10 +700,9 @@ export default function JoinSlots({
 
   const getSessionState = (entry: GameweekPlayer) => {
     const sessionInfo = sessionJoins[entry.player_id];
-    const grantedPlayerId = gameweekId
-      ? getGrantedPlayerId(selfRemovalAccess, gameweekId)
-      : null;
-    const isCookieOwner = grantedPlayerId === entry.player_id;
+    const isCookieOwner = gameweekId
+      ? hasSelfRemovalAccess(selfRemovalAccess, gameweekId, entry.player_id)
+      : false;
     if (!sessionInfo || sessionInfo.position !== entry.position) {
       return { isOwner: false, withinUndo: false, isCookieOwner };
     }
@@ -1179,7 +1178,7 @@ export default function JoinSlots({
         onClose={() => setOpenSlot(null)}
         position="top"
       >
-        <div className="border-t border-[var(--color-border)] pt-4">
+        <div className="flex h-full min-h-0 flex-col border-t border-[var(--color-border)] pt-4">
           <label className="sr-only" htmlFor="player-search">
             Search players
           </label>
@@ -1197,30 +1196,30 @@ export default function JoinSlots({
             />
           </div>
 
-          <div className="mt-4 overflow-y-auto">
+          <div className="mt-4 min-h-0 flex-1 overflow-y-auto">
             {filteredAvailablePlayers.length > 0 ? (
               filteredAvailablePlayers.map((player) => (
                 <button
                   key={player.id}
                   type="button"
                   onClick={() => selectPlayer(player.id)}
-                  className="mb-2 flex w-full items-center gap-3 rounded-[16px] border border-[#d6ddda] bg-[#eef1ef] px-4 py-3 text-left text-sm text-[var(--color-text)] transition hover:border-[#bcc8c3] hover:bg-[#e6ebe8]"
+                  className="mb-2 flex w-full items-center gap-3 rounded-[16px] border border-[#d8dbe0] bg-[#eff1f3] px-4 py-3 text-left text-sm text-[var(--color-text)] transition hover:border-[#c6cbd2] hover:bg-[#e7eaee]"
                   disabled={openSlot === null ? true : isSlotPending(openSlot)}
                 >
-                  <span className="min-w-0 flex flex-1 items-center gap-2.5">
-                    <span className="truncate text-[14px] font-semibold text-[var(--color-text)]">
+                  <span className="min-w-0 flex flex-1 items-center gap-3">
+                    <span className="min-w-0 flex-1 truncate text-[14px] font-semibold text-[var(--color-text)]">
                       {formatPlayerName(player)}
                     </span>
-                    <span className="inline-flex shrink-0 flex-wrap items-center gap-2 text-[11px] font-medium text-[var(--color-text-secondary)]">
+                    <span className="ml-auto inline-flex shrink-0 flex-wrap items-center justify-end gap-2 text-[11px] font-medium text-[var(--color-text-secondary)]">
                       <span className="rounded-full bg-white px-2.5 py-1 ring-1 ring-[rgba(15,61,52,0.08)]">
                         {(player.games_played ?? 0)} GP
                       </span>
                       <span className="rounded-full bg-white px-2.5 py-1 ring-1 ring-[rgba(15,61,52,0.08)]">
-                        Last seen {formatLastSeenDate(player.last_game_date)}
+                        Last {formatLastSeenDate(player.last_game_date)}
                       </span>
                     </span>
                   </span>
-                  <span className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-[#c7d0cb] bg-white text-[var(--color-text-secondary)]">
+                  <span className="inline-flex shrink-0 items-center justify-center text-[var(--color-text-secondary)]">
                     {plusIcon("h-[14px] w-[14px]")}
                   </span>
                 </button>
@@ -1236,7 +1235,7 @@ export default function JoinSlots({
             )}
           </div>
 
-          <div className="mt-4 border-t border-[var(--color-border)] pt-4">
+          <div className="mt-4 shrink-0 border-t border-[var(--color-border)] pt-4">
             <button
               type="button"
               onClick={handleAddNew}

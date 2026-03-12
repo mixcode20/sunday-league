@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useOrganiserMode } from "@/components/OrganiserModeProvider";
+import WhatsAppIcon from "@/components/WhatsAppIcon";
 import type { Gameweek, GameweekPlayer, Team } from "@/lib/types";
 import { formatGameweekDate, formatPlayerName } from "@/lib/utils";
 
@@ -51,18 +52,6 @@ function PlusIcon() {
   return (
     <svg viewBox="0 0 20 20" aria-hidden="true" className="h-4 w-4 fill-current">
       <path d="M10 4.25a.75.75 0 0 1 .75.75v4.25H15a.75.75 0 0 1 0 1.5h-4.25V15a.75.75 0 0 1-1.5 0v-4.25H5a.75.75 0 0 1 0-1.5h4.25V5a.75.75 0 0 1 .75-.75Z" />
-    </svg>
-  );
-}
-
-function ShareIcon() {
-  return (
-    <svg
-      viewBox="0 0 24 24"
-      aria-hidden="true"
-      className="h-4 w-4 fill-current"
-    >
-      <path d="M18 16.08c-.76 0-1.44.3-1.96.77l-7.13-4.15a3.3 3.3 0 0 0 0-1.4l7.12-4.15A2.99 2.99 0 1 0 15 5a3 3 0 0 0 .05.54L7.93 9.7a3 3 0 1 0 0 4.6l7.12 4.16A3 3 0 1 0 18 16.08Z" />
     </svg>
   );
 }
@@ -163,18 +152,22 @@ export default function TeamsClient({ gameweek, entries, onRefresh }: TeamsClien
     const whitesList = orderedWhites.map((entry) => formatPlayerName(entry.players));
 
     return [
-      `Teams selected for ${formatGameweekDate(gameweek.game_date)} 🚨`,
+      `🚨 Teamsheet for this ${formatGameweekDate(gameweek.game_date)}`,
       "",
-      "*KICKING OFF 9:15*",
+      "KICKING OFF 9:15",
       "",
-      "Darks:",
+      "*Darks:*",
       ...darksList,
       "",
-      "Whites:",
+      "*Whites:*",
       ...whitesList,
       "",
-      "Payment link:",
+      "*Payment here:*",
       gameweek.payment_link?.trim() || "",
+      "",
+      "Payment needs to be made by Saturday",
+      "",
+      "Lets get there for 9:10 to start bang on 9:15",
     ].join("\n");
   }, [gameweek.game_date, gameweek.payment_link, orderedDarks, orderedWhites, teamsComplete]);
 
@@ -595,6 +588,17 @@ export default function TeamsClient({ gameweek, entries, onRefresh }: TeamsClien
         </p>
       ) : null}
 
+      {isUnlocked && !isLocked && teamsComplete ? (
+        <button
+          type="button"
+          onClick={() => void shareMessage(sendTeamsText)}
+          className="ui-btn ui-btn-primary inline-flex w-full items-center justify-center gap-2"
+        >
+          <WhatsAppIcon tone="light" />
+          Send teams
+        </button>
+      ) : null}
+
       <div className="grid grid-cols-2 gap-4">
         {renderTeamSlots(
           "darks",
@@ -608,17 +612,6 @@ export default function TeamsClient({ gameweek, entries, onRefresh }: TeamsClien
           "border-[var(--color-border)] bg-[rgba(255,255,255,0.9)]"
         )}
       </div>
-
-      {isUnlocked && !isLocked && teamsComplete ? (
-        <button
-          type="button"
-          onClick={() => void shareMessage(sendTeamsText)}
-          className="ui-btn ui-btn-primary inline-flex w-full items-center justify-center gap-2"
-        >
-          <ShareIcon />
-          Send teams
-        </button>
-      ) : null}
 
       {openSlotMeta ? (
         <div className="fixed inset-0 z-40 flex justify-center bg-[rgba(15,30,28,0.34)] px-4 pt-[10vh] backdrop-blur-[2px]">

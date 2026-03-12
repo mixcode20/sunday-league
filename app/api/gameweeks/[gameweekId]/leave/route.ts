@@ -1,5 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getGrantedPlayerId, getSelfRemovalCookieName, parseSelfRemovalCookie } from "@/lib/selfRemovalCookie";
+import {
+  getSelfRemovalCookieName,
+  hasSelfRemovalAccess,
+  parseSelfRemovalCookie,
+} from "@/lib/selfRemovalCookie";
 import { supabaseServer } from "@/lib/supabase";
 
 export async function POST(
@@ -13,12 +17,13 @@ export async function POST(
     return NextResponse.json({ error: "playerId is required." }, { status: 400 });
   }
 
-  const grantedPlayerId = getGrantedPlayerId(
-    parseSelfRemovalCookie(request.cookies.get(getSelfRemovalCookieName())?.value),
-    gameweekId
-  );
-
-  if (grantedPlayerId !== playerId) {
+  if (
+    !hasSelfRemovalAccess(
+      parseSelfRemovalCookie(request.cookies.get(getSelfRemovalCookieName())?.value),
+      gameweekId,
+      playerId
+    )
+  ) {
     return NextResponse.json(
       { error: "You can only remove your own claimed slot from this browser." },
       { status: 403 }

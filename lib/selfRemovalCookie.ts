@@ -2,7 +2,7 @@ const COOKIE_NAME = "selfRemovalAccess";
 const COOKIE_MAX_AGE_SECONDS = 20 * 24 * 60 * 60;
 
 export type SelfRemovalGrant = {
-  playerId: string;
+  playerIds: string[];
   expiresAt: number;
 };
 
@@ -12,8 +12,9 @@ const isValidGrant = (value: unknown): value is SelfRemovalGrant => {
   if (!value || typeof value !== "object") return false;
   const candidate = value as Partial<SelfRemovalGrant>;
   return (
-    typeof candidate.playerId === "string" &&
-    candidate.playerId.length > 0 &&
+    Array.isArray(candidate.playerIds) &&
+    candidate.playerIds.length > 0 &&
+    candidate.playerIds.every((playerId) => typeof playerId === "string" && playerId.length > 0) &&
     typeof candidate.expiresAt === "number" &&
     Number.isFinite(candidate.expiresAt)
   );
@@ -55,13 +56,17 @@ export const grantSelfRemovalAccess = (
   gameweekId: string,
   playerId: string,
   now = Date.now()
-): SelfRemovalGrantMap => ({
-  ...current,
-  [gameweekId]: {
-    playerId,
-    expiresAt: now + COOKIE_MAX_AGE_SECONDS * 1000,
-  },
-});
+): SelfRemovalGrantMap => {
+  const existing = current[gameweekId];
+  const playerIds = existing?.playerIds ?? [];
+  return {
+    ...current,
+    [gameweekId]: {
+      playerIds: playerIds.includes(playerId) ? playerIds : [...playerIds, playerId],
+      expiresAt: now + COOKIE_MAX_AGE_SECONDS * 1000,
+    },
+  };
+};
 
 export const revokeSelfRemovalAccess = (
   current: SelfRemovalGrantMap,
@@ -70,13 +75,27 @@ export const revokeSelfRemovalAccess = (
 ): SelfRemovalGrantMap => {
   const existing = current[gameweekId];
   if (!existing) return current;
-  if (playerId && existing.playerId !== playerId) return current;
+  if (!playerId) {
+    const next = { ...current };
+    delete next[gameweekId];
+    return next;
+  }
+  if (!existing.playerIds.includes(playerId)) return current;
+  const nextPlayerIds = existing.playerIds.filter((candidate) => candidate !== playerId);
   const next = { ...current };
-  delete next[gameweekId];
+  if (nextPlayerIds.length === 0) {
+    delete next[gameweekId];
+  } else {
+    next[gameweekId] = {
+      ...existing,
+      playerIds: nextPlayerIds,
+    };
+  }
   return next;
 };
 
-export const getGrantedPlayerId = (
+export const hasSelfRemovalAccess = (
   current: SelfRemovalGrantMap,
-  gameweekId: string
-) => current[gameweekId]?.playerId ?? null;
+  gameweekId: string,
+  playerId: string
+) => current[gameweekId]?.playerIds.includes(playerId) ?? false;

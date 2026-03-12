@@ -5,6 +5,7 @@ import { MAIN_SLOT_CAPACITY } from "@/lib/slots";
 import type { GameweekPlayer } from "@/lib/types";
 import { formatGameweekDate, formatPlayerName } from "@/lib/utils";
 import { useOrganiserMode } from "@/components/OrganiserModeProvider";
+import WhatsAppIcon from "@/components/WhatsAppIcon";
 
 type ShareGameButtonProps = {
   gameweekId: string;
@@ -13,18 +14,6 @@ type ShareGameButtonProps = {
   location?: string | null;
   entries?: GameweekPlayer[];
 };
-
-function ShareIcon() {
-  return (
-    <svg
-      viewBox="0 0 24 24"
-      aria-hidden="true"
-      className="h-4 w-4 fill-current"
-    >
-      <path d="M18 16.08c-.76 0-1.44.3-1.96.77l-7.13-4.15a3.3 3.3 0 0 0 0-1.4l7.12-4.15A2.99 2.99 0 1 0 15 5a3 3 0 0 0 .05.54L7.93 9.7a3 3 0 1 0 0 4.6l7.12 4.16A3 3 0 1 0 18 16.08Z" />
-    </svg>
-  );
-}
 
 export default function ShareGameButton({
   gameweekId,
@@ -107,7 +96,7 @@ export default function ShareGameButton({
         onClick={() => void shareMessage(shareText)}
         className="ui-btn ui-btn-primary inline-flex w-full items-center justify-center gap-2"
       >
-        <ShareIcon />
+        <WhatsAppIcon tone="light" />
         Share to WhatsApp
       </button>
       <button
@@ -115,7 +104,7 @@ export default function ShareGameButton({
         onClick={() => void shareMessage(nudgeText)}
         className="ui-btn ui-btn-secondary inline-flex w-full items-center justify-center gap-2"
       >
-        <ShareIcon />
+        <WhatsAppIcon tone="brand" />
         Nudge group
       </button>
     </div>
