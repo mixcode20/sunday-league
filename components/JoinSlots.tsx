@@ -87,7 +87,7 @@ export default function JoinSlots({
       Math.floor((currentWeekStart.getTime() - lastWeekStart.getTime()) / (7 * 24 * 60 * 60 * 1000))
     );
 
-    if (diffWeeks === 0) {
+    if (diffWeeks === 1) {
       return "Played last game";
     }
 
@@ -925,12 +925,19 @@ export default function JoinSlots({
                       >
                         {userIcon("h-4 w-4")}
                       </span>
-                      <span
-                        className={`min-w-0 flex-1 truncate text-[14px] font-medium leading-none ${
-                          entry.remove_requested ? "text-[var(--color-danger)]" : "text-[var(--color-text)]"
-                        }`}
-                      >
-                        {formatPlayerName(entry.players)}
+                      <span className="flex min-w-0 flex-1 items-center gap-2">
+                        <span
+                          className={`min-w-0 truncate text-[14px] font-medium leading-none ${
+                            entry.remove_requested ? "text-[var(--color-danger)]" : "text-[var(--color-text)]"
+                          }`}
+                        >
+                          {formatPlayerName(entry.players)}
+                        </span>
+                        {entry.remove_requested ? (
+                          <span className="shrink-0 text-[11px] font-semibold uppercase tracking-wide text-[var(--color-danger)]">
+                            Removal requested
+                          </span>
+                        ) : null}
                       </span>
                       {isOpen && isUnlocked ? (
                           <button
@@ -970,25 +977,18 @@ export default function JoinSlots({
                           Remove me
                         </button>
                       ) : null}
-                      <span
-                        className={`inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-full ${
-                          entry.remove_requested
-                            ? "border border-[rgba(229,72,77,0.18)] bg-white text-[var(--color-danger)]"
-                            : "bg-[var(--color-primary)] text-white"
-                        }`}
-                        aria-hidden="true"
-                      >
-                        {entry.remove_requested ? "!" : checkIcon("h-[13px] w-[13px]")}
-                      </span>
+                      {!entry.remove_requested ? (
+                        <span
+                          className="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-[var(--color-primary)] text-white"
+                          aria-hidden="true"
+                        >
+                          {checkIcon("h-[13px] w-[13px]")}
+                        </span>
+                      ) : null}
                     </div>
                     {isPending && isOptimistic ? (
                       <span className="mt-2 text-[11px] font-semibold uppercase tracking-wide text-[var(--color-text-secondary)]">
                         Claiming...
-                      </span>
-                    ) : null}
-                    {entry.remove_requested ? (
-                      <span className="mt-2 text-[11px] font-semibold uppercase tracking-wide text-[var(--color-danger)]">
-                        Removal requested
                       </span>
                     ) : null}
                     {isOpen ? (
@@ -1093,12 +1093,19 @@ export default function JoinSlots({
                         >
                           {userIcon("h-4 w-4")}
                         </span>
-                        <span
-                          className={`min-w-0 flex-1 truncate text-[14px] font-medium leading-none ${
-                            entry.remove_requested ? "text-[var(--color-danger)]" : "text-[var(--color-text)]"
-                          }`}
-                        >
-                          {formatPlayerName(entry.players)}
+                        <span className="flex min-w-0 flex-1 items-center gap-2">
+                          <span
+                            className={`min-w-0 truncate text-[14px] font-medium leading-none ${
+                              entry.remove_requested ? "text-[var(--color-danger)]" : "text-[var(--color-text)]"
+                            }`}
+                          >
+                            {formatPlayerName(entry.players)}
+                          </span>
+                          {entry.remove_requested ? (
+                            <span className="shrink-0 text-[11px] font-semibold uppercase tracking-wide text-[var(--color-danger)]">
+                              Removal requested
+                            </span>
+                          ) : null}
                         </span>
                         {isOpen && isUnlocked ? (
                           <button
@@ -1142,25 +1149,18 @@ export default function JoinSlots({
                             Remove me
                           </button>
                         ) : null}
-                        <span
-                          className={`inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-full ${
-                            entry.remove_requested
-                              ? "border border-[rgba(229,72,77,0.18)] bg-white text-[var(--color-danger)]"
-                              : "bg-[var(--color-primary)] text-white"
-                          }`}
-                          aria-hidden="true"
-                        >
-                          {entry.remove_requested ? "!" : checkIcon("h-[13px] w-[13px]")}
-                        </span>
+                        {!entry.remove_requested ? (
+                          <span
+                            className="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-[var(--color-primary)] text-white"
+                            aria-hidden="true"
+                          >
+                            {checkIcon("h-[13px] w-[13px]")}
+                          </span>
+                        ) : null}
                       </div>
                       {isPending && isOptimistic ? (
                         <span className="mt-2 text-[11px] font-semibold uppercase tracking-wide text-[var(--color-text-secondary)]">
                           Claiming...
-                        </span>
-                      ) : null}
-                      {entry.remove_requested ? (
-                        <span className="mt-2 text-[11px] font-semibold uppercase tracking-wide text-[var(--color-danger)]">
-                          Removal requested
                         </span>
                       ) : null}
                       {isOpen ? (
@@ -1256,7 +1256,7 @@ export default function JoinSlots({
                     <span className="min-w-0 flex-1 truncate text-[14px] font-semibold text-[var(--color-text)]">
                       {formatPlayerName(player)}
                     </span>
-                    <span className="ml-auto inline-flex shrink-0 flex-wrap items-center justify-end gap-2 text-[11px] font-medium text-[var(--color-text-secondary)]">
+                    <span className="ml-auto inline-flex shrink-0 flex-col items-start text-left text-[11px] font-medium text-[var(--color-text-secondary)]">
                       <span className="font-normal text-[var(--color-text)]">
                         {formatLastSeenWeeksAgo(player.last_game_date)}
                       </span>
