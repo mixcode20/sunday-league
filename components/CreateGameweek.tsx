@@ -151,9 +151,10 @@ export default function CreateGameweek({
       </div>
       <Modal
         isOpen={isOpen}
-        title="New game"
+        title="Create new game"
         onClose={closeModal}
         position="top"
+        contentScrollable={false}
       >
         <div className="relative">
           {isSubmitting ? (

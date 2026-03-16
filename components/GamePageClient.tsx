@@ -5,6 +5,7 @@ import useSWR from "swr";
 import CreateGameweek from "@/components/CreateGameweek";
 import JoinSlots from "@/components/JoinSlots";
 import GameweekInfoStrip from "@/components/GameweekInfoStrip";
+import { useOrganiserMode } from "@/components/OrganiserModeProvider";
 import type { Gameweek, GameweekPlayer, Player } from "@/lib/types";
 import { fetcher, debugPerfEnabled } from "@/lib/swr";
 import { buildEntryPositionMap, getSlotCounts } from "@/lib/slots";
@@ -19,6 +20,7 @@ type GameOverviewResponse = {
 export default function GamePageClient() {
   const routeTimerArmed = useRef(false);
   const routeLabel = "route:game";
+  const { isUnlocked } = useOrganiserMode();
 
   useEffect(() => {
     if (!debugPerfEnabled || routeTimerArmed.current) return;
@@ -74,7 +76,7 @@ export default function GamePageClient() {
         showShareButton={Boolean(openGameweek)}
         gameweek={gameweek}
         footerAction={
-          gameweek?.status === "locked" ? (
+          isUnlocked && gameweek?.status === "locked" ? (
             <CreateGameweek
               activeGameweekStatus={gameweek.status}
               players={players}

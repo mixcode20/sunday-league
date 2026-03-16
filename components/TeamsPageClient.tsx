@@ -4,6 +4,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import useSWR from "swr";
 import CreateGameweek from "@/components/CreateGameweek";
 import GameweekInfoStrip from "@/components/GameweekInfoStrip";
+import { useOrganiserMode } from "@/components/OrganiserModeProvider";
 import TeamsClient from "@/components/TeamsClient";
 import TeamsReadOnly from "@/components/TeamsReadOnly";
 import type { Gameweek, GameweekPlayer, Player } from "@/lib/types";
@@ -19,6 +20,7 @@ type TeamsOverviewResponse = {
 export default function TeamsPageClient() {
   const routeTimerArmed = useRef(false);
   const routeLabel = "route:teams";
+  const { isUnlocked } = useOrganiserMode();
 
   useEffect(() => {
     if (!debugPerfEnabled || routeTimerArmed.current) return;
@@ -129,7 +131,7 @@ export default function TeamsPageClient() {
         onRefresh={() => mutate()}
         gameweek={gameweek}
         footerAction={
-          gameweek.status === "locked" ? (
+          isUnlocked && gameweek.status === "locked" ? (
             <CreateGameweek
               activeGameweekStatus={gameweek.status}
               players={players}

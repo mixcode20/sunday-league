@@ -11,6 +11,7 @@ type ModalProps = {
   position?: "top" | "center";
   closeVariant?: "text" | "icon";
   closeOnBackdrop?: boolean;
+  contentScrollable?: boolean;
 };
 
 export default function Modal({
@@ -22,6 +23,7 @@ export default function Modal({
   position = "top",
   closeVariant = "text",
   closeOnBackdrop = true,
+  contentScrollable = true,
 }: ModalProps) {
   if (!isOpen) return null;
 
@@ -34,9 +36,11 @@ export default function Modal({
       ? "w-full max-w-md overflow-hidden rounded-[1.5rem] border border-[var(--color-border)] bg-white p-5 text-[var(--color-text)] shadow-[0_20px_40px_rgba(15,61,52,0.08)]"
       : "flex w-full max-w-md max-h-[calc(100dvh-6.5rem)] flex-col overflow-hidden rounded-[1.5rem] border border-[var(--color-border)] bg-white p-5 text-[var(--color-text)] shadow-[0_20px_40px_rgba(15,61,52,0.08)]";
   const contentClass =
-    position === "center"
-      ? "max-h-[70vh] overflow-y-auto text-left"
-      : "min-h-0 flex-1 overflow-y-auto text-left";
+    contentScrollable
+      ? position === "center"
+        ? "max-h-[70vh] overflow-y-auto text-left"
+        : "min-h-0 flex-1 overflow-y-auto text-left"
+      : "text-left";
 
   return (
     <div
