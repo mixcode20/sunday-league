@@ -243,7 +243,7 @@ export default function CreateGameweek({
                 </span>
               </div>
               {players.length > 0 ? (
-                <div className="mt-3 max-h-56 space-y-2 overflow-y-auto rounded-xl border border-[var(--color-border)] p-2">
+                <div className="mt-3 max-h-[209px] space-y-2 overflow-y-auto rounded-xl border border-[var(--color-border)] p-2">
                   {orderedPlayers.map((player) => {
                     const checked = selectedPlayerIds.includes(player.id);
                     const gamesPlayed = player.games_played ?? 0;
