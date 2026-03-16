@@ -13,6 +13,7 @@ type ModalProps = {
   closeOnBackdrop?: boolean;
   contentScrollable?: boolean;
   topOffsetClassName?: string;
+  panelClassName?: string;
 };
 
 export default function Modal({
@@ -26,6 +27,7 @@ export default function Modal({
   closeOnBackdrop = true,
   contentScrollable = true,
   topOffsetClassName,
+  panelClassName,
 }: ModalProps) {
   if (!isOpen) return null;
 
@@ -52,7 +54,7 @@ export default function Modal({
       }}
     >
       <div
-        className={panelClass}
+        className={panelClassName ? `${panelClass} ${panelClassName}` : panelClass}
         onClick={(event) => event.stopPropagation()}
       >
         <div className="mb-4 flex items-start justify-between gap-4">

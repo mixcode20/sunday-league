@@ -156,8 +156,9 @@ export default function CreateGameweek({
         position="top"
         contentScrollable={false}
         topOffsetClassName="pt-[60px]"
+        panelClassName="h-[85vh]"
       >
-        <div className="relative">
+        <div className="relative flex h-full min-h-0 flex-col">
           {isSubmitting ? (
             <div className="absolute inset-0 z-10 flex items-center justify-center rounded-[1rem] bg-white/88 text-center backdrop-blur-[2px]">
               <div>
@@ -169,7 +170,7 @@ export default function CreateGameweek({
           ) : null}
           <div
             aria-hidden={isSubmitting}
-            className={`${isSubmitting ? "pointer-events-none opacity-40" : ""} space-y-5`}
+            className={`${isSubmitting ? "pointer-events-none opacity-40" : ""} flex min-h-0 flex-1 flex-col space-y-5`}
           >
             <div>
               <label className="ui-label">Date</label>
@@ -233,7 +234,7 @@ export default function CreateGameweek({
                 className="ui-input mt-2"
               />
             </div>
-            <div className="border-t border-[var(--color-border)] pt-5">
+            <div className="flex min-h-0 flex-1 flex-col border-t border-[var(--color-border)] pt-5">
               <div className="flex items-center justify-between gap-3">
                 <span className="ui-label m-0">
                   Add confirmed players
@@ -243,7 +244,7 @@ export default function CreateGameweek({
                 </span>
               </div>
               {players.length > 0 ? (
-                <div className="mt-3 max-h-[209px] space-y-2 overflow-y-auto rounded-xl border border-[var(--color-border)] p-2">
+                <div className="mt-3 min-h-0 flex-1 space-y-2 overflow-y-auto rounded-xl border border-[var(--color-border)] p-2">
                   {orderedPlayers.map((player) => {
                     const checked = selectedPlayerIds.includes(player.id);
                     const gamesPlayed = player.games_played ?? 0;
