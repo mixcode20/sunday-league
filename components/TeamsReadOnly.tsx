@@ -102,10 +102,12 @@ export default function TeamsReadOnly({
           return slots.map((entry, index) => (
             <div
               key={`${team}-${index}`}
-              className={`flex min-h-[52px] items-center rounded-xl border px-3 py-2 text-sm ${
+                className={`flex min-h-[52px] items-center rounded-xl border px-3 py-2 text-sm ${
                 isDark
                   ? "border-white/12 bg-white/8 text-white"
-                  : "border-[var(--color-border)] bg-white text-[var(--color-text)]"
+                  : entry
+                    ? "ui-slot-filled"
+                    : "border-[var(--color-border)] bg-white text-[var(--color-text)]"
               }`}
             >
               {entry ? (

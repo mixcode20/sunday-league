@@ -5,7 +5,8 @@
   --color-primary: #1f7a63;
   --color-primary-dark: #0f3d34;
   --color-accent: #7ed957;
-  --color-background: #f6f7f8;
+  --off-white-green: #f5faf9;
+  --color-background: #feffff;
   --color-surface: #ffffff;
   --color-text: #1e1e1e;
   --color-text-secondary: #667085;
@@ -76,6 +77,12 @@
     border-radius: 1.25rem;
     background: var(--color-surface);
     color: var(--color-text-secondary);
+  }
+
+  .ui-slot-filled {
+    border-color: var(--color-border);
+    background: var(--off-white-green);
+    color: var(--color-text);
   }
 
   .ui-banner {

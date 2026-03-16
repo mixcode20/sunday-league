@@ -104,7 +104,6 @@ export default function ShareGameButton({
         onClick={() => void shareMessage(nudgeText)}
         className="ui-btn ui-btn-secondary inline-flex w-full items-center justify-center gap-2"
       >
-        <WhatsAppIcon tone="brand" />
         Nudge group
       </button>
     </div>

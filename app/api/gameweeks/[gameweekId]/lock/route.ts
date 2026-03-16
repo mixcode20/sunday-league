@@ -11,6 +11,13 @@ export async function POST(
   const payload = await request.json();
   const { pin } = payload;
   const resultMode = payload?.resultMode;
+  const hasValidScores =
+    typeof payload?.darksScore === "number" &&
+    typeof payload?.whitesScore === "number" &&
+    Number.isInteger(payload.darksScore) &&
+    Number.isInteger(payload.whitesScore) &&
+    payload.darksScore >= 0 &&
+    payload.whitesScore >= 0;
 
   if (!isOrganiserPinConfigured()) {
     return NextResponse.json(
@@ -34,15 +41,8 @@ export async function POST(
   let whitesScore: number | null = null;
   let winner: "darks" | "whites" | "draw" | null = null;
 
-  if (resultMode === "score") {
-    if (
-      typeof payload?.darksScore !== "number" ||
-      typeof payload?.whitesScore !== "number" ||
-      !Number.isInteger(payload.darksScore) ||
-      !Number.isInteger(payload.whitesScore) ||
-      payload.darksScore < 0 ||
-      payload.whitesScore < 0
-    ) {
+  if (resultMode === "score" || hasValidScores) {
+    if (!hasValidScores) {
       return NextResponse.json(
         { error: "By score requires whole-number darksScore and whitesScore values." },
         { status: 400 }
@@ -90,7 +90,7 @@ export async function POST(
       status: "locked",
       darks_score: darksScore,
       whites_score: whitesScore,
-      result_mode: resultMode,
+      result_mode: hasValidScores ? "score" : resultMode,
       winner,
       locked_at: new Date().toISOString(),
     })

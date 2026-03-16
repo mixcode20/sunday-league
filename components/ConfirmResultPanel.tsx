@@ -1,18 +1,22 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, type ChangeEvent } from "react";
 import { useRouter } from "next/navigation";
 import { useSWRConfig } from "swr";
 import Modal from "@/components/Modal";
 import { useOrganiserMode } from "@/components/OrganiserModeProvider";
 import type { Gameweek } from "@/lib/types";
-import { getGameweekDateTime } from "@/lib/utils";
+import { formatGameweekDate, getGameweekDateTime } from "@/lib/utils";
 
 type ConfirmResultPanelProps = {
   gameweek: Gameweek;
+  embedded?: boolean;
 };
 
-export default function ConfirmResultPanel({ gameweek }: ConfirmResultPanelProps) {
+export default function ConfirmResultPanel({
+  gameweek,
+  embedded = false,
+}: ConfirmResultPanelProps) {
   const router = useRouter();
   const { mutate } = useSWRConfig();
   const { isUnlocked, organiserPin } = useOrganiserMode();
@@ -58,6 +62,19 @@ export default function ConfirmResultPanel({ gameweek }: ConfirmResultPanelProps
     }
     return fallback;
   };
+
+  const handleScoreChange =
+    (team: "darks" | "whites") => (event: ChangeEvent<HTMLInputElement>) => {
+      const nextValue = event.target.value;
+      setResultMode("score");
+      setWinner("");
+      setMessage("");
+      if (team === "darks") {
+        setDarksScore(nextValue);
+        return;
+      }
+      setWhitesScore(nextValue);
+    };
 
   const submitResult = async () => {
     if (!organiserPin) {
@@ -130,9 +147,9 @@ export default function ConfirmResultPanel({ gameweek }: ConfirmResultPanelProps
   };
 
   return (
-    <div className="ui-card p-4">
-      <div className="flex items-center justify-between">
-        <div>
+    <div className={embedded ? "border-t border-[var(--color-border)] pt-4" : "ui-card p-4"}>
+      <div className="flex items-center justify-between gap-3">
+        <div className="min-w-0 flex-1 text-left">
           <p className="ui-kicker">Organiser</p>
           <p className="text-sm font-semibold text-[var(--color-text)]">Confirm result</p>
         </div>
@@ -151,21 +168,20 @@ export default function ConfirmResultPanel({ gameweek }: ConfirmResultPanelProps
         </button>
       </div>
       {message ? (
-        <p className="ui-banner ui-banner-warning mt-3">
-          {message}
-        </p>
+        <p className="ui-banner ui-banner-warning mt-3">{message}</p>
       ) : null}
 
       <Modal
         isOpen={isOpen}
         title="Confirm result"
+        subtitle={formatGameweekDate(gameweek.game_date)}
         onClose={() => {
           setMessage("");
           setIsOpen(false);
         }}
         position="top"
       >
-        <div className="ui-segment">
+        <div className="mt-4 ui-segment">
           <div className="grid grid-cols-2 gap-1">
             <button
               type="button"
@@ -199,55 +215,92 @@ export default function ConfirmResultPanel({ gameweek }: ConfirmResultPanelProps
         </div>
 
         {resultMode === "score" ? (
-          <>
-            <label className="ui-label mt-4">Darks score</label>
-            <input
-              type="number"
-              min={0}
-              value={darksScore}
-              onChange={(event) => setDarksScore(event.target.value)}
-              className="ui-input mt-2"
-            />
-            <label className="ui-label mt-3">Whites score</label>
-            <input
-              type="number"
-              min={0}
-              value={whitesScore}
-              onChange={(event) => setWhitesScore(event.target.value)}
-              className="ui-input mt-2"
-            />
-          </>
+          <div className="mt-4 grid grid-cols-2 gap-3">
+            <div>
+              <label className="ui-label">Darks score</label>
+              <input
+                type="number"
+                min={0}
+                inputMode="numeric"
+                pattern="[0-9]*"
+                value={darksScore}
+                onChange={handleScoreChange("darks")}
+                className="ui-input mt-2"
+              />
+            </div>
+            <div>
+              <label className="ui-label">Whites score</label>
+              <input
+                type="number"
+                min={0}
+                inputMode="numeric"
+                pattern="[0-9]*"
+                value={whitesScore}
+                onChange={handleScoreChange("whites")}
+                className="ui-input mt-2"
+              />
+            </div>
+          </div>
         ) : (
           <fieldset className="mt-4 space-y-2">
-            <legend className="ui-label">Result</legend>
-            <label className="flex items-center gap-2 rounded-xl border border-[var(--color-border)] px-3 py-2 text-sm text-[var(--color-text)]">
+            <label
+              className={`flex cursor-pointer items-center gap-3 rounded-xl border px-3 py-3 text-sm transition ${
+                winner === "darks"
+                  ? "border-[rgba(15,61,52,0.2)] bg-[rgba(15,61,52,0.06)] text-[var(--color-primary-dark)]"
+                  : "border-[var(--color-border)] text-[var(--color-text)]"
+              }`}
+            >
               <input
                 type="radio"
                 name="winner"
                 value="darks"
                 checked={winner === "darks"}
                 onChange={() => setWinner("darks")}
+                className="peer sr-only"
               />
+              <span className="flex h-5 w-5 items-center justify-center rounded-full border border-[var(--color-border-strong)] bg-white peer-checked:border-[var(--color-primary-dark)] peer-checked:bg-[var(--color-primary-dark)]">
+                <span className="h-2 w-2 rounded-full bg-white opacity-0 peer-checked:opacity-100" />
+              </span>
               Darks won
             </label>
-            <label className="flex items-center gap-2 rounded-xl border border-[var(--color-border)] px-3 py-2 text-sm text-[var(--color-text)]">
+            <label
+              className={`flex cursor-pointer items-center gap-3 rounded-xl border px-3 py-3 text-sm transition ${
+                winner === "whites"
+                  ? "border-[rgba(15,61,52,0.2)] bg-[rgba(15,61,52,0.06)] text-[var(--color-primary-dark)]"
+                  : "border-[var(--color-border)] text-[var(--color-text)]"
+              }`}
+            >
               <input
                 type="radio"
                 name="winner"
                 value="whites"
                 checked={winner === "whites"}
                 onChange={() => setWinner("whites")}
+                className="peer sr-only"
               />
+              <span className="flex h-5 w-5 items-center justify-center rounded-full border border-[var(--color-border-strong)] bg-white peer-checked:border-[var(--color-primary-dark)] peer-checked:bg-[var(--color-primary-dark)]">
+                <span className="h-2 w-2 rounded-full bg-white opacity-0 peer-checked:opacity-100" />
+              </span>
               Whites won
             </label>
-            <label className="flex items-center gap-2 rounded-xl border border-[var(--color-border)] px-3 py-2 text-sm text-[var(--color-text)]">
+            <label
+              className={`flex cursor-pointer items-center gap-3 rounded-xl border px-3 py-3 text-sm transition ${
+                winner === "draw"
+                  ? "border-[rgba(15,61,52,0.2)] bg-[rgba(15,61,52,0.06)] text-[var(--color-primary-dark)]"
+                  : "border-[var(--color-border)] text-[var(--color-text)]"
+              }`}
+            >
               <input
                 type="radio"
                 name="winner"
                 value="draw"
                 checked={winner === "draw"}
                 onChange={() => setWinner("draw")}
+                className="peer sr-only"
               />
+              <span className="flex h-5 w-5 items-center justify-center rounded-full border border-[var(--color-border-strong)] bg-white peer-checked:border-[var(--color-primary-dark)] peer-checked:bg-[var(--color-primary-dark)]">
+                <span className="h-2 w-2 rounded-full bg-white opacity-0 peer-checked:opacity-100" />
+              </span>
               Draw
             </label>
           </fieldset>
@@ -258,7 +311,11 @@ export default function ConfirmResultPanel({ gameweek }: ConfirmResultPanelProps
           disabled={submitting}
           className="ui-btn ui-btn-primary mt-4 w-full"
         >
-          Save result
+          {submitting
+            ? "Saving..."
+            : resultMode === "score"
+              ? "Save scores"
+              : "Save result"}
         </button>
         {message ? (
           <p className="ui-banner ui-banner-warning mt-2">{message}</p>

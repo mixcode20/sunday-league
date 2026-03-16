@@ -98,6 +98,17 @@ export const getGameweekDateTime = (dateString: string, timeString?: string | nu
   return date;
 };
 
+export const hasGameweekStarted = (
+  dateString?: string | null,
+  timeString?: string | null,
+  now = Date.now()
+) => {
+  if (!dateString) return false;
+  const gameDateTime = getGameweekDateTime(dateString, timeString);
+  if (!gameDateTime) return false;
+  return now >= gameDateTime.getTime();
+};
+
 export const deriveWinnerFromScores = (
   darksScore: number | null,
   whitesScore: number | null

@@ -1,13 +1,19 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
-import { formatGameweekDate } from "@/lib/utils";
+import ConfirmResultPanel from "@/components/ConfirmResultPanel";
+import {
+  formatGameweekDate,
+  getGameweekDateTime,
+  getGameweekWinner,
+  hasGameweekStarted,
+} from "@/lib/utils";
 import { buildEntryPositionMap, getSlotCounts } from "@/lib/slots";
 import { useOrganiserMode } from "@/components/OrganiserModeProvider";
 import Modal from "@/components/Modal";
 import ShareGameButton from "@/components/ShareGameButton";
-import type { GameweekPlayer } from "@/lib/types";
+import type { Gameweek, GameweekPlayer } from "@/lib/types";
 
 type GameweekInfoStripProps = {
   gameweekId?: string | null;
@@ -20,6 +26,8 @@ type GameweekInfoStripProps = {
   entries?: GameweekPlayer[];
   onRefresh?: () => void;
   showShareButton?: boolean;
+  gameweek?: Gameweek | null;
+  footerAction?: ReactNode;
 };
 
 function LocationIcon() {
@@ -49,6 +57,8 @@ export default function GameweekInfoStrip({
   entries = [],
   onRefresh,
   showShareButton = false,
+  gameweek = null,
+  footerAction,
 }: GameweekInfoStripProps) {
   const router = useRouter();
   const { isUnlocked, organiserPin } = useOrganiserMode();
@@ -65,6 +75,7 @@ export default function GameweekInfoStrip({
   const [editPaymentLink, setEditPaymentLink] = useState(paymentLink ?? "");
   const [message, setMessage] = useState("");
   const [deleteConfirm, setDeleteConfirm] = useState("");
+  const [now, setNow] = useState(() => Date.now());
   const countsSource = `${gameweekId ?? "none"}:${mainCount}:${subsCount}`;
   const countsSourceRef = useRef(countsSource);
 
@@ -120,6 +131,17 @@ export default function GameweekInfoStrip({
     const minutesStr = String(minutes).padStart(2, "0");
     return `${hoursStr}:${minutesStr}`;
   }, [time]);
+
+  const gameweekDateTime = useMemo(
+    () => (gameDate ? getGameweekDateTime(gameDate, time) : null),
+    [gameDate, time]
+  );
+
+  useEffect(() => {
+    if (!gameweekDateTime || now >= gameweekDateTime.getTime()) return;
+    const timeoutId = window.setTimeout(() => setNow(Date.now()), 1000);
+    return () => window.clearTimeout(timeoutId);
+  }, [gameweekDateTime, now]);
 
   if (!gameDate) {
     return (
@@ -202,13 +224,33 @@ export default function GameweekInfoStrip({
       : { main: mainCount, subs: subsCount };
   const shareEntries =
     liveEntries && liveCounts?.source === countsSource ? liveEntries : entries;
-  const totalPlayers = counts.main + counts.subs;
+  const hideActionsAfterStart = hasGameweekStarted(gameDate, time, now);
+  const lockedWinner = gameweek?.status === "locked" ? getGameweekWinner(gameweek) : null;
+  const resultLabel =
+    lockedWinner === "darks"
+      ? "Darks win"
+      : lockedWinner === "whites"
+        ? "Whites win"
+        : lockedWinner === "draw"
+          ? "Draw"
+          : null;
+  const resultTextClass =
+    lockedWinner === "darks"
+      ? "text-[var(--color-primary-dark)]"
+      : lockedWinner === "whites"
+        ? "text-[var(--color-text)]"
+        : "text-[var(--color-primary-dark)]";
+  const showConfirmPanel =
+    Boolean(gameweek) &&
+    isUnlocked &&
+    gameweek?.status === "open" &&
+    hideActionsAfterStart;
 
   return (
     <div className="w-full">
       <div className="ui-card overflow-hidden">
         <section>
-          <div className="relative flex items-center justify-center bg-[#f5faf9] px-5 py-4 text-[var(--color-primary-dark)] sm:px-6">
+          <div className="relative flex items-center justify-center bg-[var(--off-white-green)] px-5 py-4 text-[var(--color-primary-dark)] sm:px-6">
             <div className="text-center text-[1.2rem] font-semibold tracking-[-0.03em] text-[var(--color-primary-dark)] sm:text-[1.6rem]">
               {formatGameweekDate(gameDate)}
             </div>
@@ -240,30 +282,37 @@ export default function GameweekInfoStrip({
               </div>
             </div>
 
-            <div className="mt-6 rounded-[1rem] border border-[var(--color-border)] bg-[var(--color-surface)] px-4 py-[0.54rem] shadow-[0_8px_20px_rgba(15,23,42,0.05)]">
-              <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-1.5 text-[0.64rem] font-medium text-[var(--color-text-secondary)] sm:text-[0.64rem]">
-                <div className="flex items-baseline gap-2">
-                  <span>Players</span>
-                  <span className="text-[0.8rem] font-semibold tracking-[-0.03em] text-[var(--color-text)] sm:text-[1.28rem]">
-                    {counts.main}
-                    <span className="text-[var(--color-text-secondary)]"> / 14</span>
-                  </span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <span>Subs</span>
-                  <span className="text-[0.8rem] font-semibold tracking-[-0.03em] text-[var(--color-text)] sm:text-[1.28rem]">
-                    {counts.subs}
-                  </span>
-                  {totalPlayers > 14 ? (
-                    <span className="rounded-full bg-[rgba(126,217,87,0.16)] px-2 py-1 text-[11px] font-semibold uppercase tracking-[0.12em] text-[var(--color-success)]">
-                      Waitlist live
-                    </span>
-                  ) : null}
-                </div>
+            <div className="mt-6 flex flex-wrap items-center justify-between gap-3">
+              <div className="inline-flex items-baseline gap-2 rounded-full bg-[var(--off-white-green)] px-4 py-2 text-[0.64rem] font-medium text-[var(--color-text-secondary)] sm:text-[0.64rem]">
+                <span>Players</span>
+                <span className="text-[0.8rem] font-semibold tracking-[-0.03em] text-[var(--color-text)] sm:text-[1.28rem]">
+                  {counts.main}
+                  <span className="text-[var(--color-text-secondary)]"> / 14</span>
+                </span>
+              </div>
+              <div className="inline-flex items-center gap-2 rounded-full bg-[var(--off-white-green)] px-4 py-2 text-[0.64rem] font-medium text-[var(--color-text-secondary)] sm:text-[0.64rem]">
+                <span>Subs</span>
+                <span className="text-[0.8rem] font-semibold tracking-[-0.03em] text-[var(--color-text)] sm:text-[1.28rem]">
+                  {counts.subs}
+                </span>
               </div>
             </div>
 
-            {showShareButton && gameweekId ? (
+            {resultLabel ? (
+              <div className="mt-4">
+                <div className="mx-auto mb-3 h-px w-10 bg-[rgba(15,61,52,0.12)]" aria-hidden="true" />
+                <div className="flex items-center justify-center gap-2">
+                  <span className="text-[0.72rem] font-semibold uppercase tracking-[0.16em] text-[var(--color-text-secondary)]">
+                    Result
+                  </span>
+                  <span className={`text-sm font-semibold ${resultTextClass}`}>
+                    {resultLabel}
+                  </span>
+                </div>
+              </div>
+            ) : null}
+
+            {showShareButton && gameweekId && !hideActionsAfterStart ? (
               <div className="mt-4">
                 <ShareGameButton
                   gameweekId={gameweekId}
@@ -272,6 +321,18 @@ export default function GameweekInfoStrip({
                   location={location}
                   entries={shareEntries}
                 />
+              </div>
+            ) : null}
+
+            {showConfirmPanel ? (
+              <div className="mt-5">
+                <ConfirmResultPanel gameweek={gameweek!} embedded />
+              </div>
+            ) : null}
+
+            {footerAction ? (
+              <div className="mt-5 border-t border-[var(--color-border)] pt-5">
+                {footerAction}
               </div>
             ) : null}
           </div>

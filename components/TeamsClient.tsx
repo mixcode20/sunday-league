@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { useOrganiserMode } from "@/components/OrganiserModeProvider";
 import WhatsAppIcon from "@/components/WhatsAppIcon";
 import type { Gameweek, GameweekPlayer, Team } from "@/lib/types";
-import { formatGameweekDate, formatPlayerName } from "@/lib/utils";
+import { formatGameweekDate, formatPlayerName, getGameweekDateTime, hasGameweekStarted } from "@/lib/utils";
 
 type TeamsClientProps = {
   gameweek: Gameweek;
@@ -70,6 +70,7 @@ export default function TeamsClient({ gameweek, entries, onRefresh }: TeamsClien
   const [statusMessage, setStatusMessage] = useState("");
   const [dragged, setDragged] = useState<DragInfo | null>(null);
   const [openSlotKey, setOpenSlotKey] = useState<string | null>(null);
+  const [now, setNow] = useState(() => Date.now());
   const slotMenuRef = useRef<HTMLDivElement | null>(null);
 
   const isLocked = gameweek.status === "locked";
@@ -129,6 +130,11 @@ export default function TeamsClient({ gameweek, entries, onRefresh }: TeamsClien
       ),
     [entries]
   );
+  const unassignedPlayers = useMemo(
+    () =>
+      playersThisWeek.filter((player) => !assignedTeamByPlayerId.get(player.player_id)),
+    [assignedTeamByPlayerId, playersThisWeek]
+  );
   const teamsSelected = grouped.darks.length + grouped.whites.length > 0;
   const teamsComplete =
     grouped.darks.length === TEAM_LIMITS.darks &&
@@ -178,6 +184,17 @@ export default function TeamsClient({ gameweek, entries, onRefresh }: TeamsClien
       "Lets get there for 9:10 to start bang on 9:15",
     ].join("\n");
   }, [gameweek.game_date, gameweek.payment_link, orderedDarks, orderedWhites, teamsComplete]);
+
+  const gameweekDateTime = useMemo(
+    () => getGameweekDateTime(gameweek.game_date, gameweek.game_time),
+    [gameweek.game_date, gameweek.game_time]
+  );
+
+  useEffect(() => {
+    if (!gameweekDateTime || now >= gameweekDateTime.getTime()) return;
+    const timeoutId = window.setTimeout(() => setNow(Date.now()), 1000);
+    return () => window.clearTimeout(timeoutId);
+  }, [gameweekDateTime, now]);
 
   useEffect(() => {
     if (!openSlotKey) return;
@@ -380,7 +397,9 @@ export default function TeamsClient({ gameweek, entries, onRefresh }: TeamsClien
                 className={`flex min-h-[52px] items-center justify-between rounded-xl border px-3 py-2 text-sm ${
                   team === "darks"
                     ? "border-white/12 bg-white/8 text-white"
-                    : "border-[var(--color-border)] bg-white text-[var(--color-text)]"
+                    : entry
+                      ? "ui-slot-filled"
+                      : "border-[var(--color-border)] bg-white text-[var(--color-text)]"
                 }`}
               >
                 {isEditable ? (
@@ -609,6 +628,7 @@ export default function TeamsClient({ gameweek, entries, onRefresh }: TeamsClien
           }),
         ]
     : [];
+  const hideSendTeamsButton = hasGameweekStarted(gameweek.game_date, gameweek.game_time, now);
 
   return (
     <div className="space-y-4">
@@ -624,7 +644,7 @@ export default function TeamsClient({ gameweek, entries, onRefresh }: TeamsClien
         </p>
       ) : null}
 
-      {isUnlocked && !isLocked && teamsComplete ? (
+      {isUnlocked && !isLocked && teamsComplete && !hideSendTeamsButton ? (
         <button
           type="button"
           onClick={() => void shareMessage(sendTeamsText)}
@@ -691,11 +711,11 @@ export default function TeamsClient({ gameweek, entries, onRefresh }: TeamsClien
 
       <section className="ui-card p-4">
         <p className="ui-kicker">
-          Players in this week
+          Unassigned players
         </p>
         <div className="mt-3 grid gap-2 md:grid-cols-2">
-          {playersThisWeek.length > 0 ? (
-            playersThisWeek.map((entry) => (
+          {unassignedPlayers.length > 0 ? (
+            unassignedPlayers.map((entry) => (
               <div
                 key={entry.player_id}
                 className="flex items-center justify-between gap-3 rounded-xl border border-[rgba(229,231,235,0.9)] bg-[rgba(15,61,52,0.03)] px-3 py-2 text-sm"
@@ -703,19 +723,9 @@ export default function TeamsClient({ gameweek, entries, onRefresh }: TeamsClien
                 <span className="min-w-0 flex-1 truncate">
                   {formatPlayerName(entry.players)}
                 </span>
-                {assignedTeamByPlayerId.get(entry.player_id) === "darks" ? (
-                  <span className="shrink-0 rounded-full border border-[rgba(15,61,52,0.18)] bg-[var(--color-primary-dark)] px-2.5 py-1 text-center text-[11px] font-medium uppercase tracking-[0.12em] text-white min-w-[76px]">
-                    Darks
-                  </span>
-                ) : assignedTeamByPlayerId.get(entry.player_id) === "whites" ? (
-                  <span className="shrink-0 rounded-full border border-[rgba(203,213,225,0.95)] bg-[rgba(255,255,255,0.95)] px-2.5 py-1 text-center text-[11px] font-medium uppercase tracking-[0.12em] text-[var(--color-text-secondary)] min-w-[76px]">
-                    Whites
-                  </span>
-                ) : (
-                  <span className="shrink-0 min-w-[76px] text-center text-sm text-[var(--color-text-secondary)]">
-                    -
-                  </span>
-                )}
+                <span className="shrink-0 min-w-[76px] text-center text-sm text-[var(--color-text-secondary)]">
+                  {entry.team === "subs" ? "Sub" : "-"}
+                </span>
               </div>
             ))
           ) : (

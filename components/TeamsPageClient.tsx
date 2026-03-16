@@ -4,13 +4,11 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import useSWR from "swr";
 import CreateGameweek from "@/components/CreateGameweek";
 import GameweekInfoStrip from "@/components/GameweekInfoStrip";
-import ConfirmResultPanel from "@/components/ConfirmResultPanel";
 import TeamsClient from "@/components/TeamsClient";
 import TeamsReadOnly from "@/components/TeamsReadOnly";
 import type { Gameweek, GameweekPlayer, Player } from "@/lib/types";
 import { fetcher, debugPerfEnabled } from "@/lib/swr";
 import { buildEntryPositionMap, getSlotCounts } from "@/lib/slots";
-import { getGameweekWinner, winnerLabel } from "@/lib/utils";
 
 type TeamsOverviewResponse = {
   gameweek: Gameweek | null;
@@ -99,7 +97,6 @@ export default function TeamsPageClient() {
   }
 
   const gameweek = data.gameweek;
-  const gameweekWinner = gameweek ? getGameweekWinner(gameweek) : null;
   const handleGameweekCreated = async (gameweekId: string) => {
     const refreshed = await mutate();
     return refreshed?.gameweek?.id === gameweekId;
@@ -130,27 +127,19 @@ export default function TeamsPageClient() {
         mainCount={mainCount}
         subsCount={subsCount}
         onRefresh={() => mutate()}
+        gameweek={gameweek}
+        footerAction={
+          <CreateGameweek
+            activeGameweekStatus={gameweek.status}
+            players={players}
+            onCreated={handleGameweekCreated}
+          />
+        }
       />
-      <CreateGameweek
-        activeGameweekStatus={gameweek.status}
-        players={players}
-        onCreated={handleGameweekCreated}
-      />
-      <ConfirmResultPanel gameweek={gameweek} />
-
-      {gameweek.status === "locked" ? (
-        <div className="ui-card p-4 text-sm text-[var(--color-text-secondary)]">
-          {typeof gameweek.darks_score === "number" &&
-          typeof gameweek.whites_score === "number"
-            ? `Final score: Darks ${gameweek.darks_score} - ${gameweek.whites_score} · Locked`
-            : `Final result: ${winnerLabel(gameweekWinner)} · Locked`}
-        </div>
-      ) : null}
-
       {gameweek.status === "open" ? (
         <TeamsClient gameweek={gameweek} entries={entries} onRefresh={() => mutate()} />
       ) : (
-        <TeamsReadOnly entries={entries} winner={gameweekWinner} />
+        <TeamsReadOnly entries={entries} />
       )}
     </div>
   );

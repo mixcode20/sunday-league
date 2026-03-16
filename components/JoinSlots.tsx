@@ -63,11 +63,31 @@ export default function JoinSlots({
   const debugJoinFlow =
     typeof window !== "undefined" &&
     process.env.NEXT_PUBLIC_DEBUG_JOIN_FLOW === "true";
-  const formatLastSeenDate = (dateString?: string | null) => {
-    if (!dateString) return "--/--/--";
+  const formatLastSeenWeeksAgo = (dateString?: string | null) => {
+    if (!dateString) return "Last played not yet";
     const match = dateString.match(/^(\d{4})-(\d{2})-(\d{2})$/);
-    if (!match) return "--/--/--";
-    return `${match[3]}/${match[2]}/${match[1].slice(2)}`;
+    if (!match) return "Last played not yet";
+
+    const lastPlayed = new Date(Date.UTC(Number(match[1]), Number(match[2]) - 1, Number(match[3])));
+    const today = new Date();
+    const currentDate = new Date(
+      Date.UTC(today.getUTCFullYear(), today.getUTCMonth(), today.getUTCDate())
+    );
+    const getWeekStart = (date: Date) => {
+      const weekStart = new Date(date);
+      const daysSinceMonday = (weekStart.getUTCDay() + 6) % 7;
+      weekStart.setUTCDate(weekStart.getUTCDate() - daysSinceMonday);
+      return weekStart;
+    };
+
+    const lastWeekStart = getWeekStart(lastPlayed);
+    const currentWeekStart = getWeekStart(currentDate);
+    const diffWeeks = Math.max(
+      0,
+      Math.floor((currentWeekStart.getTime() - lastWeekStart.getTime()) / (7 * 24 * 60 * 60 * 1000))
+    );
+
+    return `Last played ${diffWeeks} week${diffWeeks === 1 ? "" : "s"} ago`;
   };
 
   useEffect(() => {
@@ -880,7 +900,7 @@ export default function JoinSlots({
                   entry?.remove_requested
                     ? "border-[rgba(229,72,77,0.18)] bg-[rgba(229,72,77,0.08)] text-[var(--color-danger)]"
                     : entry
-                      ? "border-[#d5dfdc] bg-[#eef3f1] text-[var(--color-text)]"
+                      ? "ui-slot-filled"
                       : "border-[var(--color-border)] bg-white text-[var(--color-text-secondary)]"
                 } justify-center ${
                   isHighlighted ? "ring-2 ring-amber-400" : ""
@@ -1048,7 +1068,7 @@ export default function JoinSlots({
                     entry?.remove_requested
                       ? "border-[rgba(229,72,77,0.18)] bg-[rgba(229,72,77,0.08)] text-[var(--color-danger)]"
                       : entry
-                        ? "border-[#d5dfdc] bg-[#eef3f1] text-[var(--color-text)]"
+                        ? "ui-slot-filled"
                         : "border-[var(--color-border)] bg-white text-[var(--color-text-secondary)]"
                   } justify-center ${
                     isHighlighted ? "ring-2 ring-amber-400" : ""
@@ -1233,11 +1253,8 @@ export default function JoinSlots({
                       {formatPlayerName(player)}
                     </span>
                     <span className="ml-auto inline-flex shrink-0 flex-wrap items-center justify-end gap-2 text-[11px] font-medium text-[var(--color-text-secondary)]">
-                      <span className="rounded-full bg-white px-2.5 py-1 ring-1 ring-[rgba(15,61,52,0.08)]">
-                        {(player.games_played ?? 0)} GP
-                      </span>
-                      <span className="rounded-full bg-white px-2.5 py-1 ring-1 ring-[rgba(15,61,52,0.08)]">
-                        Last {formatLastSeenDate(player.last_game_date)}
+                      <span className="font-normal text-[var(--color-text)]">
+                        {formatLastSeenWeeksAgo(player.last_game_date)}
                       </span>
                     </span>
                   </span>

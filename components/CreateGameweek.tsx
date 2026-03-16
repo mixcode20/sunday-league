@@ -12,17 +12,24 @@ type CreateGameweekProps = {
   activeGameweekStatus?: GameweekStatus | null;
   players?: Player[];
   onCreated?: (gameweekId: string) => Promise<boolean> | boolean;
+  buttonLabel?: string;
 };
 
 export default function CreateGameweek({
   activeGameweekStatus = null,
   players = [],
   onCreated,
+  buttonLabel = "Create new game",
 }: CreateGameweekProps) {
   const pinnedPlayerId = "541f87de-b74d-43da-b97b-97d688968fb5";
-  const customTimeOption = "Custom";
-  const presetTimes = ["9:00am", "9:15am", "9:30am", "9:45am", "10:00am"];
+  const customTimeOption = "custom";
+  const presetTimes = ["9:15am", "9:30am"];
   const quickPickTimes = [...presetTimes, customTimeOption];
+  const timeOptionLabels: Record<string, string> = {
+    "9:15am": "9:15",
+    "9:30am": "9:30",
+    [customTimeOption]: "Custom",
+  };
   const router = useRouter();
   const { isUnlocked, organiserPin } = useOrganiserMode();
   const [date, setDate] = useState(getNextSundayISO());
@@ -139,12 +146,12 @@ export default function CreateGameweek({
           onClick={openModal}
           className="ui-btn ui-btn-primary w-full"
         >
-          Create next gameweek
+          {buttonLabel}
         </button>
       </div>
       <Modal
         isOpen={isOpen}
-        title="Create next gameweek"
+        title="New game"
         onClose={closeModal}
         position="top"
       >
@@ -153,48 +160,55 @@ export default function CreateGameweek({
             <div className="absolute inset-0 z-10 flex items-center justify-center rounded-[1rem] bg-white/88 text-center backdrop-blur-[2px]">
               <div>
                 <p className="text-sm font-semibold uppercase tracking-[0.16em] text-[var(--color-primary-dark)]">
-                  Creating new gameweek
+                  Creating game
                 </p>
               </div>
             </div>
           ) : null}
-          <div aria-hidden={isSubmitting} className={isSubmitting ? "pointer-events-none opacity-40" : ""}>
-            <label className="ui-label">Date</label>
-            <input
-              type="date"
-              value={date}
-              onChange={(event) => setDate(event.target.value)}
-              className="ui-input mt-2"
-            />
-            <label className="ui-label mt-3">Time</label>
-            <div className="mt-2 flex flex-wrap gap-2">
-              {quickPickTimes.map((option) => {
-                const isSelected = selectedTimeOption === option;
-                return (
-                  <button
-                    key={option}
-                    type="button"
-                    onClick={() => {
-                      setSelectedTimeOption(option);
-                      if (option === customTimeOption) return;
-                      setTime(option);
-                      setCustomTime("");
-                    }}
-                    className={`ui-chip ${
-                      isSelected
-                        ? "ui-chip-active"
-                        : ""
-                    }`}
-                    aria-pressed={isSelected}
-                  >
-                    {option}
-                  </button>
-                );
-              })}
+          <div
+            aria-hidden={isSubmitting}
+            className={`${isSubmitting ? "pointer-events-none opacity-40" : ""} space-y-5`}
+          >
+            <div>
+              <label className="ui-label">Date</label>
+              <input
+                type="date"
+                value={date}
+                onChange={(event) => setDate(event.target.value)}
+                className="ui-input mt-2"
+              />
+            </div>
+            <div>
+              <label className="ui-label">Time</label>
+              <div className="mt-2 grid grid-cols-3 gap-2 text-center">
+                {quickPickTimes.map((option) => {
+                  const isSelected = selectedTimeOption === option;
+                  return (
+                    <button
+                      key={option}
+                      type="button"
+                      onClick={() => {
+                        setSelectedTimeOption(option);
+                        if (option === customTimeOption) return;
+                        setTime(option);
+                        setCustomTime("");
+                      }}
+                      className={`ui-chip w-full justify-center ${
+                        isSelected
+                          ? "ui-chip-active"
+                          : ""
+                      }`}
+                      aria-pressed={isSelected}
+                    >
+                      {timeOptionLabels[option] ?? option}
+                    </button>
+                  );
+                })}
+              </div>
             </div>
             {selectedTimeOption === customTimeOption ? (
-              <>
-                <label className="ui-label mt-3">Custom time</label>
+              <div>
+                <label className="ui-label">Custom time</label>
                 <input
                   type="time"
                   value={customTime}
@@ -206,16 +220,18 @@ export default function CreateGameweek({
                   }}
                   className="ui-input mt-2"
                 />
-              </>
+              </div>
             ) : null}
-            <label className="ui-label mt-3">Location</label>
-            <input
-              type="text"
-              value={location}
-              onChange={(event) => setLocation(event.target.value)}
-              className="ui-input mt-2"
-            />
-            <div className="mt-4 border-t border-[var(--color-border)] pt-4">
+            <div>
+              <label className="ui-label">Location</label>
+              <input
+                type="text"
+                value={location}
+                onChange={(event) => setLocation(event.target.value)}
+                className="ui-input mt-2"
+              />
+            </div>
+            <div className="border-t border-[var(--color-border)] pt-5">
               <div className="flex items-center justify-between gap-3">
                 <span className="ui-label m-0">
                   Add confirmed players
@@ -263,12 +279,12 @@ export default function CreateGameweek({
               type="button"
               onClick={createGameweek}
               disabled={isSubmitting}
-              className="ui-btn ui-btn-primary mt-4 w-full disabled:cursor-not-allowed disabled:opacity-60"
+              className="ui-btn ui-btn-primary w-full disabled:cursor-not-allowed disabled:opacity-60"
             >
               {isSubmitting ? "Creating..." : "Create game"}
             </button>
             {message ? (
-              <p className="ui-banner ui-banner-danger mt-2">{message}</p>
+              <p className="ui-banner ui-banner-danger">{message}</p>
             ) : null}
           </div>
         </div>

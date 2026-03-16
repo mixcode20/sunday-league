@@ -82,11 +82,13 @@ export async function GET() {
     }
   });
 
-  const rows = Object.values(stats).map((row) => ({
-    ...row,
-    winPct: row.gp ? (row.w / row.gp) * 100 : 0,
-    goalDifference: row.goalsFor - row.goalsAgainst,
-  }));
+  const rows = Object.values(stats)
+    .map((row) => ({
+      ...row,
+      winPct: row.gp ? (row.w / row.gp) * 100 : 0,
+      goalDifference: row.goalsFor - row.goalsAgainst,
+    }))
+    .filter((row) => row.gp > 0);
 
   if (debugPerf) {
     console.timeEnd("api:league:overview");

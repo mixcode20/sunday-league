@@ -52,6 +52,13 @@ export default function LeagueTableClient({ rows }: { rows: LeagueStatRow[] }) {
         const winsDiff = compareNumeric(a.w, b.w, direction);
         if (winsDiff !== 0) return winsDiff;
 
+        const goalDifferenceDiff = compareNumeric(
+          a.goalDifference,
+          b.goalDifference,
+          direction
+        );
+        if (goalDifferenceDiff !== 0) return goalDifferenceDiff;
+
         const gamesPlayedDiff = compareNumeric(a.gp, b.gp, direction);
         if (gamesPlayedDiff !== 0) return gamesPlayedDiff;
 
@@ -174,10 +181,13 @@ export default function LeagueTableClient({ rows }: { rows: LeagueStatRow[] }) {
               ))}
             </tr>
           </thead>
-          <tbody className="bg-[rgba(126,217,87,0.06)]">
+          <tbody>
             {sorted.length > 0 ? (
               sorted.map((row) => (
-                <tr key={row.id} className="border-t border-[rgba(229,231,235,0.9)]">
+                <tr
+                  key={row.id}
+                  className="border-t border-[rgba(229,231,235,0.9)] bg-[var(--off-white-green)]"
+                >
                   <td className="px-3 py-2.5 align-middle font-medium text-[var(--color-text)]">
                     <div className="relative flex min-h-8 items-center pr-10">
                       <span>{row.name}</span>
@@ -208,7 +218,7 @@ export default function LeagueTableClient({ rows }: { rows: LeagueStatRow[] }) {
                 </tr>
               ))
             ) : (
-              <tr>
+              <tr className="bg-[var(--off-white-green)]">
                 <td colSpan={7} className="px-4 py-6 text-center text-[var(--color-text-secondary)]">
                   No locked results yet.
                 </td>
