@@ -64,9 +64,9 @@ export default function JoinSlots({
     typeof window !== "undefined" &&
     process.env.NEXT_PUBLIC_DEBUG_JOIN_FLOW === "true";
   const formatLastSeenWeeksAgo = (dateString?: string | null) => {
-    if (!dateString) return "Last played not yet";
+    if (!dateString) return "-";
     const match = dateString.match(/^(\d{4})-(\d{2})-(\d{2})$/);
-    if (!match) return "Last played not yet";
+    if (!match) return "-";
 
     const lastPlayed = new Date(Date.UTC(Number(match[1]), Number(match[2]) - 1, Number(match[3])));
     const today = new Date();
@@ -87,7 +87,11 @@ export default function JoinSlots({
       Math.floor((currentWeekStart.getTime() - lastWeekStart.getTime()) / (7 * 24 * 60 * 60 * 1000))
     );
 
-    return `Last played ${diffWeeks} week${diffWeeks === 1 ? "" : "s"} ago`;
+    if (diffWeeks === 0) {
+      return "Played last game";
+    }
+
+    return `Played ${diffWeeks} weeks ago`;
   };
 
   useEffect(() => {

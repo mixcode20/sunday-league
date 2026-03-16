@@ -130,6 +130,7 @@ export default function TeamsPageClient() {
         subsCount={subsCount}
         onRefresh={() => mutate()}
         gameweek={gameweek}
+        players={players}
         footerAction={
           isUnlocked && gameweek.status === "locked" ? (
             <CreateGameweek

@@ -3,19 +3,22 @@
 import { useEffect, useState, type ChangeEvent } from "react";
 import { useRouter } from "next/navigation";
 import { useSWRConfig } from "swr";
+import CreateGameweek from "@/components/CreateGameweek";
 import Modal from "@/components/Modal";
 import { useOrganiserMode } from "@/components/OrganiserModeProvider";
-import type { Gameweek } from "@/lib/types";
+import type { Gameweek, Player } from "@/lib/types";
 import { formatGameweekDate, getGameweekDateTime } from "@/lib/utils";
 
 type ConfirmResultPanelProps = {
   gameweek: Gameweek;
   embedded?: boolean;
+  players?: Player[];
 };
 
 export default function ConfirmResultPanel({
   gameweek,
   embedded = false,
+  players = [],
 }: ConfirmResultPanelProps) {
   const router = useRouter();
   const { mutate } = useSWRConfig();
@@ -32,6 +35,8 @@ export default function ConfirmResultPanel({
   const [message, setMessage] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [now, setNow] = useState(() => Date.now());
+  const [createPromptOpen, setCreatePromptOpen] = useState(false);
+  const [createModalRequestKey, setCreateModalRequestKey] = useState(0);
 
   const gameDateTime = getGameweekDateTime(gameweek.game_date, gameweek.game_time);
   const canConfirm = Boolean(gameDateTime && now >= gameDateTime.getTime());
@@ -143,6 +148,7 @@ export default function ConfirmResultPanel({
     setSubmitting(false);
     setMessage("");
     setIsOpen(false);
+    setCreatePromptOpen(true);
     router.refresh();
   };
 
@@ -321,6 +327,44 @@ export default function ConfirmResultPanel({
           <p className="ui-banner ui-banner-warning mt-2">{message}</p>
         ) : null}
       </Modal>
+      <Modal
+        isOpen={createPromptOpen}
+        title="Create new game?"
+        onClose={() => setCreatePromptOpen(false)}
+        position="top"
+      >
+        <div className="space-y-4">
+          <p className="text-sm text-[var(--color-text-secondary)]">
+            Would you like to create a new game now or later?
+          </p>
+          <div className="grid grid-cols-2 gap-3">
+            <button
+              type="button"
+              className="ui-btn ui-btn-primary w-full"
+              onClick={() => {
+                setCreatePromptOpen(false);
+                setCreateModalRequestKey((current) => current + 1);
+              }}
+            >
+              Now
+            </button>
+            <button
+              type="button"
+              className="ui-btn ui-btn-secondary w-full"
+              onClick={() => setCreatePromptOpen(false)}
+            >
+              Later
+            </button>
+          </div>
+        </div>
+      </Modal>
+      <CreateGameweek
+        activeGameweekStatus={gameweek.status}
+        players={players}
+        showTrigger={false}
+        openRequestKey={createModalRequestKey}
+        allowCompletedOverride={createPromptOpen || createModalRequestKey > 0}
+      />
     </div>
   );
 }

@@ -13,7 +13,7 @@ import { buildEntryPositionMap, getSlotCounts } from "@/lib/slots";
 import { useOrganiserMode } from "@/components/OrganiserModeProvider";
 import Modal from "@/components/Modal";
 import ShareGameButton from "@/components/ShareGameButton";
-import type { Gameweek, GameweekPlayer } from "@/lib/types";
+import type { Gameweek, GameweekPlayer, Player } from "@/lib/types";
 
 type GameweekInfoStripProps = {
   gameweekId?: string | null;
@@ -27,6 +27,7 @@ type GameweekInfoStripProps = {
   onRefresh?: () => void;
   showShareButton?: boolean;
   gameweek?: Gameweek | null;
+  players?: Player[];
   footerAction?: ReactNode;
 };
 
@@ -58,6 +59,7 @@ export default function GameweekInfoStrip({
   onRefresh,
   showShareButton = false,
   gameweek = null,
+  players = [],
   footerAction,
 }: GameweekInfoStripProps) {
   const router = useRouter();
@@ -326,7 +328,7 @@ export default function GameweekInfoStrip({
 
             {showConfirmPanel ? (
               <div className="mt-5">
-                <ConfirmResultPanel gameweek={gameweek!} embedded />
+                <ConfirmResultPanel gameweek={gameweek!} players={players} embedded />
               </div>
             ) : null}
 

@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { getNextSundayISO } from "@/lib/utils";
 import { useOrganiserMode } from "@/components/OrganiserModeProvider";
@@ -13,6 +13,9 @@ type CreateGameweekProps = {
   players?: Player[];
   onCreated?: (gameweekId: string) => Promise<boolean> | boolean;
   buttonLabel?: string;
+  showTrigger?: boolean;
+  openRequestKey?: number;
+  allowCompletedOverride?: boolean;
 };
 
 export default function CreateGameweek({
@@ -20,6 +23,9 @@ export default function CreateGameweek({
   players = [],
   onCreated,
   buttonLabel = "Create new game",
+  showTrigger = true,
+  openRequestKey = 0,
+  allowCompletedOverride = false,
 }: CreateGameweekProps) {
   const pinnedPlayerId = "541f87de-b74d-43da-b97b-97d688968fb5";
   const customTimeOption = "custom";
@@ -41,7 +47,8 @@ export default function CreateGameweek({
   const [customTime, setCustomTime] = useState("");
   const [selectedPlayerIds, setSelectedPlayerIds] = useState<string[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const hasCompletedGameweek = activeGameweekStatus === "locked";
+  const hasCompletedGameweek = activeGameweekStatus === "locked" || allowCompletedOverride;
+  const previousOpenRequestKeyRef = useRef(openRequestKey);
   const orderedPlayers = useMemo(
     () =>
       [...players].sort((a, b) => {
@@ -82,6 +89,21 @@ export default function CreateGameweek({
     if (isSubmitting) return;
     setIsOpen(false);
   };
+
+  useEffect(() => {
+    if (openRequestKey === 0) {
+      previousOpenRequestKeyRef.current = openRequestKey;
+      return;
+    }
+    if (openRequestKey !== previousOpenRequestKeyRef.current) {
+      const timeoutId = window.setTimeout(() => {
+        openModal();
+      }, 0);
+      previousOpenRequestKeyRef.current = openRequestKey;
+      return () => window.clearTimeout(timeoutId);
+    }
+    previousOpenRequestKeyRef.current = openRequestKey;
+  }, [openRequestKey]);
 
   const togglePlayer = (playerId: string) => {
     setSelectedPlayerIds((current) =>
@@ -140,15 +162,17 @@ export default function CreateGameweek({
 
   return (
     <>
-      <div className="w-full">
-        <button
-          type="button"
-          onClick={openModal}
-          className="ui-btn ui-btn-primary w-full"
-        >
-          {buttonLabel}
-        </button>
-      </div>
+      {showTrigger ? (
+        <div className="w-full">
+          <button
+            type="button"
+            onClick={openModal}
+            className="ui-btn ui-btn-primary w-full"
+          >
+            {buttonLabel}
+          </button>
+        </div>
+      ) : null}
       <Modal
         isOpen={isOpen}
         title="Create new game"

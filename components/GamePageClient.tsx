@@ -75,6 +75,7 @@ export default function GamePageClient() {
         onRefresh={() => mutate()}
         showShareButton={Boolean(openGameweek)}
         gameweek={gameweek}
+        players={players}
         footerAction={
           isUnlocked && gameweek?.status === "locked" ? (
             <CreateGameweek
