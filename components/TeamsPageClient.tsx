@@ -129,11 +129,13 @@ export default function TeamsPageClient() {
         onRefresh={() => mutate()}
         gameweek={gameweek}
         footerAction={
-          <CreateGameweek
-            activeGameweekStatus={gameweek.status}
-            players={players}
-            onCreated={handleGameweekCreated}
-          />
+          gameweek.status === "locked" ? (
+            <CreateGameweek
+              activeGameweekStatus={gameweek.status}
+              players={players}
+              onCreated={handleGameweekCreated}
+            />
+          ) : null
         }
       />
       {gameweek.status === "open" ? (

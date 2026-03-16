@@ -74,17 +74,19 @@ export default function GamePageClient() {
         showShareButton={Boolean(openGameweek)}
         gameweek={gameweek}
         footerAction={
-          <CreateGameweek
-            activeGameweekStatus={gameweek?.status ?? null}
-            players={players}
-            onCreated={async (gameweekId) => {
-              const refreshed = await mutate();
-              return (
-                refreshed?.openGameweek?.id === gameweekId ||
-                refreshed?.gameweek?.id === gameweekId
-              );
-            }}
-          />
+          gameweek?.status === "locked" ? (
+            <CreateGameweek
+              activeGameweekStatus={gameweek.status}
+              players={players}
+              onCreated={async (gameweekId) => {
+                const refreshed = await mutate();
+                return (
+                  refreshed?.openGameweek?.id === gameweekId ||
+                  refreshed?.gameweek?.id === gameweekId
+                );
+              }}
+            />
+          ) : null
         }
       />
 

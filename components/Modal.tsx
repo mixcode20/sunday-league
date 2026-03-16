@@ -35,8 +35,8 @@ export default function Modal({
       : "flex w-full max-w-md max-h-[calc(100dvh-6.5rem)] flex-col overflow-hidden rounded-[1.5rem] border border-[var(--color-border)] bg-white p-5 text-[var(--color-text)] shadow-[0_20px_40px_rgba(15,61,52,0.08)]";
   const contentClass =
     position === "center"
-      ? "max-h-[70vh] overflow-y-auto"
-      : "min-h-0 flex-1 overflow-y-auto";
+      ? "max-h-[70vh] overflow-y-auto text-left"
+      : "min-h-0 flex-1 overflow-y-auto text-left";
 
   return (
     <div
@@ -49,8 +49,8 @@ export default function Modal({
         className={panelClass}
         onClick={(event) => event.stopPropagation()}
       >
-        <div className="relative mb-4 flex items-start justify-end">
-          <div className="absolute left-1/2 top-0 flex -translate-x-1/2 flex-col items-center text-center">
+        <div className="mb-4 flex items-start justify-between gap-4">
+          <div className="min-w-0 flex-1 text-left">
             {subtitle ? (
               <p className="text-sm text-[var(--color-text-secondary)]">{subtitle}</p>
             ) : null}
