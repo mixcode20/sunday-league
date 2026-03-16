@@ -845,7 +845,7 @@ export default function JoinSlots({
                       >
                         {userIcon("h-4 w-4")}
                       </span>
-                      <span className="flex min-w-0 flex-1 items-center gap-2">
+                      <span className="flex min-w-0 flex-1 items-center gap-3">
                         <span
                           className={`min-w-0 truncate text-[14px] font-medium leading-none ${
                             entry.remove_requested ? "text-[var(--color-danger)]" : "text-[var(--color-text)]"
@@ -854,8 +854,8 @@ export default function JoinSlots({
                           {formatPlayerName(entry.players)}
                         </span>
                         {entry.remove_requested ? (
-                          <span className="ml-auto shrink-0 text-[11px] font-semibold uppercase tracking-wide text-[var(--color-danger)]">
-                            Removal requested
+                          <span className="shrink-0 text-[11px] font-semibold uppercase tracking-wide text-[var(--color-danger)]">
+                            {isUnlocked ? "Remove me" : "Removal requested"}
                           </span>
                         ) : null}
                       </span>
@@ -910,22 +910,6 @@ export default function JoinSlots({
                       <span className="mt-2 text-[11px] font-semibold uppercase tracking-wide text-[var(--color-text-secondary)]">
                         Claiming...
                       </span>
-                    ) : null}
-                    {isOpen ? (
-                      isUnlocked ? (
-                        entry.remove_requested ? (
-                          <div className="mt-2 flex items-center gap-2">
-                            <button
-                              type="button"
-                              onClick={() => clearRemovalRequest(entry.player_id)}
-                              className="text-left text-xs font-semibold text-[var(--color-text-secondary)]"
-                              disabled={isSlotPending(entry.position)}
-                            >
-                              Clear request
-                            </button>
-                          </div>
-                        ) : null
-                      ) : null
                     ) : null}
                   </>
                 ) : (
@@ -1013,7 +997,7 @@ export default function JoinSlots({
                         >
                           {userIcon("h-4 w-4")}
                         </span>
-                        <span className="flex min-w-0 flex-1 items-center gap-2">
+                        <span className="flex min-w-0 flex-1 items-center gap-3">
                           <span
                             className={`min-w-0 truncate text-[14px] font-medium leading-none ${
                               entry.remove_requested ? "text-[var(--color-danger)]" : "text-[var(--color-text)]"
@@ -1022,8 +1006,8 @@ export default function JoinSlots({
                             {formatPlayerName(entry.players)}
                           </span>
                           {entry.remove_requested ? (
-                            <span className="ml-auto shrink-0 text-[11px] font-semibold uppercase tracking-wide text-[var(--color-danger)]">
-                              Removal requested
+                            <span className="shrink-0 text-[11px] font-semibold uppercase tracking-wide text-[var(--color-danger)]">
+                              {isUnlocked ? "Remove me" : "Removal requested"}
                             </span>
                           ) : null}
                         </span>
@@ -1082,22 +1066,6 @@ export default function JoinSlots({
                         <span className="mt-2 text-[11px] font-semibold uppercase tracking-wide text-[var(--color-text-secondary)]">
                           Claiming...
                         </span>
-                      ) : null}
-                      {isOpen ? (
-                        isUnlocked ? (
-                          entry.remove_requested ? (
-                            <div className="mt-2 flex items-center gap-2">
-                              <button
-                                type="button"
-                                onClick={() => clearRemovalRequest(entry.player_id)}
-                                className="text-left text-xs font-semibold text-[var(--color-text-secondary)]"
-                                disabled={isSlotPending(entry.position)}
-                              >
-                                Clear request
-                              </button>
-                            </div>
-                          ) : null
-                        ) : null
                       ) : null}
                     </>
                   ) : (
