@@ -12,6 +12,7 @@ type ModalProps = {
   closeVariant?: "text" | "icon";
   closeOnBackdrop?: boolean;
   contentScrollable?: boolean;
+  topOffsetClassName?: string;
 };
 
 export default function Modal({
@@ -24,13 +25,14 @@ export default function Modal({
   closeVariant = "text",
   closeOnBackdrop = true,
   contentScrollable = true,
+  topOffsetClassName,
 }: ModalProps) {
   if (!isOpen) return null;
 
   const positionClass =
     position === "center"
       ? "items-center py-8"
-      : "items-start pt-20 pb-6";
+      : `items-start ${topOffsetClassName ?? "pt-20"} pb-6`;
   const panelClass =
     position === "center"
       ? "w-full max-w-md overflow-hidden rounded-[1.5rem] border border-[var(--color-border)] bg-white p-5 text-[var(--color-text)] shadow-[0_20px_40px_rgba(15,61,52,0.08)]"

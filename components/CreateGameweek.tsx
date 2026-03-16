@@ -155,6 +155,7 @@ export default function CreateGameweek({
         onClose={closeModal}
         position="top"
         contentScrollable={false}
+        topOffsetClassName="pt-[60px]"
       >
         <div className="relative">
           {isSubmitting ? (
