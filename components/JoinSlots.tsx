@@ -8,6 +8,7 @@ import { useOrganiserMode } from "@/components/OrganiserModeProvider";
 import { buildEntryPositionMap, getSubSlotPositions, MAIN_SLOT_CAPACITY } from "@/lib/slots";
 import { debugPerfEnabled } from "@/lib/swr";
 import {
+  getSelfRemovalJoinedAt,
   getSelfRemovalCookieMaxAgeSeconds,
   getSelfRemovalCookieName,
   grantSelfRemovalAccess,
@@ -51,9 +52,6 @@ export default function JoinSlots({
   >({});
   const [slotErrors, setSlotErrors] = useState<Record<number, string>>({});
   const [highlightedPosition, setHighlightedPosition] = useState<number | null>(null);
-  const [sessionJoins, setSessionJoins] = useState<
-    Record<string, { position: number; joinedAt: number }>
-  >({});
   const [selfRemovalAccess, setSelfRemovalAccess] = useState<SelfRemovalGrantMap>({});
   const [now, setNow] = useState(() => Date.now());
   const [subMovePrompt, setSubMovePrompt] = useState<{
@@ -105,24 +103,6 @@ export default function JoinSlots({
   }, [openSlot]);
 
   useEffect(() => {
-    if (!gameweekId || typeof window === "undefined") return;
-    try {
-      const stored = sessionStorage.getItem(`joinSession:${gameweekId}`);
-      if (!stored) {
-        setSessionJoins({});
-        return;
-      }
-      const parsed = JSON.parse(stored) as Record<
-        string,
-        { position: number; joinedAt: number }
-      >;
-      setSessionJoins(parsed ?? {});
-    } catch {
-      setSessionJoins({});
-    }
-  }, [gameweekId]);
-
-  useEffect(() => {
     if (typeof document === "undefined") return;
     const rawCookie = document.cookie
       .split("; ")
@@ -132,10 +112,10 @@ export default function JoinSlots({
   }, [gameweekId]);
 
   useEffect(() => {
-    if (Object.keys(sessionJoins).length === 0) return;
+    if (Object.keys(selfRemovalAccess).length === 0) return;
     const interval = window.setInterval(() => setNow(Date.now()), 30000);
     return () => window.clearInterval(interval);
-  }, [sessionJoins]);
+  }, [selfRemovalAccess]);
 
   useEffect(() => {
     if (highlightedPosition === null) return;
@@ -157,63 +137,12 @@ export default function JoinSlots({
     return () => clearInterval(interval);
   }, [gameweekId]);
 
-  const persistSessionJoins = useCallback((
-    next: Record<string, { position: number; joinedAt: number }>
-  ) => {
-    setSessionJoins(next);
-    if (typeof window !== "undefined" && gameweekId) {
-      sessionStorage.setItem(`joinSession:${gameweekId}`, JSON.stringify(next));
-    }
-  }, [gameweekId]);
-
   const persistSelfRemovalAccess = useCallback((next: SelfRemovalGrantMap) => {
     setSelfRemovalAccess(next);
     if (typeof document !== "undefined") {
       document.cookie = `${getSelfRemovalCookieName()}=${serializeSelfRemovalCookie(next)}; max-age=${getSelfRemovalCookieMaxAgeSeconds()}; path=/; samesite=lax`;
     }
   }, []);
-
-  const recordSessionJoin = (playerId: string, position: number) => {
-    setSessionJoins((prev) => {
-      const next = {
-        ...prev,
-        [playerId]: { position, joinedAt: Date.now() },
-      };
-      if (typeof window !== "undefined" && gameweekId) {
-        sessionStorage.setItem(`joinSession:${gameweekId}`, JSON.stringify(next));
-      }
-      return next;
-    });
-  };
-
-  const clearSessionJoin = (playerId: string) => {
-    setSessionJoins((prev) => {
-      if (!prev[playerId]) return prev;
-      const next = { ...prev };
-      delete next[playerId];
-      if (typeof window !== "undefined" && gameweekId) {
-        sessionStorage.setItem(`joinSession:${gameweekId}`, JSON.stringify(next));
-      }
-      return next;
-    });
-  };
-
-  useEffect(() => {
-    if (!gameweekId) return;
-    const liveIds = new Set(liveEntries.map((entry) => entry.player_id));
-    let changed = false;
-    const next: Record<string, { position: number; joinedAt: number }> = {};
-    Object.entries(sessionJoins).forEach(([playerId, info]) => {
-      if (liveIds.has(playerId)) {
-        next[playerId] = info;
-      } else {
-        changed = true;
-      }
-    });
-    if (changed) {
-      persistSessionJoins(next);
-    }
-  }, [gameweekId, liveEntries, persistSessionJoins, sessionJoins]);
 
   useEffect(() => {
     if (Object.keys(optimisticByPosition).length === 0) return;
@@ -436,7 +365,6 @@ export default function JoinSlots({
           position,
         });
       }
-      recordSessionJoin(playerId, position);
       persistSelfRemovalAccess(
         grantSelfRemovalAccess(selfRemovalAccess, gameweekId, playerId)
       );
@@ -470,7 +398,6 @@ export default function JoinSlots({
     if (!gameweekId) return false;
     setMessage("");
     setLiveEntries((prev) => prev.filter((entry) => entry.player_id !== playerId));
-    clearSessionJoin(playerId);
     const nextSelfRemovalAccess = revokeSelfRemovalAccess(
       selfRemovalAccess,
       gameweekId,
@@ -503,7 +430,6 @@ export default function JoinSlots({
     }
     setMessage("");
     setLiveEntries((prev) => prev.filter((entry) => entry.player_id !== playerId));
-    clearSessionJoin(playerId);
     const nextSelfRemovalAccess = revokeSelfRemovalAccess(
       selfRemovalAccess,
       gameweekId,
@@ -537,15 +463,6 @@ export default function JoinSlots({
         entry.player_id === playerId ? { ...entry, position } : entry
       )
     );
-    setSessionJoins((prev) => {
-      const existing = prev[playerId];
-      if (!existing) return prev;
-      const next = { ...prev, [playerId]: { ...existing, position } };
-      if (typeof window !== "undefined" && gameweekId) {
-        sessionStorage.setItem(`joinSession:${gameweekId}`, JSON.stringify(next));
-      }
-      return next;
-    });
     try {
       const response = await fetch(`/api/gameweeks/${gameweekId}/slots/move`, {
         method: "POST",
@@ -745,16 +662,19 @@ export default function JoinSlots({
   };
 
   const getSessionState = (entry: GameweekPlayer) => {
-    const sessionInfo = sessionJoins[entry.player_id];
     const isCookieOwner = gameweekId
       ? hasSelfRemovalAccess(selfRemovalAccess, gameweekId, entry.player_id)
       : false;
-    if (!sessionInfo || sessionInfo.position !== entry.position) {
+    if (!gameweekId || !isCookieOwner) {
       return { isOwner: false, withinUndo: false, isCookieOwner };
+    }
+    const joinedAt = getSelfRemovalJoinedAt(selfRemovalAccess, gameweekId, entry.player_id);
+    if (typeof joinedAt !== "number") {
+      return { isOwner: true, withinUndo: false, isCookieOwner };
     }
     return {
       isOwner: true,
-      withinUndo: now - sessionInfo.joinedAt <= UNDO_WINDOW_MS,
+      withinUndo: now - joinedAt <= UNDO_WINDOW_MS,
       isCookieOwner,
     };
   };
@@ -934,7 +854,7 @@ export default function JoinSlots({
                           {formatPlayerName(entry.players)}
                         </span>
                         {entry.remove_requested ? (
-                          <span className="shrink-0 text-[11px] font-semibold uppercase tracking-wide text-[var(--color-danger)]">
+                          <span className="ml-auto shrink-0 text-[11px] font-semibold uppercase tracking-wide text-[var(--color-danger)]">
                             Removal requested
                           </span>
                         ) : null}
@@ -1102,7 +1022,7 @@ export default function JoinSlots({
                             {formatPlayerName(entry.players)}
                           </span>
                           {entry.remove_requested ? (
-                            <span className="shrink-0 text-[11px] font-semibold uppercase tracking-wide text-[var(--color-danger)]">
+                            <span className="ml-auto shrink-0 text-[11px] font-semibold uppercase tracking-wide text-[var(--color-danger)]">
                               Removal requested
                             </span>
                           ) : null}

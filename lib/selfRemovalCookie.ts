@@ -3,6 +3,7 @@ const COOKIE_MAX_AGE_SECONDS = 20 * 24 * 60 * 60;
 
 export type SelfRemovalGrant = {
   playerIds: string[];
+  joinedAtByPlayer?: Record<string, number>;
   expiresAt: number;
 };
 
@@ -15,6 +16,16 @@ const isValidGrant = (value: unknown): value is SelfRemovalGrant => {
     Array.isArray(candidate.playerIds) &&
     candidate.playerIds.length > 0 &&
     candidate.playerIds.every((playerId) => typeof playerId === "string" && playerId.length > 0) &&
+    (candidate.joinedAtByPlayer === undefined ||
+      (candidate.joinedAtByPlayer !== null &&
+        typeof candidate.joinedAtByPlayer === "object" &&
+        Object.entries(candidate.joinedAtByPlayer).every(
+          ([playerId, joinedAt]) =>
+            typeof playerId === "string" &&
+            playerId.length > 0 &&
+            typeof joinedAt === "number" &&
+            Number.isFinite(joinedAt)
+        ))) &&
     typeof candidate.expiresAt === "number" &&
     Number.isFinite(candidate.expiresAt)
   );
@@ -59,10 +70,15 @@ export const grantSelfRemovalAccess = (
 ): SelfRemovalGrantMap => {
   const existing = current[gameweekId];
   const playerIds = existing?.playerIds ?? [];
+  const joinedAtByPlayer = {
+    ...(existing?.joinedAtByPlayer ?? {}),
+    [playerId]: now,
+  };
   return {
     ...current,
     [gameweekId]: {
       playerIds: playerIds.includes(playerId) ? playerIds : [...playerIds, playerId],
+      joinedAtByPlayer,
       expiresAt: now + COOKIE_MAX_AGE_SECONDS * 1000,
     },
   };
@@ -82,6 +98,8 @@ export const revokeSelfRemovalAccess = (
   }
   if (!existing.playerIds.includes(playerId)) return current;
   const nextPlayerIds = existing.playerIds.filter((candidate) => candidate !== playerId);
+  const nextJoinedAtByPlayer = { ...(existing.joinedAtByPlayer ?? {}) };
+  delete nextJoinedAtByPlayer[playerId];
   const next = { ...current };
   if (nextPlayerIds.length === 0) {
     delete next[gameweekId];
@@ -89,6 +107,7 @@ export const revokeSelfRemovalAccess = (
     next[gameweekId] = {
       ...existing,
       playerIds: nextPlayerIds,
+      joinedAtByPlayer: nextJoinedAtByPlayer,
     };
   }
   return next;
@@ -99,3 +118,9 @@ export const hasSelfRemovalAccess = (
   gameweekId: string,
   playerId: string
 ) => current[gameweekId]?.playerIds.includes(playerId) ?? false;
+
+export const getSelfRemovalJoinedAt = (
+  current: SelfRemovalGrantMap,
+  gameweekId: string,
+  playerId: string
+) => current[gameweekId]?.joinedAtByPlayer?.[playerId] ?? null;
