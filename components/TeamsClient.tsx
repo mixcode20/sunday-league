@@ -590,8 +590,11 @@ export default function TeamsClient({ gameweek, entries, onRefresh }: TeamsClien
         <span className="min-w-0 flex-1 truncate text-base text-[var(--color-text)]">
           {formatPlayerName(openSlotEntry.players)}
         </span>
-        <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[rgba(148,163,184,0.18)] text-[var(--color-text-secondary)]">
-          <MinusIcon />
+        <span className="flex shrink-0 items-center gap-2 text-sm font-medium text-[var(--color-text-secondary)]">
+          <span className="flex h-8 w-8 items-center justify-center rounded-full bg-[rgba(148,163,184,0.18)]">
+            <MinusIcon />
+          </span>
+          <span>Remove</span>
         </span>
       </button>
     </section>
