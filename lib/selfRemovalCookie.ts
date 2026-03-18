@@ -1,5 +1,6 @@
 const COOKIE_NAME = "selfRemovalAccess";
 const COOKIE_MAX_AGE_SECONDS = 20 * 24 * 60 * 60;
+const STORAGE_KEY = "selfRemovalAccess";
 
 export type SelfRemovalGrant = {
   playerIds: string[];
@@ -35,6 +36,8 @@ export const getSelfRemovalCookieName = () => COOKIE_NAME;
 
 export const getSelfRemovalCookieMaxAgeSeconds = () => COOKIE_MAX_AGE_SECONDS;
 
+export const getSelfRemovalStorageKey = () => STORAGE_KEY;
+
 export const parseSelfRemovalCookie = (
   rawValue?: string | null,
   now = Date.now()
@@ -61,6 +64,42 @@ export const parseSelfRemovalCookie = (
 
 export const serializeSelfRemovalCookie = (value: SelfRemovalGrantMap) =>
   encodeURIComponent(JSON.stringify(value));
+
+export const mergeSelfRemovalAccess = (
+  ...values: SelfRemovalGrantMap[]
+): SelfRemovalGrantMap => {
+  const next: SelfRemovalGrantMap = {};
+  values.forEach((value) => {
+    Object.entries(value).forEach(([gameweekId, grant]) => {
+      const existing = next[gameweekId];
+      if (!existing) {
+        next[gameweekId] = {
+          playerIds: [...grant.playerIds],
+          joinedAtByPlayer: grant.joinedAtByPlayer
+            ? { ...grant.joinedAtByPlayer }
+            : undefined,
+          expiresAt: grant.expiresAt,
+        };
+        return;
+      }
+
+      const playerIds = Array.from(new Set([...existing.playerIds, ...grant.playerIds]));
+      const joinedAtByPlayer = {
+        ...(existing.joinedAtByPlayer ?? {}),
+        ...(grant.joinedAtByPlayer ?? {}),
+      };
+
+      next[gameweekId] = {
+        playerIds,
+        joinedAtByPlayer:
+          Object.keys(joinedAtByPlayer).length > 0 ? joinedAtByPlayer : undefined,
+        expiresAt: Math.max(existing.expiresAt, grant.expiresAt),
+      };
+    });
+  });
+
+  return next;
+};
 
 export const grantSelfRemovalAccess = (
   current: SelfRemovalGrantMap,

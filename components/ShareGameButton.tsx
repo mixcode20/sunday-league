@@ -41,7 +41,7 @@ export default function ShareGameButton({
       0
     );
 
-    return [
+    const lines = [
       `Game is live for ${formatGameweekDate(gameDate)}`,
       "",
       `Join here: ${gameUrl}`,
@@ -51,9 +51,13 @@ export default function ShareGameButton({
       "",
       "Players already in:",
       ...(playerLines.length > 0 ? playerLines : ["None yet"]),
-      "",
-      `${spacesLeft} spaces left`,
-    ].join("\n");
+    ];
+
+    if (spacesLeft > 0) {
+      lines.push("", `${spacesLeft} spaces left`);
+    }
+
+    return lines.join("\n");
   }, [entries, gameDate, location, time]);
 
   const nudgeText = useMemo(() => {
@@ -63,10 +67,9 @@ export default function ShareGameButton({
     const spacesLeft = Math.max(MAIN_SLOT_CAPACITY - mainEntries, 0);
     const spacesLabel = spacesLeft === 1 ? "space" : "spaces";
 
-    return [
-      `Still ${spacesLeft} ${spacesLabel} for this game`,
-      formatGameweekDate(gameDate),
-    ].join("\n\n");
+    return spacesLeft > 0
+      ? [`Still ${spacesLeft} ${spacesLabel} for this game`, formatGameweekDate(gameDate)].join("\n\n")
+      : formatGameweekDate(gameDate);
   }, [entries, gameDate]);
 
   if (!isUnlocked || !gameweekId) return null;

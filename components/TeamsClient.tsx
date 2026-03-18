@@ -170,10 +170,10 @@ export default function TeamsClient({ gameweek, entries, onRefresh }: TeamsClien
       "",
       "KICKING OFF 9:15",
       "",
-      "*Darks:*",
+      "⚫ *Darks:*",
       ...darksList,
       "",
-      "*Whites:*",
+      "⚪ *Whites:*",
       ...whitesList,
       "",
       "*Payment here:*",
@@ -561,8 +561,8 @@ export default function TeamsClient({ gameweek, entries, onRefresh }: TeamsClien
 
     return (
       <section>
-        <div className="border-y border-[rgba(226,232,240,0.82)] bg-[rgba(248,250,252,0.92)] px-4 py-2">
-          <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-[var(--color-text-secondary)]">
+        <div className="border-y border-[rgba(226,232,240,0.82)] bg-[rgba(248,250,252,0.92)] px-5 py-2">
+          <p className="text-xs font-semibold text-[var(--color-text-secondary)]">
             {label}
           </p>
         </div>
@@ -573,8 +573,8 @@ export default function TeamsClient({ gameweek, entries, onRefresh }: TeamsClien
 
   const currentSlotSection = openSlotEntry ? (
     <section>
-      <div className="border-y border-[rgba(226,232,240,0.82)] bg-[rgba(248,250,252,0.92)] px-4 py-2">
-        <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-[var(--color-text-secondary)]">
+      <div className="border-y border-[rgba(226,232,240,0.82)] bg-[rgba(248,250,252,0.92)] px-5 py-2">
+        <p className="text-xs font-semibold text-[var(--color-text-secondary)]">
           Current Slot
         </p>
       </div>

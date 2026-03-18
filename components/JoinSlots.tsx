@@ -11,8 +11,10 @@ import {
   getSelfRemovalJoinedAt,
   getSelfRemovalCookieMaxAgeSeconds,
   getSelfRemovalCookieName,
+  getSelfRemovalStorageKey,
   grantSelfRemovalAccess,
   hasSelfRemovalAccess,
+  mergeSelfRemovalAccess,
   parseSelfRemovalCookie,
   revokeSelfRemovalAccess,
   serializeSelfRemovalCookie,
@@ -104,16 +106,37 @@ export default function JoinSlots({
 
   useEffect(() => {
     if (typeof document === "undefined") return;
-    const rawCookie = document.cookie
-      .split("; ")
-      .find((part) => part.startsWith(`${getSelfRemovalCookieName()}=`))
-      ?.slice(getSelfRemovalCookieName().length + 1);
-    setSelfRemovalAccess(parseSelfRemovalCookie(rawCookie));
+    const syncSelfRemovalAccess = () => {
+      const rawCookie = document.cookie
+        .split("; ")
+        .find((part) => part.startsWith(`${getSelfRemovalCookieName()}=`))
+        ?.slice(getSelfRemovalCookieName().length + 1);
+      const cookieAccess = parseSelfRemovalCookie(rawCookie);
+      const storedAccess = parseSelfRemovalCookie(
+        window.localStorage.getItem(getSelfRemovalStorageKey())
+      );
+      const mergedAccess = mergeSelfRemovalAccess(cookieAccess, storedAccess);
+
+      setSelfRemovalAccess(mergedAccess);
+
+      const serializedAccess = serializeSelfRemovalCookie(mergedAccess);
+      document.cookie = `${getSelfRemovalCookieName()}=${serializedAccess}; max-age=${getSelfRemovalCookieMaxAgeSeconds()}; path=/; samesite=lax`;
+      window.localStorage.setItem(getSelfRemovalStorageKey(), serializedAccess);
+    };
+
+    syncSelfRemovalAccess();
+    window.addEventListener("focus", syncSelfRemovalAccess);
+    window.addEventListener("storage", syncSelfRemovalAccess);
+
+    return () => {
+      window.removeEventListener("focus", syncSelfRemovalAccess);
+      window.removeEventListener("storage", syncSelfRemovalAccess);
+    };
   }, [gameweekId]);
 
   useEffect(() => {
     if (Object.keys(selfRemovalAccess).length === 0) return;
-    const interval = window.setInterval(() => setNow(Date.now()), 30000);
+    const interval = window.setInterval(() => setNow(Date.now()), 1000);
     return () => window.clearInterval(interval);
   }, [selfRemovalAccess]);
 
@@ -140,7 +163,9 @@ export default function JoinSlots({
   const persistSelfRemovalAccess = useCallback((next: SelfRemovalGrantMap) => {
     setSelfRemovalAccess(next);
     if (typeof document !== "undefined") {
-      document.cookie = `${getSelfRemovalCookieName()}=${serializeSelfRemovalCookie(next)}; max-age=${getSelfRemovalCookieMaxAgeSeconds()}; path=/; samesite=lax`;
+      const serialized = serializeSelfRemovalCookie(next);
+      document.cookie = `${getSelfRemovalCookieName()}=${serialized}; max-age=${getSelfRemovalCookieMaxAgeSeconds()}; path=/; samesite=lax`;
+      window.localStorage.setItem(getSelfRemovalStorageKey(), serialized);
     }
   }, []);
 
@@ -545,37 +570,6 @@ export default function JoinSlots({
     await refreshEntries();
   };
 
-  const clearRemovalRequest = async (playerId: string) => {
-    if (!gameweekId) return;
-    if (!organiserPin) {
-      setMessage("Organiser PIN required.");
-      return;
-    }
-    setMessage("");
-    setLiveEntries((prev) =>
-      prev.map((entry) =>
-        entry.player_id === playerId
-          ? { ...entry, remove_requested: false }
-          : entry
-      )
-    );
-    const response = await fetch(
-      `/api/gameweeks/${gameweekId}/clear-remove`,
-      {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ playerId, pin: organiserPin }),
-      }
-    );
-    if (!response.ok) {
-      setMessage("Could not clear removal request.");
-      router.refresh();
-      await refreshEntries();
-      return;
-    }
-    await refreshEntries();
-  };
-
   const createPlayer = async () => {
     setMessage("");
     const response = await fetch("/api/players/public-create", {
@@ -677,6 +671,17 @@ export default function JoinSlots({
       withinUndo: now - joinedAt <= UNDO_WINDOW_MS,
       isCookieOwner,
     };
+  };
+
+  const formatUndoCountdown = (entry: GameweekPlayer) => {
+    if (!gameweekId) return null;
+    const joinedAt = getSelfRemovalJoinedAt(selfRemovalAccess, gameweekId, entry.player_id);
+    if (typeof joinedAt !== "number") return null;
+    const remainingMs = Math.max(0, joinedAt + UNDO_WINDOW_MS - now);
+    const totalSeconds = Math.ceil(remainingMs / 1000);
+    const minutes = Math.floor(totalSeconds / 60);
+    const seconds = totalSeconds % 60;
+    return `${minutes}:${seconds.toString().padStart(2, "0")}`;
   };
 
   const handleOrganiserRemove = (entry: GameweekPlayer) => {
@@ -805,6 +810,7 @@ export default function JoinSlots({
             const canUndo = Boolean(
               sessionState?.isOwner && sessionState?.withinUndo && !entry?.remove_requested
             );
+            const undoCountdown = entry ? formatUndoCountdown(entry) : null;
             const canRequestRemoval = Boolean(
               sessionState?.isCookieOwner && !canUndo && !entry?.remove_requested
             );
@@ -885,7 +891,7 @@ export default function JoinSlots({
                           className="shrink-0 text-xs font-semibold text-[var(--color-text-secondary)]"
                           disabled={isSlotPending(entry.position)}
                         >
-                          Undo
+                          {undoCountdown ? `Undo ${undoCountdown}` : "Undo"}
                         </button>
                       ) : isOpen && canRequestRemoval ? (
                         <button
@@ -957,6 +963,7 @@ export default function JoinSlots({
               const canUndo = Boolean(
                 sessionState?.isOwner && sessionState?.withinUndo && !entry?.remove_requested
               );
+              const undoCountdown = entry ? formatUndoCountdown(entry) : null;
               const canRequestRemoval = Boolean(
                 sessionState?.isCookieOwner && !canUndo && !entry?.remove_requested
               );
@@ -1035,14 +1042,14 @@ export default function JoinSlots({
                             Cancel
                           </button>
                         ) : isOpen && canUndo ? (
-                          <button
-                            type="button"
-                            onClick={() => leavePlayer(entry.player_id)}
-                            className="shrink-0 text-xs font-semibold text-[var(--color-text-secondary)]"
-                            disabled={isSlotPending(entry.position)}
-                          >
-                            Undo
-                          </button>
+                        <button
+                          type="button"
+                          onClick={() => leavePlayer(entry.player_id)}
+                          className="shrink-0 text-xs font-semibold text-[var(--color-text-secondary)]"
+                          disabled={isSlotPending(entry.position)}
+                        >
+                          {undoCountdown ? `Undo ${undoCountdown}` : "Undo"}
+                        </button>
                         ) : isOpen && canRequestRemoval ? (
                           <button
                             type="button"
