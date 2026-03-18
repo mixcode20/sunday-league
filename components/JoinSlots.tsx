@@ -569,6 +569,45 @@ export default function JoinSlots({
     await refreshEntries();
   };
 
+  const clearRemovalRequest = async (playerId: string) => {
+    if (!gameweekId) return;
+    if (!organiserPin) {
+      setMessage("Organiser PIN required.");
+      return;
+    }
+    setMessage("");
+    setLiveEntries((prev) =>
+      prev.map((entry) =>
+        entry.player_id === playerId
+          ? { ...entry, remove_requested: false }
+          : entry
+      )
+    );
+    const response = await fetch(
+      `/api/gameweeks/${gameweekId}/clear-remove`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ playerId, pin: organiserPin }),
+      }
+    );
+    if (!response.ok) {
+      setMessage("Could not clear removal request.");
+      router.refresh();
+      await refreshEntries();
+      return;
+    }
+    await refreshEntries();
+  };
+
+  const handleCancelRemoval = async (playerId: string) => {
+    if (isUnlocked) {
+      await clearRemovalRequest(playerId);
+      return;
+    }
+    await cancelRemovalRequest(playerId);
+  };
+
   const createPlayer = async () => {
     setMessage("");
     const response = await fetch("/api/players/public-create", {
@@ -802,7 +841,7 @@ export default function JoinSlots({
               sessionState?.isCookieOwner && !canUndo && !entry?.remove_requested
             );
             const canCancelRemoval = Boolean(
-              sessionState?.isCookieOwner && entry?.remove_requested
+              entry?.remove_requested && (isUnlocked || sessionState?.isCookieOwner)
             );
             const isHighlighted = highlightedPosition === slotPosition;
             const slotError = slotErrors[slotPosition];
@@ -838,7 +877,7 @@ export default function JoinSlots({
                       >
                         {userIcon("h-4 w-4")}
                       </span>
-                      <span className="flex min-w-0 flex-1 items-center gap-3">
+                      <span className="flex min-w-0 flex-1 items-center">
                         <span
                           className={`min-w-0 truncate text-[14px] font-medium leading-none ${
                             entry.remove_requested ? "text-[var(--color-danger)]" : "text-[var(--color-text)]"
@@ -846,13 +885,22 @@ export default function JoinSlots({
                         >
                           {formatPlayerName(entry.players)}
                         </span>
-                        {entry.remove_requested ? (
-                          <span className="shrink-0 rounded-full border border-[rgba(229,72,77,0.18)] bg-[rgba(229,72,77,0.08)] px-2.5 py-1 text-[11px] font-semibold uppercase tracking-wide text-[var(--color-danger)]">
-                            {isUnlocked ? "Remove me" : "Removal requested"}
-                          </span>
-                        ) : null}
                       </span>
-                      {isOpen && isUnlocked ? (
+                      {entry.remove_requested ? (
+                        <span className="ml-auto shrink-0 rounded-full border border-[rgba(229,72,77,0.18)] bg-[rgba(229,72,77,0.08)] px-2.5 py-1 text-[11px] font-semibold uppercase tracking-wide text-[var(--color-danger)]">
+                          {isUnlocked ? "Remove me" : "Removal requested"}
+                        </span>
+                      ) : null}
+                      {isOpen && canCancelRemoval ? (
+                        <button
+                          type="button"
+                          onClick={() => handleCancelRemoval(entry.player_id)}
+                          className="shrink-0 text-xs font-semibold text-[var(--color-text-secondary)]"
+                          disabled={isSlotPending(entry.position)}
+                        >
+                          Cancel
+                        </button>
+                      ) : isOpen && isUnlocked ? (
                           <button
                             type="button"
                             onClick={() => handleOrganiserRemove(entry)}
@@ -861,15 +909,6 @@ export default function JoinSlots({
                             disabled={isSlotPending(entry.position)}
                           >
                           ×
-                        </button>
-                      ) : isOpen && canCancelRemoval ? (
-                        <button
-                          type="button"
-                          onClick={() => cancelRemovalRequest(entry.player_id)}
-                          className="shrink-0 text-xs font-semibold text-[var(--color-text-secondary)]"
-                          disabled={isSlotPending(entry.position)}
-                        >
-                          Cancel
                         </button>
                       ) : isOpen && canUndo ? (
                         <button
@@ -954,7 +993,7 @@ export default function JoinSlots({
                 sessionState?.isCookieOwner && !canUndo && !entry?.remove_requested
               );
               const canCancelRemoval = Boolean(
-                sessionState?.isCookieOwner && entry?.remove_requested
+                entry?.remove_requested && (isUnlocked || sessionState?.isCookieOwner)
               );
               const isHighlighted = highlightedPosition === slotPosition;
               const slotError = slotErrors[slotPosition];
@@ -990,7 +1029,7 @@ export default function JoinSlots({
                         >
                           {userIcon("h-4 w-4")}
                         </span>
-                        <span className="flex min-w-0 flex-1 items-center gap-3">
+                        <span className="flex min-w-0 flex-1 items-center">
                           <span
                             className={`min-w-0 truncate text-[14px] font-medium leading-none ${
                               entry.remove_requested ? "text-[var(--color-danger)]" : "text-[var(--color-text)]"
@@ -998,13 +1037,22 @@ export default function JoinSlots({
                           >
                             {formatPlayerName(entry.players)}
                           </span>
-                          {entry.remove_requested ? (
-                            <span className="shrink-0 rounded-full border border-[rgba(229,72,77,0.18)] bg-[rgba(229,72,77,0.08)] px-2.5 py-1 text-[11px] font-semibold uppercase tracking-wide text-[var(--color-danger)]">
-                              {isUnlocked ? "Remove me" : "Removal requested"}
-                            </span>
-                          ) : null}
                         </span>
-                        {isOpen && isUnlocked ? (
+                        {entry.remove_requested ? (
+                          <span className="ml-auto shrink-0 rounded-full border border-[rgba(229,72,77,0.18)] bg-[rgba(229,72,77,0.08)] px-2.5 py-1 text-[11px] font-semibold uppercase tracking-wide text-[var(--color-danger)]">
+                            {isUnlocked ? "Remove me" : "Removal requested"}
+                          </span>
+                        ) : null}
+                        {isOpen && canCancelRemoval ? (
+                          <button
+                            type="button"
+                            onClick={() => handleCancelRemoval(entry.player_id)}
+                            className="shrink-0 text-xs font-semibold text-[var(--color-text-secondary)]"
+                            disabled={isSlotPending(entry.position)}
+                          >
+                            Cancel
+                          </button>
+                        ) : isOpen && isUnlocked ? (
                           <button
                             type="button"
                             onClick={() =>
@@ -1017,15 +1065,6 @@ export default function JoinSlots({
                             disabled={isSlotPending(entry.position)}
                           >
                             ×
-                          </button>
-                        ) : isOpen && canCancelRemoval ? (
-                          <button
-                            type="button"
-                            onClick={() => cancelRemovalRequest(entry.player_id)}
-                            className="shrink-0 text-xs font-semibold text-[var(--color-text-secondary)]"
-                            disabled={isSlotPending(entry.position)}
-                          >
-                            Cancel
                           </button>
                         ) : isOpen && canUndo ? (
                         <button
