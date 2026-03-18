@@ -847,7 +847,7 @@ export default function JoinSlots({
                           {formatPlayerName(entry.players)}
                         </span>
                         {entry.remove_requested ? (
-                          <span className="shrink-0 text-[11px] font-semibold uppercase tracking-wide text-[var(--color-danger)]">
+                          <span className="shrink-0 rounded-full border border-[rgba(229,72,77,0.18)] bg-[rgba(229,72,77,0.08)] px-2.5 py-1 text-[11px] font-semibold uppercase tracking-wide text-[var(--color-danger)]">
                             {isUnlocked ? "Remove me" : "Removal requested"}
                           </span>
                         ) : null}
@@ -999,7 +999,7 @@ export default function JoinSlots({
                             {formatPlayerName(entry.players)}
                           </span>
                           {entry.remove_requested ? (
-                            <span className="shrink-0 text-[11px] font-semibold uppercase tracking-wide text-[var(--color-danger)]">
+                            <span className="shrink-0 rounded-full border border-[rgba(229,72,77,0.18)] bg-[rgba(229,72,77,0.08)] px-2.5 py-1 text-[11px] font-semibold uppercase tracking-wide text-[var(--color-danger)]">
                               {isUnlocked ? "Remove me" : "Removal requested"}
                             </span>
                           ) : null}
