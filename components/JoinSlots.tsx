@@ -423,12 +423,6 @@ export default function JoinSlots({
     if (!gameweekId) return false;
     setMessage("");
     setLiveEntries((prev) => prev.filter((entry) => entry.player_id !== playerId));
-    const nextSelfRemovalAccess = revokeSelfRemovalAccess(
-      selfRemovalAccess,
-      gameweekId,
-      playerId
-    );
-    persistSelfRemovalAccess(nextSelfRemovalAccess);
     const response = await fetch(`/api/gameweeks/${gameweekId}/leave`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -437,11 +431,16 @@ export default function JoinSlots({
     const data = await response.json();
     if (!response.ok) {
       setMessage(data.error ?? "Could not remove.");
-      persistSelfRemovalAccess(selfRemovalAccess);
       router.refresh();
       await refreshEntries();
       return false;
     }
+    const nextSelfRemovalAccess = revokeSelfRemovalAccess(
+      selfRemovalAccess,
+      gameweekId,
+      playerId
+    );
+    persistSelfRemovalAccess(nextSelfRemovalAccess);
     await refreshEntries();
     router.refresh();
     return true;
@@ -673,17 +672,6 @@ export default function JoinSlots({
     };
   };
 
-  const formatUndoCountdown = (entry: GameweekPlayer) => {
-    if (!gameweekId) return null;
-    const joinedAt = getSelfRemovalJoinedAt(selfRemovalAccess, gameweekId, entry.player_id);
-    if (typeof joinedAt !== "number") return null;
-    const remainingMs = Math.max(0, joinedAt + UNDO_WINDOW_MS - now);
-    const totalSeconds = Math.ceil(remainingMs / 1000);
-    const minutes = Math.floor(totalSeconds / 60);
-    const seconds = totalSeconds % 60;
-    return `${minutes}:${seconds.toString().padStart(2, "0")}`;
-  };
-
   const handleOrganiserRemove = (entry: GameweekPlayer) => {
     if (entry.position <= MAIN_CAPACITY) {
       const suggested = getEarliestSubEntry();
@@ -810,7 +798,6 @@ export default function JoinSlots({
             const canUndo = Boolean(
               sessionState?.isOwner && sessionState?.withinUndo && !entry?.remove_requested
             );
-            const undoCountdown = entry ? formatUndoCountdown(entry) : null;
             const canRequestRemoval = Boolean(
               sessionState?.isCookieOwner && !canUndo && !entry?.remove_requested
             );
@@ -891,7 +878,7 @@ export default function JoinSlots({
                           className="shrink-0 text-xs font-semibold text-[var(--color-text-secondary)]"
                           disabled={isSlotPending(entry.position)}
                         >
-                          {undoCountdown ? `Undo ${undoCountdown}` : "Undo"}
+                          Undo
                         </button>
                       ) : isOpen && canRequestRemoval ? (
                         <button
@@ -963,7 +950,6 @@ export default function JoinSlots({
               const canUndo = Boolean(
                 sessionState?.isOwner && sessionState?.withinUndo && !entry?.remove_requested
               );
-              const undoCountdown = entry ? formatUndoCountdown(entry) : null;
               const canRequestRemoval = Boolean(
                 sessionState?.isCookieOwner && !canUndo && !entry?.remove_requested
               );
@@ -1048,7 +1034,7 @@ export default function JoinSlots({
                           className="shrink-0 text-xs font-semibold text-[var(--color-text-secondary)]"
                           disabled={isSlotPending(entry.position)}
                         >
-                          {undoCountdown ? `Undo ${undoCountdown}` : "Undo"}
+                          Undo
                         </button>
                         ) : isOpen && canRequestRemoval ? (
                           <button
