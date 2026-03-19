@@ -1,5 +1,5 @@
 const COOKIE_NAME = "selfRemovalAccess";
-const COOKIE_MAX_AGE_SECONDS = 20 * 24 * 60 * 60;
+const COOKIE_MAX_AGE_SECONDS = 8 * 24 * 60 * 60;
 const STORAGE_KEY = "selfRemovalAccess";
 
 export type SelfRemovalGrant = {

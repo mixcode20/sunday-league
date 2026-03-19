@@ -891,16 +891,7 @@ export default function JoinSlots({
                           {isUnlocked ? "Remove me" : "Removal requested"}
                         </span>
                       ) : null}
-                      {isOpen && canCancelRemoval ? (
-                        <button
-                          type="button"
-                          onClick={() => handleCancelRemoval(entry.player_id)}
-                          className="shrink-0 text-xs font-semibold text-[var(--color-text-secondary)]"
-                          disabled={isSlotPending(entry.position)}
-                        >
-                          Cancel
-                        </button>
-                      ) : isOpen && isUnlocked ? (
+                      {isOpen && isUnlocked ? (
                           <button
                             type="button"
                             onClick={() => handleOrganiserRemove(entry)}
@@ -909,6 +900,15 @@ export default function JoinSlots({
                             disabled={isSlotPending(entry.position)}
                           >
                           ×
+                        </button>
+                      ) : isOpen && canCancelRemoval ? (
+                        <button
+                          type="button"
+                          onClick={() => handleCancelRemoval(entry.player_id)}
+                          className="shrink-0 text-xs font-semibold text-[var(--color-text-secondary)]"
+                          disabled={isSlotPending(entry.position)}
+                        >
+                          Cancel
                         </button>
                       ) : isOpen && canUndo ? (
                         <button
@@ -1043,16 +1043,7 @@ export default function JoinSlots({
                             {isUnlocked ? "Remove me" : "Removal requested"}
                           </span>
                         ) : null}
-                        {isOpen && canCancelRemoval ? (
-                          <button
-                            type="button"
-                            onClick={() => handleCancelRemoval(entry.player_id)}
-                            className="shrink-0 text-xs font-semibold text-[var(--color-text-secondary)]"
-                            disabled={isSlotPending(entry.position)}
-                          >
-                            Cancel
-                          </button>
-                        ) : isOpen && isUnlocked ? (
+                        {isOpen && isUnlocked ? (
                           <button
                             type="button"
                             onClick={() =>
@@ -1065,6 +1056,15 @@ export default function JoinSlots({
                             disabled={isSlotPending(entry.position)}
                           >
                             ×
+                          </button>
+                        ) : isOpen && canCancelRemoval ? (
+                          <button
+                            type="button"
+                            onClick={() => handleCancelRemoval(entry.player_id)}
+                            className="shrink-0 text-xs font-semibold text-[var(--color-text-secondary)]"
+                            disabled={isSlotPending(entry.position)}
+                          >
+                            Cancel
                           </button>
                         ) : isOpen && canUndo ? (
                         <button
