@@ -560,7 +560,7 @@ export default function TeamsClient({ gameweek, entries, onRefresh }: TeamsClien
     if (players.length === 0) return null;
 
     return (
-      <section>
+      <section key={label}>
         <div className="border-y border-[rgba(226,232,240,0.82)] bg-[rgba(248,250,252,0.92)] px-5 py-2">
           <p className="text-xs font-semibold text-[var(--color-text-secondary)]">
             {label}
@@ -572,7 +572,7 @@ export default function TeamsClient({ gameweek, entries, onRefresh }: TeamsClien
   };
 
   const currentSlotSection = openSlotEntry ? (
-    <section>
+    <section key="current-slot">
       <div className="border-y border-[rgba(226,232,240,0.82)] bg-[rgba(248,250,252,0.92)] px-5 py-2">
         <p className="text-xs font-semibold text-[var(--color-text-secondary)]">
           Current Slot
@@ -591,10 +591,10 @@ export default function TeamsClient({ gameweek, entries, onRefresh }: TeamsClien
           {formatPlayerName(openSlotEntry.players)}
         </span>
         <span className="flex shrink-0 items-center gap-2 text-sm font-medium text-[var(--color-text-secondary)]">
+          <span>Remove</span>
           <span className="flex h-8 w-8 items-center justify-center rounded-full bg-[rgba(148,163,184,0.18)]">
             <MinusIcon />
           </span>
-          <span>Remove</span>
         </span>
       </button>
     </section>
@@ -727,7 +727,7 @@ export default function TeamsClient({ gameweek, entries, onRefresh }: TeamsClien
                   {formatPlayerName(entry.players)}
                 </span>
                 <span className="shrink-0 min-w-[76px] text-center text-sm text-[var(--color-text-secondary)]">
-                  {entry.team === "subs" ? "Sub" : "-"}
+                  -
                 </span>
               </div>
             ))
