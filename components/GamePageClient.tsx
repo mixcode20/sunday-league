@@ -103,6 +103,7 @@ export default function GamePageClient() {
           <JoinSlots
             isOpen={Boolean(openGameweek)}
             gameweekId={openGameweek?.id}
+            gameDate={openGameweek?.game_date ?? null}
             players={players}
             entries={normalizedEntries}
           />

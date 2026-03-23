@@ -25,6 +25,7 @@ import { formatPlayerName } from "@/lib/utils";
 type JoinSlotsProps = {
   isOpen: boolean;
   gameweekId?: string;
+  gameDate?: string | null;
   players: Player[];
   entries: GameweekPlayer[];
 };
@@ -35,6 +36,7 @@ const UNDO_WINDOW_MS = 5 * 60 * 1000;
 export default function JoinSlots({
   isOpen,
   gameweekId,
+  gameDate,
   players,
   entries,
 }: JoinSlotsProps) {
@@ -63,16 +65,23 @@ export default function JoinSlots({
   const debugJoinFlow =
     typeof window !== "undefined" &&
     process.env.NEXT_PUBLIC_DEBUG_JOIN_FLOW === "true";
-  const formatLastSeenWeeksAgo = (dateString?: string | null) => {
+  const formatLastSeenWeeksAgo = useCallback((dateString?: string | null) => {
     if (!dateString) return "-";
-    const match = dateString.match(/^(\d{4})-(\d{2})-(\d{2})$/);
-    if (!match) return "-";
+    const parseDateOnly = (value: string) => {
+      const match = value.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+      if (!match) return null;
+      return new Date(Date.UTC(Number(match[1]), Number(match[2]) - 1, Number(match[3])));
+    };
 
-    const lastPlayed = new Date(Date.UTC(Number(match[1]), Number(match[2]) - 1, Number(match[3])));
+    const lastPlayed = parseDateOnly(dateString);
+    if (!lastPlayed) return "-";
+
+    const referenceDate = gameDate ? parseDateOnly(gameDate) : null;
     const today = new Date();
-    const currentDate = new Date(
+    const fallbackCurrentDate = new Date(
       Date.UTC(today.getUTCFullYear(), today.getUTCMonth(), today.getUTCDate())
     );
+    const currentDate = referenceDate ?? fallbackCurrentDate;
     const getWeekStart = (date: Date) => {
       const weekStart = new Date(date);
       const daysSinceMonday = (weekStart.getUTCDay() + 6) % 7;
@@ -87,12 +96,21 @@ export default function JoinSlots({
       Math.floor((currentWeekStart.getTime() - lastWeekStart.getTime()) / (7 * 24 * 60 * 60 * 1000))
     );
 
-    if (diffWeeks === 1) {
+    if (currentDate.getTime() >= lastPlayed.getTime() && diffWeeks <= 1) {
       return "Played last game";
     }
 
     return `Played ${diffWeeks} weeks ago`;
-  };
+  }, [gameDate]);
+
+  const getLastSeenSortBucket = useCallback((dateString?: string | null) => {
+    if (!dateString) return Number.MAX_SAFE_INTEGER;
+    const label = formatLastSeenWeeksAgo(dateString);
+    if (label === "-") return Number.MAX_SAFE_INTEGER;
+    if (label === "Played last game") return 1;
+    const match = label.match(/^Played (\d+) weeks ago$/);
+    return match ? Number(match[1]) : Number.MAX_SAFE_INTEGER;
+  }, [formatLastSeenWeeksAgo]);
 
   useEffect(() => {
     setLiveEntries(entries);
@@ -640,19 +658,20 @@ export default function JoinSlots({
       players
         .filter((player) => !filledPlayerIds.has(player.id))
         .sort((a, b) => {
-          const lastSeenComparison = (b.last_game_date ?? "").localeCompare(a.last_game_date ?? "");
+          const lastSeenComparison =
+            getLastSeenSortBucket(a.last_game_date) - getLastSeenSortBucket(b.last_game_date);
           if (lastSeenComparison !== 0) {
             return lastSeenComparison;
           }
 
-          const gamesPlayedComparison = (b.games_played ?? 0) - (a.games_played ?? 0);
-          if (gamesPlayedComparison !== 0) {
-            return gamesPlayedComparison;
+          const firstNameComparison = a.first_name.localeCompare(b.first_name);
+          if (firstNameComparison !== 0) {
+            return firstNameComparison;
           }
 
           return formatPlayerName(a).localeCompare(formatPlayerName(b));
         }),
-    [filledPlayerIds, players]
+    [filledPlayerIds, getLastSeenSortBucket, players]
   );
   const filteredAvailablePlayers = useMemo(
     () =>
