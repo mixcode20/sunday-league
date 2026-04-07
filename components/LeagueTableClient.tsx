@@ -19,9 +19,9 @@ const columns: [SortKey, string][] = [
   ["gp", "GP"],
   ["w", "W"],
   ["l", "L"],
+  ["winPct", "W%"],
   ["ppg", "PPG"],
   ["goalDifference", "GD"],
-  ["winPct", "W%"],
 ];
 
 const compareByName = (a: LeagueStatRow, b: LeagueStatRow) =>
@@ -151,12 +151,13 @@ export default function LeagueTableClient({ rows }: { rows: LeagueStatRow[] }) {
       <div className="ui-table-shell">
         <table className="w-full table-fixed text-left text-xs">
           <colgroup>
-            <col style={{ width: "35%" }} />
-            <col style={{ width: "9%" }} />
-            <col style={{ width: "9%" }} />
-            <col style={{ width: "11%" }} />
-            <col style={{ width: "11%" }} />
-            <col style={{ width: "15%" }} />
+            <col style={{ width: "37%" }} />
+            <col style={{ width: "8%" }} />
+            <col style={{ width: "8%" }} />
+            <col style={{ width: "8%" }} />
+            <col style={{ width: "13%" }} />
+            <col style={{ width: "13%" }} />
+            <col style={{ width: "13%" }} />
           </colgroup>
           <thead className="text-[11px] uppercase tracking-[0.14em] text-white">
             <tr>
@@ -211,12 +212,12 @@ export default function LeagueTableClient({ rows }: { rows: LeagueStatRow[] }) {
                   <td className="px-2 py-2.5 align-middle text-center text-[var(--color-text-secondary)]">{row.w}</td>
                   <td className="px-2 py-2.5 align-middle text-center text-[var(--color-text-secondary)]">{row.l}</td>
                   <td className="px-2 py-2.5 align-middle text-center text-[var(--color-text-secondary)]">
+                    {row.winPct.toFixed(0)}%
+                  </td>
+                  <td className="px-2 py-2.5 align-middle text-center text-[var(--color-text-secondary)]">
                     {row.ppg.toFixed(2)}
                   </td>
                   <td className="px-2 py-2.5 align-middle text-center text-[var(--color-text-secondary)]">{row.goalDifference}</td>
-                  <td className="px-2 py-2.5 align-middle text-center text-[var(--color-text-secondary)]">
-                    {row.winPct.toFixed(0)}%
-                  </td>
                 </tr>
               ))
             ) : (
