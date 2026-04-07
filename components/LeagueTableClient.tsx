@@ -11,14 +11,15 @@ type SortKey =
   | "w"
   | "d"
   | "l"
+  | "ppg"
   | "winPct"
   | "goalDifference";
 
 const columns: [SortKey, string][] = [
   ["gp", "GP"],
   ["w", "W"],
-  ["d", "D"],
   ["l", "L"],
+  ["ppg", "PPG"],
   ["goalDifference", "GD"],
   ["winPct", "W%"],
 ];
@@ -150,12 +151,11 @@ export default function LeagueTableClient({ rows }: { rows: LeagueStatRow[] }) {
       <div className="ui-table-shell">
         <table className="w-full table-fixed text-left text-xs">
           <colgroup>
-            <col style={{ width: "40%" }} />
+            <col style={{ width: "35%" }} />
             <col style={{ width: "9%" }} />
             <col style={{ width: "9%" }} />
-            <col style={{ width: "9%" }} />
-            <col style={{ width: "9%" }} />
-            <col style={{ width: "9%" }} />
+            <col style={{ width: "11%" }} />
+            <col style={{ width: "11%" }} />
             <col style={{ width: "15%" }} />
           </colgroup>
           <thead className="text-[11px] uppercase tracking-[0.14em] text-white">
@@ -209,8 +209,10 @@ export default function LeagueTableClient({ rows }: { rows: LeagueStatRow[] }) {
                   </td>
                   <td className="px-2 py-2.5 align-middle text-center text-[var(--color-text-secondary)]">{row.gp}</td>
                   <td className="px-2 py-2.5 align-middle text-center text-[var(--color-text-secondary)]">{row.w}</td>
-                  <td className="px-2 py-2.5 align-middle text-center text-[var(--color-text-secondary)]">{row.d}</td>
                   <td className="px-2 py-2.5 align-middle text-center text-[var(--color-text-secondary)]">{row.l}</td>
+                  <td className="px-2 py-2.5 align-middle text-center text-[var(--color-text-secondary)]">
+                    {row.ppg.toFixed(2)}
+                  </td>
                   <td className="px-2 py-2.5 align-middle text-center text-[var(--color-text-secondary)]">{row.goalDifference}</td>
                   <td className="px-2 py-2.5 align-middle text-center text-[var(--color-text-secondary)]">
                     {row.winPct.toFixed(0)}%

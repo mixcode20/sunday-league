@@ -45,6 +45,7 @@ export async function GET() {
       w: 0,
       d: 0,
       l: 0,
+      ppg: 0,
       winPct: 0,
       goalsFor: 0,
       goalsAgainst: 0,
@@ -85,6 +86,7 @@ export async function GET() {
   const rows = Object.values(stats)
     .map((row) => ({
       ...row,
+      ppg: row.gp ? (row.w * 3 + row.d) / row.gp : 0,
       winPct: row.gp ? (row.w / row.gp) * 100 : 0,
       goalDifference: row.goalsFor - row.goalsAgainst,
     }))

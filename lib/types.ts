@@ -46,6 +46,7 @@ export type LeagueStatRow = {
   w: number;
   d: number;
   l: number;
+  ppg: number;
   winPct: number;
   goalsFor: number;
   goalsAgainst: number;
