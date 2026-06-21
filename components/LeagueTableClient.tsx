@@ -3,6 +3,7 @@
 import { useMemo, useState } from "react";
 import { useSWRConfig } from "swr";
 import Modal from "@/components/Modal";
+import PlayerDrawer from "@/components/PlayerDrawer";
 import { useOrganiserMode } from "@/components/OrganiserModeProvider";
 import type { LeagueSortDirection, LeagueStatRow } from "@/lib/types";
 
@@ -38,6 +39,7 @@ export default function LeagueTableClient({ rows }: { rows: LeagueStatRow[] }) {
   const { mutate } = useSWRConfig();
   const [sortKey, setSortKey] = useState<SortKey>("w");
   const [direction, setDirection] = useState<LeagueSortDirection>("desc");
+  const [expandedPlayerId, setExpandedPlayerId] = useState<string | null>(null);
   const [playerPendingArchive, setPlayerPendingArchive] = useState<LeagueStatRow | null>(null);
   const [archiveInput, setArchiveInput] = useState("");
   const [isArchiving, setIsArchiving] = useState(false);
@@ -185,42 +187,59 @@ export default function LeagueTableClient({ rows }: { rows: LeagueStatRow[] }) {
           </thead>
           <tbody>
             {sorted.length > 0 ? (
-              sorted.map((row) => (
-                <tr
-                  key={row.id}
-                  className="border-t border-[rgba(229,231,235,0.9)] bg-[var(--off-white-green)]"
-                >
-                  <td className="px-3 py-2.5 align-middle font-medium text-[var(--color-text)]">
-                    <div className="relative flex min-h-8 items-center pr-10">
-                      <span>{row.name}</span>
-                      {isUnlocked ? (
-                        <button
-                          type="button"
-                          onClick={() => {
-                            setMessage(null);
-                            setArchiveInput("");
-                            setPlayerPendingArchive(row);
-                          }}
-                          className="absolute right-0 top-1/2 inline-flex h-7 w-7 -translate-y-1/2 items-center justify-center rounded-full border border-[var(--color-danger)] bg-[var(--color-danger)] text-sm font-semibold leading-none text-white shadow-[0_6px_16px_rgba(229,72,77,0.22)]"
-                          aria-label={`Archive ${row.name}`}
-                        >
-                          ×
-                        </button>
-                      ) : null}
-                    </div>
-                  </td>
-                  <td className="px-2 py-2.5 align-middle text-center text-[var(--color-text-secondary)]">{row.gp}</td>
-                  <td className="px-2 py-2.5 align-middle text-center text-[var(--color-text-secondary)]">{row.w}</td>
-                  <td className="px-2 py-2.5 align-middle text-center text-[var(--color-text-secondary)]">{row.l}</td>
-                  <td className="px-2 py-2.5 align-middle text-center text-[var(--color-text-secondary)]">
-                    {row.winPct.toFixed(0)}%
-                  </td>
-                  <td className="px-2 py-2.5 align-middle text-center text-[var(--color-text-secondary)]">
-                    {row.ppg.toFixed(2)}
-                  </td>
-                  <td className="px-2 py-2.5 align-middle text-center text-[var(--color-text-secondary)]">{row.goalDifference}</td>
-                </tr>
-              ))
+              sorted.map((row) => {
+                const isExpanded = expandedPlayerId === row.id;
+                return (
+                  <>
+                    <tr
+                      key={row.id}
+                      className="cursor-pointer border-t border-[rgba(229,231,235,0.9)] bg-[var(--off-white-green)] hover:bg-[#edf5f2]"
+                      onClick={() => setExpandedPlayerId(isExpanded ? null : row.id)}
+                    >
+                      <td className="px-3 py-2.5 align-middle font-medium text-[var(--color-text)]">
+                        <div className="relative flex min-h-8 items-center pr-10">
+                          <span className="flex items-center gap-1">
+                            {row.name}
+                            <span className="text-[9px] opacity-30">{isExpanded ? "▴" : "▾"}</span>
+                          </span>
+                          {isUnlocked ? (
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setMessage(null);
+                                setArchiveInput("");
+                                setPlayerPendingArchive(row);
+                              }}
+                              className="absolute right-0 top-1/2 inline-flex h-7 w-7 -translate-y-1/2 items-center justify-center rounded-full border border-[var(--color-danger)] bg-[var(--color-danger)] text-sm font-semibold leading-none text-white shadow-[0_6px_16px_rgba(229,72,77,0.22)]"
+                              aria-label={`Archive ${row.name}`}
+                            >
+                              ×
+                            </button>
+                          ) : null}
+                        </div>
+                      </td>
+                      <td className="px-2 py-2.5 align-middle text-center text-[var(--color-text-secondary)]">{row.gp}</td>
+                      <td className="px-2 py-2.5 align-middle text-center text-[var(--color-text-secondary)]">{row.w}</td>
+                      <td className="px-2 py-2.5 align-middle text-center text-[var(--color-text-secondary)]">{row.l}</td>
+                      <td className="px-2 py-2.5 align-middle text-center text-[var(--color-text-secondary)]">
+                        {row.winPct.toFixed(0)}%
+                      </td>
+                      <td className="px-2 py-2.5 align-middle text-center text-[var(--color-text-secondary)]">
+                        {row.ppg.toFixed(2)}
+                      </td>
+                      <td className="px-2 py-2.5 align-middle text-center text-[var(--color-text-secondary)]">{row.goalDifference}</td>
+                    </tr>
+                    {isExpanded && (
+                      <tr key={`${row.id}-drawer`} className="bg-[#edf5f2]">
+                        <td colSpan={7} className="px-3 py-3">
+                          <PlayerDrawer playerId={row.id} />
+                        </td>
+                      </tr>
+                    )}
+                  </>
+                );
+              })
             ) : (
               <tr className="bg-[var(--off-white-green)]">
                 <td colSpan={7} className="px-4 py-6 text-center text-[var(--color-text-secondary)]">
@@ -266,42 +285,59 @@ export default function LeagueTableClient({ rows }: { rows: LeagueStatRow[] }) {
                 </tr>
               </thead>
               <tbody>
-                {div2Sorted.map((row) => (
-                  <tr
-                    key={row.id}
-                    className="border-t border-[rgba(229,231,235,0.9)] bg-[var(--off-white-green)]"
-                  >
-                    <td className="px-3 py-2.5 align-middle font-medium text-[var(--color-text)]">
-                      <div className="relative flex min-h-8 items-center pr-10">
-                        <span>{row.name}</span>
-                        {isUnlocked ? (
-                          <button
-                            type="button"
-                            onClick={() => {
-                              setMessage(null);
-                              setArchiveInput("");
-                              setPlayerPendingArchive(row);
-                            }}
-                            className="absolute right-0 top-1/2 inline-flex h-7 w-7 -translate-y-1/2 items-center justify-center rounded-full border border-[var(--color-danger)] bg-[var(--color-danger)] text-sm font-semibold leading-none text-white shadow-[0_6px_16px_rgba(229,72,77,0.22)]"
-                            aria-label={`Archive ${row.name}`}
-                          >
-                            ×
-                          </button>
-                        ) : null}
-                      </div>
-                    </td>
-                    <td className="px-2 py-2.5 align-middle text-center text-[var(--color-text-secondary)]">{row.gp}</td>
-                    <td className="px-2 py-2.5 align-middle text-center text-[var(--color-text-secondary)]">{row.w}</td>
-                    <td className="px-2 py-2.5 align-middle text-center text-[var(--color-text-secondary)]">{row.l}</td>
-                    <td className="px-2 py-2.5 align-middle text-center text-[var(--color-text-secondary)]">
-                      {row.winPct.toFixed(0)}%
-                    </td>
-                    <td className="px-2 py-2.5 align-middle text-center text-[var(--color-text-secondary)]">
-                      {row.ppg.toFixed(2)}
-                    </td>
-                    <td className="px-2 py-2.5 align-middle text-center text-[var(--color-text-secondary)]">{row.goalDifference}</td>
-                  </tr>
-                ))}
+                {div2Sorted.map((row) => {
+                  const isExpanded = expandedPlayerId === row.id;
+                  return (
+                    <>
+                      <tr
+                        key={row.id}
+                        className="cursor-pointer border-t border-[rgba(229,231,235,0.9)] bg-[var(--off-white-green)] hover:bg-[#edf5f2]"
+                        onClick={() => setExpandedPlayerId(isExpanded ? null : row.id)}
+                      >
+                        <td className="px-3 py-2.5 align-middle font-medium text-[var(--color-text)]">
+                          <div className="relative flex min-h-8 items-center pr-10">
+                            <span className="flex items-center gap-1">
+                              {row.name}
+                              <span className="text-[9px] opacity-30">{isExpanded ? "▴" : "▾"}</span>
+                            </span>
+                            {isUnlocked ? (
+                              <button
+                                type="button"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setMessage(null);
+                                  setArchiveInput("");
+                                  setPlayerPendingArchive(row);
+                                }}
+                                className="absolute right-0 top-1/2 inline-flex h-7 w-7 -translate-y-1/2 items-center justify-center rounded-full border border-[var(--color-danger)] bg-[var(--color-danger)] text-sm font-semibold leading-none text-white shadow-[0_6px_16px_rgba(229,72,77,0.22)]"
+                                aria-label={`Archive ${row.name}`}
+                              >
+                                ×
+                              </button>
+                            ) : null}
+                          </div>
+                        </td>
+                        <td className="px-2 py-2.5 align-middle text-center text-[var(--color-text-secondary)]">{row.gp}</td>
+                        <td className="px-2 py-2.5 align-middle text-center text-[var(--color-text-secondary)]">{row.w}</td>
+                        <td className="px-2 py-2.5 align-middle text-center text-[var(--color-text-secondary)]">{row.l}</td>
+                        <td className="px-2 py-2.5 align-middle text-center text-[var(--color-text-secondary)]">
+                          {row.winPct.toFixed(0)}%
+                        </td>
+                        <td className="px-2 py-2.5 align-middle text-center text-[var(--color-text-secondary)]">
+                          {row.ppg.toFixed(2)}
+                        </td>
+                        <td className="px-2 py-2.5 align-middle text-center text-[var(--color-text-secondary)]">{row.goalDifference}</td>
+                      </tr>
+                      {isExpanded && (
+                        <tr key={`${row.id}-drawer`} className="bg-[#edf5f2]">
+                          <td colSpan={7} className="px-3 py-3">
+                            <PlayerDrawer playerId={row.id} />
+                          </td>
+                        </tr>
+                      )}
+                    </>
+                  );
+                })}
               </tbody>
             </table>
           </div>

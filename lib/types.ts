@@ -52,3 +52,13 @@ export type LeagueStatRow = {
   goalsAgainst: number;
   goalDifference: number;
 };
+
+export type PlayerFormEntry = {
+  result: "w" | "l" | "d";
+  team: "darks" | "whites";
+};
+
+export type PlayerStats = {
+  form: PlayerFormEntry[];
+  teamPicks: { darks: number; whites: number };
+};
