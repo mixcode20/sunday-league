@@ -4,12 +4,16 @@ import useSWR from "swr";
 import { fetcher } from "@/lib/swr";
 import type { PlayerStats } from "@/lib/types";
 
+// Reference bar width for label threshold calculations
 const BAR_W = 270;
-const DARK_MIN_PX = 78;
-const WHITE_MIN_PX = 84;
-const WHITE_NUM_PX = 44;
+// "Dark X%"  ≈ 8 chars × 6px + 18px padding
+const DARK_FULL_PX = 66;
+// "White X%" ≈ 9 chars × 6px + 18px padding
+const WHITE_FULL_PX = 72;
+// "X%"       ≈ 3 chars × 6px + 18px padding
+const NUM_PX = 36;
 
-// Fixed width for exactly 5 tiles at 22px with gap-1 (4px) between them
+// Fixed width for exactly 5 tiles (22px each) with gap-1 (4px) between them
 const FORM_W = 5 * 22 + 4 * 4; // 126px
 
 const RESULT_BG: Record<"w" | "l" | "d", string> = {
@@ -18,12 +22,23 @@ const RESULT_BG: Record<"w" | "l" | "d", string> = {
   d: "#9ca3af",
 };
 
-function FormTile({ result }: { result: "w" | "l" | "d" }) {
+const TEAM_STRIPE: Record<"darks" | "whites", string> = {
+  darks: "#0f3d34",
+  whites: "#ffffff",
+};
+
+function FormTile({ result, team }: { result: "w" | "l" | "d"; team: "darks" | "whites" }) {
+  const bg = RESULT_BG[result];
+  const stripe = TEAM_STRIPE[team];
   return (
     <div
-      className="rounded-[3px]"
-      style={{ width: 22, height: 30, background: RESULT_BG[result], border: "1px solid rgba(0,0,0,0.07)" }}
-    />
+      className="flex flex-col overflow-hidden rounded-[3px]"
+      style={{ width: 22, height: 30, border: "1px solid #374151" }}
+    >
+      <div style={{ flex: 4, background: bg }} />
+      <div style={{ flex: 2, background: stripe }} />
+      <div style={{ flex: 4, background: bg }} />
+    </div>
   );
 }
 
@@ -37,36 +52,46 @@ function TeamPicksBar({ darks, whites }: { darks: number; whites: number }) {
   const whitePct = 100 - darkPct;
   const darkPx = (BAR_W * darkPct) / 100;
   const whitePx = BAR_W - darkPx;
-  const showDark = darkPx >= DARK_MIN_PX;
-  const showWhiteFull = whitePx >= WHITE_MIN_PX;
-  const showWhiteNum = !showWhiteFull && whitePx >= WHITE_NUM_PX;
+
+  const showDarkFull = darkPx >= DARK_FULL_PX;
+  const showDarkNum = !showDarkFull && darkPx >= NUM_PX;
+  const showWhiteFull = whitePx >= WHITE_FULL_PX;
+  const showWhiteNum = !showWhiteFull && whitePx >= NUM_PX;
 
   return (
     <div className="flex h-[26px] w-full overflow-hidden rounded-full">
-      <div
-        className="flex shrink-0 items-center justify-end overflow-hidden px-[9px]"
-        style={{ width: `${darkPct}%`, background: "#0f3d34" }}
-      >
-        {showDark && (
-          <span className="whitespace-nowrap text-[11px] font-semibold text-white">
-            Darks {darkPct}%
-          </span>
-        )}
-      </div>
-      <div
-        className="flex shrink-0 items-center justify-start overflow-hidden px-[9px]"
-        style={{ width: `${whitePct}%`, background: "#ffffff" }}
-      >
-        {showWhiteFull ? (
-          <span className="whitespace-nowrap text-[11px] font-semibold text-[#0f3d34]">
-            Whites {whitePct}%
-          </span>
-        ) : showWhiteNum ? (
-          <span className="whitespace-nowrap text-[11px] font-semibold text-[#0f3d34]">
-            {whitePct}%
-          </span>
-        ) : null}
-      </div>
+      {darkPct > 0 && (
+        <div
+          className="flex shrink-0 items-center justify-end overflow-hidden px-[9px]"
+          style={{ width: `${darkPct}%`, background: "#0f3d34" }}
+        >
+          {showDarkFull ? (
+            <span className="whitespace-nowrap text-[11px] font-semibold text-white">
+              Dark {darkPct}%
+            </span>
+          ) : showDarkNum ? (
+            <span className="whitespace-nowrap text-[11px] font-semibold text-white">
+              {darkPct}%
+            </span>
+          ) : null}
+        </div>
+      )}
+      {whitePct > 0 && (
+        <div
+          className="flex shrink-0 items-center justify-start overflow-hidden px-[9px]"
+          style={{ width: `${whitePct}%`, background: "#ffffff" }}
+        >
+          {showWhiteFull ? (
+            <span className="whitespace-nowrap text-[11px] font-semibold text-[#0f3d34]">
+              White {whitePct}%
+            </span>
+          ) : showWhiteNum ? (
+            <span className="whitespace-nowrap text-[11px] font-semibold text-[#0f3d34]">
+              {whitePct}%
+            </span>
+          ) : null}
+        </div>
+      )}
     </div>
   );
 }
@@ -79,9 +104,9 @@ export default function PlayerDrawer({ playerId }: { playerId: string }) {
 
   if (isLoading || !data) {
     return (
-      <div className="flex">
+      <div className="flex gap-3">
         <div className="shrink-0 space-y-1.5" style={{ width: FORM_W }}>
-          <div className="h-3 w-10 animate-pulse rounded bg-[rgba(15,61,52,0.12)]" />
+          <div className="h-3 w-16 animate-pulse rounded bg-[rgba(15,61,52,0.12)]" />
           <div className="flex gap-1">
             {Array.from({ length: 5 }).map((_, i) => (
               <div
@@ -92,11 +117,8 @@ export default function PlayerDrawer({ playerId }: { playerId: string }) {
             ))}
           </div>
         </div>
-        <div className="flex shrink-0 flex-col justify-end pb-1" style={{ width: 24 }}>
-          <span className="text-center text-[11px] text-[rgba(15,61,52,0.12)]">→</span>
-        </div>
         <div className="min-w-0 flex-1 space-y-1.5">
-          <div className="h-3 w-20 animate-pulse rounded bg-[rgba(15,61,52,0.12)]" />
+          <div className="h-3 w-10 animate-pulse rounded bg-[rgba(15,61,52,0.12)]" />
           <div className="h-[26px] animate-pulse rounded-full bg-[rgba(15,61,52,0.12)]" />
         </div>
       </div>
@@ -104,32 +126,27 @@ export default function PlayerDrawer({ playerId }: { playerId: string }) {
   }
 
   return (
-    <div className="flex">
-      {/* Form: fixed width for exactly 5 tiles */}
+    <div className="flex gap-3">
+      {/* Form: fixed width for exactly 5 tiles; arrow inline with heading */}
       <div className="shrink-0 space-y-1.5" style={{ width: FORM_W }}>
         <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-[var(--color-text-secondary)]">
-          Form
+          Form <span className="font-normal opacity-40">→</span>
         </p>
         {data.form.length === 0 ? (
           <p className="text-[11px] text-[var(--color-text-secondary)]">No data</p>
         ) : (
           <div className="flex gap-1">
             {data.form.map((entry, i) => (
-              <FormTile key={i} result={entry.result} />
+              <FormTile key={i} result={entry.result} team={entry.team} />
             ))}
           </div>
         )}
       </div>
 
-      {/* Arrow: fixed width column, arrow pushed to bottom to sit beside tiles */}
-      <div className="flex shrink-0 flex-col justify-end pb-1" style={{ width: 24 }}>
-        <span className="text-center text-[11px] text-[rgba(15,61,52,0.35)]">→</span>
-      </div>
-
       {/* Team picks: fills remaining width */}
       <div className="min-w-0 flex-1 space-y-1.5">
         <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-[var(--color-text-secondary)]">
-          Team picks
+          Team
         </p>
         <TeamPicksBar darks={data.teamPicks.darks} whites={data.teamPicks.whites} />
       </div>
