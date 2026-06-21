@@ -36,7 +36,7 @@ const compareNumeric = (
 export default function LeagueTableClient({ rows }: { rows: LeagueStatRow[] }) {
   const { isUnlocked, organiserPin } = useOrganiserMode();
   const { mutate } = useSWRConfig();
-  const [sortKey, setSortKey] = useState<SortKey>("winPct");
+  const [sortKey, setSortKey] = useState<SortKey>("w");
   const [direction, setDirection] = useState<LeagueSortDirection>("desc");
   const [playerPendingArchive, setPlayerPendingArchive] = useState<LeagueStatRow | null>(null);
   const [archiveInput, setArchiveInput] = useState("");
@@ -252,13 +252,13 @@ export default function LeagueTableClient({ rows }: { rows: LeagueStatRow[] }) {
               </colgroup>
               <thead className="text-[11px] uppercase tracking-[0.14em] text-white">
                 <tr>
-                  <th className="rounded-tl-lg bg-[var(--color-primary-dark)] px-3 py-[0.85rem] opacity-80">
+                  <th className="rounded-tl-lg bg-[var(--color-primary-dark)] px-3 py-[0.85rem]">
                     Player
                   </th>
                   {columns.map(([key, label]) => (
                     <th
                       key={key}
-                      className="bg-[var(--color-primary-dark)] px-2 py-[0.85rem] text-center align-middle opacity-80 last:rounded-tr-lg"
+                      className="bg-[var(--color-primary-dark)] px-2 py-[0.85rem] text-center align-middle last:rounded-tr-lg"
                     >
                       {label}
                     </th>
