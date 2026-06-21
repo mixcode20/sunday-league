@@ -7,6 +7,10 @@ import type { PlayerStats } from "@/lib/types";
 const BAR_W = 270;
 const DARK_MIN_PX = 78;
 const WHITE_MIN_PX = 84;
+const WHITE_NUM_PX = 44;
+
+// Fixed width for exactly 5 tiles at 22px with gap-1 (4px) between them
+const FORM_W = 5 * 22 + 4 * 4; // 126px
 
 const RESULT_BG: Record<"w" | "l" | "d", string> = {
   w: "#22c55e",
@@ -34,7 +38,8 @@ function TeamPicksBar({ darks, whites }: { darks: number; whites: number }) {
   const darkPx = (BAR_W * darkPct) / 100;
   const whitePx = BAR_W - darkPx;
   const showDark = darkPx >= DARK_MIN_PX;
-  const showWhite = whitePx >= WHITE_MIN_PX;
+  const showWhiteFull = whitePx >= WHITE_MIN_PX;
+  const showWhiteNum = !showWhiteFull && whitePx >= WHITE_NUM_PX;
 
   return (
     <div className="flex h-[26px] w-full overflow-hidden rounded-full">
@@ -50,13 +55,17 @@ function TeamPicksBar({ darks, whites }: { darks: number; whites: number }) {
       </div>
       <div
         className="flex shrink-0 items-center justify-start overflow-hidden px-[9px]"
-        style={{ width: `${whitePct}%`, background: "#dde8e5", border: "1px solid rgba(0,0,0,0.07)" }}
+        style={{ width: `${whitePct}%`, background: "#ffffff" }}
       >
-        {showWhite && (
+        {showWhiteFull ? (
           <span className="whitespace-nowrap text-[11px] font-semibold text-[#0f3d34]">
             Whites {whitePct}%
           </span>
-        )}
+        ) : showWhiteNum ? (
+          <span className="whitespace-nowrap text-[11px] font-semibold text-[#0f3d34]">
+            {whitePct}%
+          </span>
+        ) : null}
       </div>
     </div>
   );
@@ -70,14 +79,10 @@ export default function PlayerDrawer({ playerId }: { playerId: string }) {
 
   if (isLoading || !data) {
     return (
-      <div className="space-y-2">
-        <div className="flex items-center gap-2">
+      <div className="flex">
+        <div className="shrink-0 space-y-1.5" style={{ width: FORM_W }}>
           <div className="h-3 w-10 animate-pulse rounded bg-[rgba(15,61,52,0.12)]" />
-          <div className="h-px flex-1 animate-pulse bg-[rgba(15,61,52,0.12)]" />
-          <div className="h-3 w-20 animate-pulse rounded bg-[rgba(15,61,52,0.12)]" />
-        </div>
-        <div className="flex items-center gap-4">
-          <div className="flex shrink-0 gap-1">
+          <div className="flex gap-1">
             {Array.from({ length: 5 }).map((_, i) => (
               <div
                 key={i}
@@ -86,44 +91,47 @@ export default function PlayerDrawer({ playerId }: { playerId: string }) {
               />
             ))}
           </div>
-          <div className="h-[26px] min-w-0 flex-1 animate-pulse rounded-full bg-[rgba(15,61,52,0.12)]" />
+        </div>
+        <div className="flex shrink-0 flex-col justify-end pb-1" style={{ width: 24 }}>
+          <span className="text-center text-[11px] text-[rgba(15,61,52,0.12)]">→</span>
+        </div>
+        <div className="min-w-0 flex-1 space-y-1.5">
+          <div className="h-3 w-20 animate-pulse rounded bg-[rgba(15,61,52,0.12)]" />
+          <div className="h-[26px] animate-pulse rounded-full bg-[rgba(15,61,52,0.12)]" />
         </div>
       </div>
     );
   }
 
   return (
-    <div className="space-y-2">
-      {/* Header row: FORM ──→ TEAM PICKS */}
-      <div className="flex items-center gap-2">
-        <p className="shrink-0 text-[10px] font-semibold uppercase tracking-[0.14em] text-[var(--color-text-secondary)]">
+    <div className="flex">
+      {/* Form: fixed width for exactly 5 tiles */}
+      <div className="shrink-0 space-y-1.5" style={{ width: FORM_W }}>
+        <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-[var(--color-text-secondary)]">
           Form
         </p>
-        <div className="flex min-w-0 flex-1 items-center gap-1">
-          <div className="h-px flex-1 bg-[rgba(15,61,52,0.15)]" />
-          <span className="text-[10px] text-[rgba(15,61,52,0.35)]">→</span>
-        </div>
-        <p className="shrink-0 text-[10px] font-semibold uppercase tracking-[0.14em] text-[var(--color-text-secondary)]">
-          Team picks
-        </p>
+        {data.form.length === 0 ? (
+          <p className="text-[11px] text-[var(--color-text-secondary)]">No data</p>
+        ) : (
+          <div className="flex gap-1">
+            {data.form.map((entry, i) => (
+              <FormTile key={i} result={entry.result} />
+            ))}
+          </div>
+        )}
       </div>
 
-      {/* Content row: tiles | bar */}
-      <div className="flex items-center gap-4">
-        <div className="shrink-0">
-          {data.form.length === 0 ? (
-            <p className="text-[11px] text-[var(--color-text-secondary)]">No data</p>
-          ) : (
-            <div className="flex gap-1">
-              {data.form.map((entry, i) => (
-                <FormTile key={i} result={entry.result} />
-              ))}
-            </div>
-          )}
-        </div>
-        <div className="min-w-0 flex-1">
-          <TeamPicksBar darks={data.teamPicks.darks} whites={data.teamPicks.whites} />
-        </div>
+      {/* Arrow: fixed width column, arrow pushed to bottom to sit beside tiles */}
+      <div className="flex shrink-0 flex-col justify-end pb-1" style={{ width: 24 }}>
+        <span className="text-center text-[11px] text-[rgba(15,61,52,0.35)]">→</span>
+      </div>
+
+      {/* Team picks: fills remaining width */}
+      <div className="min-w-0 flex-1 space-y-1.5">
+        <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-[var(--color-text-secondary)]">
+          Team picks
+        </p>
+        <TeamPicksBar darks={data.teamPicks.darks} whites={data.teamPicks.whites} />
       </div>
     </div>
   );
