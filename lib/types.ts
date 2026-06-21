@@ -56,6 +56,10 @@ export type LeagueStatRow = {
 export type PlayerFormEntry = {
   result: "w" | "l" | "d";
   team: "darks" | "whites";
+  gameweekId: string;
+  gameDate: string;
+  darksScore: number | null;
+  whitesScore: number | null;
 };
 
 export type PlayerStats = {

@@ -41,7 +41,7 @@ export async function GET(
     else teamPicks.whites++;
   }
 
-  const form: PlayerFormEntry[] = lockedEntries.slice(0, 5).map((entry) => {
+  const form: PlayerFormEntry[] = lockedEntries.map((entry) => {
     const winner = getGameweekWinner(entry.gameweek);
     let result: "w" | "l" | "d";
     if (winner === "draw") {
@@ -54,7 +54,14 @@ export async function GET(
     } else {
       result = "l";
     }
-    return { result, team: entry.team };
+    return {
+      result,
+      team: entry.team,
+      gameweekId: entry.gameweek.id,
+      gameDate: entry.gameweek.game_date,
+      darksScore: entry.gameweek.darks_score,
+      whitesScore: entry.gameweek.whites_score,
+    };
   });
 
   return NextResponse.json({ form, teamPicks } satisfies PlayerStats);

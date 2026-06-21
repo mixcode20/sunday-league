@@ -57,7 +57,7 @@ export default function Modal({
         className={panelClassName ? `${panelClass} ${panelClassName}` : panelClass}
         onClick={(event) => event.stopPropagation()}
       >
-        <div className="mb-4 flex items-start justify-between gap-4">
+        <div className="mb-4 flex items-center justify-between gap-4">
           <div className="min-w-0 flex-1 text-left">
             {subtitle ? (
               <p className="text-sm text-[var(--color-text-secondary)]">{subtitle}</p>
