@@ -154,7 +154,8 @@ export default function LeagueTableClient({ rows }: { rows: LeagueStatRow[] }) {
       <div className="ui-table-shell">
         <table className="w-full table-fixed text-left text-xs">
           <colgroup>
-            <col style={{ width: "37%" }} />
+            <col style={{ width: "5%" }} />
+            <col style={{ width: "32%" }} />
             <col style={{ width: "8%" }} />
             <col style={{ width: "8%" }} />
             <col style={{ width: "8%" }} />
@@ -164,7 +165,8 @@ export default function LeagueTableClient({ rows }: { rows: LeagueStatRow[] }) {
           </colgroup>
           <thead className="text-[11px] uppercase tracking-[0.14em] text-white">
             <tr>
-              <th className="sticky top-[69px] z-10 rounded-tl-lg bg-[var(--color-primary-dark)] px-3 py-[0.85rem]">
+              <th className="sticky top-[69px] z-10 rounded-tl-lg bg-[var(--color-primary-dark)] px-2 py-[0.85rem] text-center" />
+              <th className="sticky top-[69px] z-10 bg-[var(--color-primary-dark)] px-3 py-[0.85rem]">
                 Player
               </th>
               {columns.map(([key, label]) => (
@@ -187,7 +189,7 @@ export default function LeagueTableClient({ rows }: { rows: LeagueStatRow[] }) {
           </thead>
           <tbody>
             {sorted.length > 0 ? (
-              sorted.map((row) => {
+              sorted.map((row, index) => {
                 const isExpanded = expandedPlayerId === row.id;
                 return (
                   <>
@@ -196,11 +198,14 @@ export default function LeagueTableClient({ rows }: { rows: LeagueStatRow[] }) {
                       className="cursor-pointer border-t border-[rgba(229,231,235,0.9)] bg-[var(--off-white-green)] hover:bg-[#edf5f2]"
                       onClick={() => setExpandedPlayerId(isExpanded ? null : row.id)}
                     >
+                      <td className="px-2 py-2.5 align-middle text-center text-[10px] font-medium text-[var(--color-text-secondary)] opacity-50">
+                        {index + 1}
+                      </td>
                       <td className="px-3 py-2.5 align-middle font-medium text-[var(--color-text)]">
-                        <div className="relative flex min-h-8 items-center pr-10">
-                          <span className="flex items-center gap-1">
-                            {row.name}
-                            <span className="text-[9px] opacity-30">{isExpanded ? "▴" : "▾"}</span>
+                        <div className={`relative flex min-h-8 items-center ${isUnlocked ? "pr-[4.25rem]" : "pr-5"}`}>
+                          <span>{row.name}</span>
+                          <span className={`absolute top-1/2 -translate-y-1/2 select-none text-sm font-bold text-[var(--color-text-secondary)] opacity-50 ${isUnlocked ? "right-9" : "right-0"}`}>
+                            {isExpanded ? "−" : "+"}
                           </span>
                           {isUnlocked ? (
                             <button
@@ -228,11 +233,13 @@ export default function LeagueTableClient({ rows }: { rows: LeagueStatRow[] }) {
                       <td className="px-2 py-2.5 align-middle text-center text-[var(--color-text-secondary)]">
                         {row.ppg.toFixed(2)}
                       </td>
-                      <td className="px-2 py-2.5 align-middle text-center text-[var(--color-text-secondary)]">{row.goalDifference}</td>
+                      <td className={`px-2 py-2.5 align-middle text-center font-medium ${row.goalDifference > 0 ? "text-[#22c55e]" : row.goalDifference < 0 ? "text-[var(--color-danger)]" : "text-[var(--color-text-secondary)]"}`}>
+                        {row.goalDifference}
+                      </td>
                     </tr>
                     {isExpanded && (
                       <tr key={`${row.id}-drawer`} className="bg-[#edf5f2]">
-                        <td colSpan={7} className="px-3 py-3">
+                        <td colSpan={8} className="px-3 py-3">
                           <PlayerDrawer playerId={row.id} />
                         </td>
                       </tr>
@@ -242,7 +249,7 @@ export default function LeagueTableClient({ rows }: { rows: LeagueStatRow[] }) {
               })
             ) : (
               <tr className="bg-[var(--off-white-green)]">
-                <td colSpan={7} className="px-4 py-6 text-center text-[var(--color-text-secondary)]">
+                <td colSpan={8} className="px-4 py-6 text-center text-[var(--color-text-secondary)]">
                   No locked results yet.
                 </td>
               </tr>
@@ -261,7 +268,8 @@ export default function LeagueTableClient({ rows }: { rows: LeagueStatRow[] }) {
           <div className="ui-table-shell opacity-80">
             <table className="w-full table-fixed text-left text-xs">
               <colgroup>
-                <col style={{ width: "37%" }} />
+                <col style={{ width: "5%" }} />
+                <col style={{ width: "32%" }} />
                 <col style={{ width: "8%" }} />
                 <col style={{ width: "8%" }} />
                 <col style={{ width: "8%" }} />
@@ -271,7 +279,8 @@ export default function LeagueTableClient({ rows }: { rows: LeagueStatRow[] }) {
               </colgroup>
               <thead className="text-[11px] uppercase tracking-[0.14em] text-white">
                 <tr>
-                  <th className="rounded-tl-lg bg-[var(--color-primary-dark)] px-3 py-[0.85rem]">
+                  <th className="rounded-tl-lg bg-[var(--color-primary-dark)] px-2 py-[0.85rem] text-center" />
+                  <th className="bg-[var(--color-primary-dark)] px-3 py-[0.85rem]">
                     Player
                   </th>
                   {columns.map(([key, label]) => (
@@ -285,7 +294,7 @@ export default function LeagueTableClient({ rows }: { rows: LeagueStatRow[] }) {
                 </tr>
               </thead>
               <tbody>
-                {div2Sorted.map((row) => {
+                {div2Sorted.map((row, index) => {
                   const isExpanded = expandedPlayerId === row.id;
                   return (
                     <>
@@ -294,11 +303,14 @@ export default function LeagueTableClient({ rows }: { rows: LeagueStatRow[] }) {
                         className="cursor-pointer border-t border-[rgba(229,231,235,0.9)] bg-[var(--off-white-green)] hover:bg-[#edf5f2]"
                         onClick={() => setExpandedPlayerId(isExpanded ? null : row.id)}
                       >
+                        <td className="px-2 py-2.5 align-middle text-center text-[10px] font-medium text-[var(--color-text-secondary)] opacity-50">
+                          {index + 1}
+                        </td>
                         <td className="px-3 py-2.5 align-middle font-medium text-[var(--color-text)]">
-                          <div className="relative flex min-h-8 items-center pr-10">
-                            <span className="flex items-center gap-1">
-                              {row.name}
-                              <span className="text-[9px] opacity-30">{isExpanded ? "▴" : "▾"}</span>
+                          <div className={`relative flex min-h-8 items-center ${isUnlocked ? "pr-[4.25rem]" : "pr-5"}`}>
+                            <span>{row.name}</span>
+                            <span className={`absolute top-1/2 -translate-y-1/2 select-none text-sm font-bold text-[var(--color-text-secondary)] opacity-50 ${isUnlocked ? "right-9" : "right-0"}`}>
+                              {isExpanded ? "−" : "+"}
                             </span>
                             {isUnlocked ? (
                               <button
@@ -326,11 +338,13 @@ export default function LeagueTableClient({ rows }: { rows: LeagueStatRow[] }) {
                         <td className="px-2 py-2.5 align-middle text-center text-[var(--color-text-secondary)]">
                           {row.ppg.toFixed(2)}
                         </td>
-                        <td className="px-2 py-2.5 align-middle text-center text-[var(--color-text-secondary)]">{row.goalDifference}</td>
+                        <td className={`px-2 py-2.5 align-middle text-center font-medium ${row.goalDifference > 0 ? "text-[#22c55e]" : row.goalDifference < 0 ? "text-[var(--color-danger)]" : "text-[var(--color-text-secondary)]"}`}>
+                          {row.goalDifference}
+                        </td>
                       </tr>
                       {isExpanded && (
                         <tr key={`${row.id}-drawer`} className="bg-[#edf5f2]">
-                          <td colSpan={7} className="px-3 py-3">
+                          <td colSpan={8} className="px-3 py-3">
                             <PlayerDrawer playerId={row.id} />
                           </td>
                         </tr>

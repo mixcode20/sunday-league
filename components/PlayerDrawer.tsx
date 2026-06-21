@@ -14,20 +14,12 @@ const RESULT_BG: Record<"w" | "l" | "d", string> = {
   d: "#9ca3af",
 };
 
-const TEAM_STRIP_BG: Record<"darks" | "whites", string> = {
-  darks: "#0f3d34",
-  whites: "#dde8e5",
-};
-
-function FormTile({ result, team }: { result: "w" | "l" | "d"; team: "darks" | "whites" }) {
+function FormTile({ result }: { result: "w" | "l" | "d" }) {
   return (
     <div
-      className="flex flex-col overflow-hidden rounded-[3px]"
-      style={{ width: 22, height: 30, border: "1px solid rgba(0,0,0,0.07)" }}
-    >
-      <div style={{ flex: 7, background: RESULT_BG[result] }} />
-      <div style={{ flex: 3, background: TEAM_STRIP_BG[team] }} />
-    </div>
+      className="rounded-[3px]"
+      style={{ width: 22, height: 30, background: RESULT_BG[result], border: "1px solid rgba(0,0,0,0.07)" }}
+    />
   );
 }
 
@@ -45,10 +37,7 @@ function TeamPicksBar({ darks, whites }: { darks: number; whites: number }) {
   const showWhite = whitePx >= WHITE_MIN_PX;
 
   return (
-    <div
-      className="flex h-[26px] overflow-hidden rounded-full"
-      style={{ width: "100%", maxWidth: BAR_W }}
-    >
+    <div className="flex h-[26px] w-full overflow-hidden rounded-full">
       <div
         className="flex shrink-0 items-center justify-end overflow-hidden px-[9px]"
         style={{ width: `${darkPct}%`, background: "#0f3d34" }}
@@ -61,11 +50,7 @@ function TeamPicksBar({ darks, whites }: { darks: number; whites: number }) {
       </div>
       <div
         className="flex shrink-0 items-center justify-start overflow-hidden px-[9px]"
-        style={{
-          width: `${whitePct}%`,
-          background: "#dde8e5",
-          border: "1px solid rgba(0,0,0,0.07)",
-        }}
+        style={{ width: `${whitePct}%`, background: "#dde8e5", border: "1px solid rgba(0,0,0,0.07)" }}
       >
         {showWhite && (
           <span className="whitespace-nowrap text-[11px] font-semibold text-[#0f3d34]">
@@ -85,10 +70,14 @@ export default function PlayerDrawer({ playerId }: { playerId: string }) {
 
   if (isLoading || !data) {
     return (
-      <div className="flex gap-6">
-        <div className="flex-1 space-y-2">
-          <div className="h-3 w-12 animate-pulse rounded bg-[rgba(15,61,52,0.12)]" />
-          <div className="flex gap-1">
+      <div className="space-y-2">
+        <div className="flex items-center gap-2">
+          <div className="h-3 w-10 animate-pulse rounded bg-[rgba(15,61,52,0.12)]" />
+          <div className="h-px flex-1 animate-pulse bg-[rgba(15,61,52,0.12)]" />
+          <div className="h-3 w-20 animate-pulse rounded bg-[rgba(15,61,52,0.12)]" />
+        </div>
+        <div className="flex items-center gap-4">
+          <div className="flex shrink-0 gap-1">
             {Array.from({ length: 5 }).map((_, i) => (
               <div
                 key={i}
@@ -97,38 +86,44 @@ export default function PlayerDrawer({ playerId }: { playerId: string }) {
               />
             ))}
           </div>
-        </div>
-        <div className="flex-1 space-y-2">
-          <div className="h-3 w-20 animate-pulse rounded bg-[rgba(15,61,52,0.12)]" />
-          <div className="h-[26px] animate-pulse rounded-full bg-[rgba(15,61,52,0.12)]" style={{ maxWidth: BAR_W }} />
+          <div className="h-[26px] min-w-0 flex-1 animate-pulse rounded-full bg-[rgba(15,61,52,0.12)]" />
         </div>
       </div>
     );
   }
 
   return (
-    <div className="flex flex-wrap gap-x-6 gap-y-3">
-      <div className="space-y-2">
-        <p className="flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-[0.14em] text-[var(--color-text-secondary)]">
+    <div className="space-y-2">
+      {/* Header row: FORM ──→ TEAM PICKS */}
+      <div className="flex items-center gap-2">
+        <p className="shrink-0 text-[10px] font-semibold uppercase tracking-[0.14em] text-[var(--color-text-secondary)]">
           Form
-          <span className="opacity-50">→</span>
         </p>
-        {data.form.length === 0 ? (
-          <p className="text-[11px] text-[var(--color-text-secondary)]">No data</p>
-        ) : (
-          <div className="flex gap-1">
-            {data.form.map((entry, i) => (
-              <FormTile key={i} result={entry.result} team={entry.team} />
-            ))}
-          </div>
-        )}
-      </div>
-
-      <div className="space-y-2">
-        <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-[var(--color-text-secondary)]">
+        <div className="flex min-w-0 flex-1 items-center gap-1">
+          <div className="h-px flex-1 bg-[rgba(15,61,52,0.15)]" />
+          <span className="text-[10px] text-[rgba(15,61,52,0.35)]">→</span>
+        </div>
+        <p className="shrink-0 text-[10px] font-semibold uppercase tracking-[0.14em] text-[var(--color-text-secondary)]">
           Team picks
         </p>
-        <TeamPicksBar darks={data.teamPicks.darks} whites={data.teamPicks.whites} />
+      </div>
+
+      {/* Content row: tiles | bar */}
+      <div className="flex items-center gap-4">
+        <div className="shrink-0">
+          {data.form.length === 0 ? (
+            <p className="text-[11px] text-[var(--color-text-secondary)]">No data</p>
+          ) : (
+            <div className="flex gap-1">
+              {data.form.map((entry, i) => (
+                <FormTile key={i} result={entry.result} />
+              ))}
+            </div>
+          )}
+        </div>
+        <div className="min-w-0 flex-1">
+          <TeamPicksBar darks={data.teamPicks.darks} whites={data.teamPicks.whites} />
+        </div>
       </div>
     </div>
   );
