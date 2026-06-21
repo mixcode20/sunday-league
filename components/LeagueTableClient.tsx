@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { Fragment, useMemo, useState } from "react";
 import { useSWRConfig } from "swr";
 import Modal from "@/components/Modal";
 import PlayerDrawer from "@/components/PlayerDrawer";
@@ -192,9 +192,8 @@ export default function LeagueTableClient({ rows }: { rows: LeagueStatRow[] }) {
               sorted.map((row, index) => {
                 const isExpanded = expandedPlayerId === row.id;
                 return (
-                  <>
+                  <Fragment key={row.id}>
                     <tr
-                      key={row.id}
                       className="cursor-pointer border-t border-[rgba(229,231,235,0.9)] bg-[var(--off-white-green)] hover:bg-[#edf5f2]"
                       onClick={() => setExpandedPlayerId(isExpanded ? null : row.id)}
                     >
@@ -233,18 +232,18 @@ export default function LeagueTableClient({ rows }: { rows: LeagueStatRow[] }) {
                       <td className="px-2 py-2.5 align-middle text-center text-[var(--color-text-secondary)]">
                         {row.ppg.toFixed(2)}
                       </td>
-                      <td className={`px-2 py-2.5 align-middle text-center font-medium ${row.goalDifference > 0 ? "text-[#22c55e]" : row.goalDifference < 0 ? "text-[var(--color-danger)]" : "text-[var(--color-text-secondary)]"}`}>
+                      <td className={`px-2 py-2.5 align-middle text-center font-medium ${row.goalDifference > 0 ? "text-[#2f9e6a]" : row.goalDifference < 0 ? "text-[#d6533f]" : "text-[var(--color-text-secondary)]"}`}>
                         {row.goalDifference}
                       </td>
                     </tr>
                     {isExpanded && (
-                      <tr key={`${row.id}-drawer`} className="bg-[#edf5f2]">
+                      <tr className="bg-[#edf5f2]">
                         <td colSpan={8} className="px-3 py-3">
                           <PlayerDrawer playerId={row.id} />
                         </td>
                       </tr>
                     )}
-                  </>
+                  </Fragment>
                 );
               })
             ) : (
@@ -297,9 +296,8 @@ export default function LeagueTableClient({ rows }: { rows: LeagueStatRow[] }) {
                 {div2Sorted.map((row, index) => {
                   const isExpanded = expandedPlayerId === row.id;
                   return (
-                    <>
+                    <Fragment key={row.id}>
                       <tr
-                        key={row.id}
                         className="cursor-pointer border-t border-[rgba(229,231,235,0.9)] bg-[var(--off-white-green)] hover:bg-[#edf5f2]"
                         onClick={() => setExpandedPlayerId(isExpanded ? null : row.id)}
                       >
@@ -338,18 +336,18 @@ export default function LeagueTableClient({ rows }: { rows: LeagueStatRow[] }) {
                         <td className="px-2 py-2.5 align-middle text-center text-[var(--color-text-secondary)]">
                           {row.ppg.toFixed(2)}
                         </td>
-                        <td className={`px-2 py-2.5 align-middle text-center font-medium ${row.goalDifference > 0 ? "text-[#22c55e]" : row.goalDifference < 0 ? "text-[var(--color-danger)]" : "text-[var(--color-text-secondary)]"}`}>
+                        <td className={`px-2 py-2.5 align-middle text-center font-medium ${row.goalDifference > 0 ? "text-[#2f9e6a]" : row.goalDifference < 0 ? "text-[#d6533f]" : "text-[var(--color-text-secondary)]"}`}>
                           {row.goalDifference}
                         </td>
                       </tr>
                       {isExpanded && (
-                        <tr key={`${row.id}-drawer`} className="bg-[#edf5f2]">
+                        <tr className="bg-[#edf5f2]">
                           <td colSpan={8} className="px-3 py-3">
                             <PlayerDrawer playerId={row.id} />
                           </td>
                         </tr>
                       )}
-                    </>
+                    </Fragment>
                   );
                 })}
               </tbody>
