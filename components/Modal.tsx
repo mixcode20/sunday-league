@@ -14,6 +14,7 @@ type ModalProps = {
   contentScrollable?: boolean;
   topOffsetClassName?: string;
   panelClassName?: string;
+  panelMaxHeightClassName?: string;
 };
 
 export default function Modal({
@@ -28,6 +29,7 @@ export default function Modal({
   contentScrollable = true,
   topOffsetClassName,
   panelClassName,
+  panelMaxHeightClassName,
 }: ModalProps) {
   if (!isOpen) return null;
 
@@ -35,10 +37,12 @@ export default function Modal({
     position === "center"
       ? "items-center py-8"
       : `items-start ${topOffsetClassName ?? "pt-20"} pb-6`;
+  const defaultMaxH = position === "top" ? "max-h-[calc(100dvh-6.5rem)]" : "";
+  const maxHClass = panelMaxHeightClassName ?? defaultMaxH;
   const panelClass =
     position === "center"
-      ? "w-full max-w-md overflow-hidden rounded-[1.5rem] border border-[var(--color-border)] bg-white p-5 text-[var(--color-text)] shadow-[0_20px_40px_rgba(15,61,52,0.08)]"
-      : "flex w-full max-w-md max-h-[calc(100dvh-6.5rem)] flex-col overflow-hidden rounded-[1.5rem] border border-[var(--color-border)] bg-white p-5 text-[var(--color-text)] shadow-[0_20px_40px_rgba(15,61,52,0.08)]";
+      ? `w-full max-w-md overflow-hidden rounded-[1.5rem] border border-[var(--color-border)] bg-white p-5 text-[var(--color-text)] shadow-[0_20px_40px_rgba(15,61,52,0.08)]${maxHClass ? ` ${maxHClass}` : ""}`
+      : `flex w-full max-w-md ${maxHClass} flex-col overflow-hidden rounded-[1.5rem] border border-[var(--color-border)] bg-white p-5 text-[var(--color-text)] shadow-[0_20px_40px_rgba(15,61,52,0.08)]`;
   const contentClass =
     contentScrollable
       ? position === "center"

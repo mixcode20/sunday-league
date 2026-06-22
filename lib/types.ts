@@ -62,7 +62,30 @@ export type PlayerFormEntry = {
   whitesScore: number | null;
 };
 
+export type PlayerTeammate = {
+  id: string;
+  name: string;
+  gp: number;
+  winRate: number;
+};
+
+export type PlayerOpponent = {
+  id: string;
+  name: string;
+  gp: number;
+  losses: number;
+  winRate: number;
+};
+
 export type PlayerStats = {
   form: PlayerFormEntry[];
   teamPicks: { darks: number; whites: number };
+  ppgTrend: number[];
+  goalsFor: number;
+  goalsAgainst: number;
+  avgGdPerGame: number;
+  darkWinRate: number | null;
+  whitesWinRate: number | null;
+  bestTeammates: PlayerTeammate[];
+  toughestOpponent: PlayerOpponent | null;
 };

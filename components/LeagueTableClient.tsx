@@ -47,6 +47,11 @@ export default function LeagueTableClient({ rows }: { rows: LeagueStatRow[] }) {
     null
   );
 
+  const maxGoalsFor = useMemo(
+    () => Math.max(0, ...rows.map((r) => r.goalsFor)),
+    [rows]
+  );
+
   const { sorted, div2Sorted } = useMemo(() => {
     const div1 = rows.filter((r) => r.gp >= 3);
     const div2 = rows.filter((r) => r.gp >= 1 && r.gp < 3);
@@ -194,7 +199,7 @@ export default function LeagueTableClient({ rows }: { rows: LeagueStatRow[] }) {
                 return (
                   <Fragment key={row.id}>
                     <tr
-                      className="cursor-pointer border-t border-[rgba(229,231,235,0.9)] bg-[var(--off-white-green)] hover:bg-[#edf5f2]"
+                      className={`cursor-pointer border-t border-[rgba(229,231,235,0.9)] ${isExpanded ? "bg-[#edf5f2]" : "bg-[var(--off-white-green)] hover:bg-[#edf5f2]"}`}
                       onClick={() => setExpandedPlayerId(isExpanded ? null : row.id)}
                     >
                       <td className="px-2 py-2.5 align-middle text-center text-[10px] font-medium text-[var(--color-text-secondary)] opacity-50">
@@ -203,7 +208,7 @@ export default function LeagueTableClient({ rows }: { rows: LeagueStatRow[] }) {
                       <td className="px-3 py-2.5 align-middle font-medium text-[var(--color-text)]">
                         <div className={`relative flex min-h-8 items-center ${isUnlocked ? "pr-[4.25rem]" : "pr-5"}`}>
                           <span>{row.name}</span>
-                          <span className={`absolute top-1/2 -translate-y-1/2 select-none text-sm font-bold text-[var(--color-text-secondary)] opacity-50 ${isUnlocked ? "right-9" : "right-0"}`}>
+                          <span className={`absolute top-1/2 -translate-y-1/2 select-none text-sm font-bold text-[var(--color-text-secondary)] opacity-[0.65] ${isUnlocked ? "right-9" : "right-0"}`}>
                             {isExpanded ? "−" : "+"}
                           </span>
                           {isUnlocked ? (
@@ -239,7 +244,7 @@ export default function LeagueTableClient({ rows }: { rows: LeagueStatRow[] }) {
                     {isExpanded && (
                       <tr className="bg-[#edf5f2]">
                         <td colSpan={8} className="px-3 py-3">
-                          <PlayerDrawer playerId={row.id} />
+                          <PlayerDrawer playerId={row.id} isTopScorer={row.goalsFor > 0 && row.goalsFor === maxGoalsFor} />
                         </td>
                       </tr>
                     )}
@@ -293,63 +298,48 @@ export default function LeagueTableClient({ rows }: { rows: LeagueStatRow[] }) {
                 </tr>
               </thead>
               <tbody>
-                {div2Sorted.map((row, index) => {
-                  const isExpanded = expandedPlayerId === row.id;
-                  return (
-                    <Fragment key={row.id}>
-                      <tr
-                        className="cursor-pointer border-t border-[rgba(229,231,235,0.9)] bg-[var(--off-white-green)] hover:bg-[#edf5f2]"
-                        onClick={() => setExpandedPlayerId(isExpanded ? null : row.id)}
-                      >
-                        <td className="px-2 py-2.5 align-middle text-center text-[10px] font-medium text-[var(--color-text-secondary)] opacity-50">
-                          {index + 1}
-                        </td>
-                        <td className="px-3 py-2.5 align-middle font-medium text-[var(--color-text)]">
-                          <div className={`relative flex min-h-8 items-center ${isUnlocked ? "pr-[4.25rem]" : "pr-5"}`}>
-                            <span>{row.name}</span>
-                            <span className={`absolute top-1/2 -translate-y-1/2 select-none text-sm font-bold text-[var(--color-text-secondary)] opacity-50 ${isUnlocked ? "right-9" : "right-0"}`}>
-                              {isExpanded ? "−" : "+"}
-                            </span>
-                            {isUnlocked ? (
-                              <button
-                                type="button"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  setMessage(null);
-                                  setArchiveInput("");
-                                  setPlayerPendingArchive(row);
-                                }}
-                                className="absolute right-0 top-1/2 inline-flex h-7 w-7 -translate-y-1/2 items-center justify-center rounded-full border border-[var(--color-danger)] bg-[var(--color-danger)] text-sm font-semibold leading-none text-white shadow-[0_6px_16px_rgba(229,72,77,0.22)]"
-                                aria-label={`Archive ${row.name}`}
-                              >
-                                ×
-                              </button>
-                            ) : null}
-                          </div>
-                        </td>
-                        <td className="px-2 py-2.5 align-middle text-center text-[var(--color-text-secondary)]">{row.gp}</td>
-                        <td className="px-2 py-2.5 align-middle text-center text-[var(--color-text-secondary)]">{row.w}</td>
-                        <td className="px-2 py-2.5 align-middle text-center text-[var(--color-text-secondary)]">{row.l}</td>
-                        <td className="px-2 py-2.5 align-middle text-center text-[var(--color-text-secondary)]">
-                          {row.winPct.toFixed(0)}%
-                        </td>
-                        <td className="px-2 py-2.5 align-middle text-center text-[var(--color-text-secondary)]">
-                          {row.ppg.toFixed(2)}
-                        </td>
-                        <td className={`px-2 py-2.5 align-middle text-center font-medium ${row.goalDifference > 0 ? "text-[#2f9e6a]" : row.goalDifference < 0 ? "text-[#d6533f]" : "text-[var(--color-text-secondary)]"}`}>
-                          {row.goalDifference}
-                        </td>
-                      </tr>
-                      {isExpanded && (
-                        <tr className="bg-[#edf5f2]">
-                          <td colSpan={8} className="px-3 py-3">
-                            <PlayerDrawer playerId={row.id} />
-                          </td>
-                        </tr>
-                      )}
-                    </Fragment>
-                  );
-                })}
+                {div2Sorted.map((row, index) => (
+                  <tr
+                    key={row.id}
+                    className="border-t border-[rgba(229,231,235,0.9)] bg-[var(--off-white-green)]"
+                  >
+                    <td className="px-2 py-2.5 align-middle text-center text-[10px] font-medium text-[var(--color-text-secondary)] opacity-50">
+                      {index + 1}
+                    </td>
+                    <td className="px-3 py-2.5 align-middle font-medium text-[var(--color-text)]">
+                      <div className={`relative flex min-h-8 items-center ${isUnlocked ? "pr-9" : ""}`}>
+                        <span>{row.name}</span>
+                        {isUnlocked ? (
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setMessage(null);
+                              setArchiveInput("");
+                              setPlayerPendingArchive(row);
+                            }}
+                            className="absolute right-0 top-1/2 inline-flex h-7 w-7 -translate-y-1/2 items-center justify-center rounded-full border border-[var(--color-danger)] bg-[var(--color-danger)] text-sm font-semibold leading-none text-white shadow-[0_6px_16px_rgba(229,72,77,0.22)]"
+                            aria-label={`Archive ${row.name}`}
+                          >
+                            ×
+                          </button>
+                        ) : null}
+                      </div>
+                    </td>
+                    <td className="px-2 py-2.5 align-middle text-center text-[var(--color-text-secondary)]">{row.gp}</td>
+                    <td className="px-2 py-2.5 align-middle text-center text-[var(--color-text-secondary)]">{row.w}</td>
+                    <td className="px-2 py-2.5 align-middle text-center text-[var(--color-text-secondary)]">{row.l}</td>
+                    <td className="px-2 py-2.5 align-middle text-center text-[var(--color-text-secondary)]">
+                      {row.winPct.toFixed(0)}%
+                    </td>
+                    <td className="px-2 py-2.5 align-middle text-center text-[var(--color-text-secondary)]">
+                      {row.ppg.toFixed(2)}
+                    </td>
+                    <td className={`px-2 py-2.5 align-middle text-center font-medium ${row.goalDifference > 0 ? "text-[#2f9e6a]" : row.goalDifference < 0 ? "text-[#d6533f]" : "text-[var(--color-text-secondary)]"}`}>
+                      {row.goalDifference}
+                    </td>
+                  </tr>
+                ))}
               </tbody>
             </table>
           </div>
