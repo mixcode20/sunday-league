@@ -241,7 +241,7 @@ export default function LeagueTableClient({ rows }: { rows: LeagueStatRow[] }) {
                 return (
                   <Fragment key={row.id}>
                     <tr
-                      className={`cursor-pointer border-t border-[rgba(229,231,235,0.9)] ${isExpanded ? "bg-[#edf5f2]" : "bg-[var(--off-white-green)] hover:bg-[#edf5f2]"}`}
+                      className={`cursor-pointer border-t ${isExpanded ? "border-[rgba(15,61,52,0.25)] bg-[#edf5f2]" : "border-[rgba(229,231,235,0.9)] bg-[var(--off-white-green)] hover:bg-[#edf5f2]"}`}
                       onClick={() => setExpandedPlayerId(isExpanded ? null : row.id)}
                     >
                       <td className="px-2 py-2.5 align-middle text-center text-[10px] font-medium text-[var(--color-text-secondary)] opacity-50">
@@ -285,7 +285,7 @@ export default function LeagueTableClient({ rows }: { rows: LeagueStatRow[] }) {
                     </tr>
                     {isExpanded && (
                       <tr className="bg-[#edf5f2]">
-                        <td colSpan={8} className="px-3 py-3">
+                        <td colSpan={8} className="border-b border-[rgba(15,61,52,0.25)] px-3 py-3">
                           <PlayerDrawer
                             playerId={row.id}
                             goalsForRank={goalsForRankMap.get(row.id)}
