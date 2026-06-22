@@ -311,10 +311,11 @@ export default function PlayerDrawer({
       {/* Row 1: Form + PPG Trend */}
       <div className="flex gap-6">
         <div className="flex min-w-0 flex-1 flex-col gap-1.5">
-          <div className="flex items-center text-[10px] font-semibold uppercase tracking-[0.14em] text-[var(--color-text-secondary)]">
+          <div className="flex items-center gap-2 text-[10px] font-semibold uppercase tracking-[0.14em] text-[var(--color-text-secondary)]">
             <span className="shrink-0">Form</span>
-            <span className="ml-1.5 h-px flex-1 bg-current opacity-25" />
-            <span className="opacity-40">→</span>
+            <svg width="40" height="8" viewBox="0 0 40 8" fill="none" className="shrink-0 opacity-40">
+              <path d="M0 4h36M33 1l3 3-3 3" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+            </svg>
           </div>
           {data.form.length === 0 ? (
             <p className="text-[11px] text-[var(--color-text-secondary)]">No data</p>
@@ -383,7 +384,7 @@ export default function PlayerDrawer({
             </span>
           )}
           <p className="text-base font-semibold tracking-[-0.02em] text-[var(--color-text)]">{data.avgGoalsPerGame}</p>
-          <p className="mt-0.5 text-[9px] font-semibold uppercase tracking-[0.12em] text-[var(--color-text-secondary)]">AVG FOR/GP</p>
+          <p className="mt-0.5 text-[9px] font-semibold uppercase tracking-[0.12em] text-[var(--color-text-secondary)]">AVG GOALS FOR</p>
         </div>
         {/* Avg CON/GP */}
         <div className={`relative rounded-xl border bg-white px-2 py-3 text-center ${avgConcededRank ? RANK_BORDER[avgConcededRank] : isWorstDefender ? "border-[#d6533f]" : "border-[rgba(31,122,99,0.18)]"}`}>
@@ -398,7 +399,7 @@ export default function PlayerDrawer({
             </span>
           )}
           <p className="text-base font-semibold tracking-[-0.02em] text-[var(--color-text)]">{data.avgConcededPerGame}</p>
-          <p className="mt-0.5 text-[9px] font-semibold uppercase tracking-[0.12em] text-[var(--color-text-secondary)]">Avg Con/GP</p>
+          <p className="mt-0.5 text-[9px] font-semibold uppercase tracking-[0.12em] text-[var(--color-text-secondary)]">AVG GOALS CON</p>
         </div>
       </div>
 
