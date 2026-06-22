@@ -13,7 +13,7 @@ const DARK_FULL_PX = 66;
 const WHITE_FULL_PX = 72;
 const NUM_PX = 36;
 
-const FORM_W = 5 * 22 + 4 * 4; // 126px — exactly 5 tiles
+const FORM_W = 5 * 25 + 4 * 4; // 141px — exactly 5 tiles
 
 const RESULT_BG: Record<"w" | "l" | "d", string> = {
   w: "#2f9e6a",
@@ -50,7 +50,7 @@ function FormTile({
       type="button"
       onClick={onClick}
       className="flex shrink-0 flex-col overflow-hidden rounded-[3px] active:opacity-70"
-      style={{ width: 22, height: 38, border: "1px solid #374151" }}
+      style={{ width: 25, height: 38, border: "1px solid #374151" }}
     >
       <div style={{ flex: 3, background: RESULT_BG[result] }} />
       <div style={{ flex: 1, background: TEAM_STRIPE[team] }} />
@@ -130,9 +130,9 @@ function PpgSparkline({ data }: { data: number[] }) {
   const PAD_X = 2;
   const PAD_Y = 4;
 
-  const min = Math.min(...data);
-  const max = Math.max(...data);
-  const range = max - min || 0.01;
+  const min = 0;
+  const max = 3;
+  const range = 3;
 
   const points = data.map((v, i) => [
     PAD_X + (i / (data.length - 1)) * (W - 2 * PAD_X),
@@ -225,7 +225,33 @@ function GameweekDetail({ entry }: { entry: PlayerFormEntry }) {
 
 const KICKER = "text-[10px] font-semibold uppercase tracking-[0.14em] text-[var(--color-text-secondary)]";
 
-export default function PlayerDrawer({ playerId, isTopScorer = false }: { playerId: string; isTopScorer?: boolean }) {
+const RANK_BG: Record<1 | 2 | 3, string> = {
+  1: "#E8B84B",
+  2: "#9BA3AF",
+  3: "#CD8B4E",
+};
+
+const RANK_BORDER: Record<1 | 2 | 3, string> = {
+  1: "border-[#E8B84B]",
+  2: "border-[#9BA3AF]",
+  3: "border-[#CD8B4E]",
+};
+
+export default function PlayerDrawer({
+  playerId,
+  goalsForRank,
+  avgGoalsRank,
+  isWorstAttacker = false,
+  avgConcededRank,
+  isWorstDefender = false,
+}: {
+  playerId: string;
+  goalsForRank?: 1 | 2 | 3;
+  avgGoalsRank?: 1 | 2 | 3;
+  isWorstAttacker?: boolean;
+  avgConcededRank?: 1 | 2 | 3;
+  isWorstDefender?: boolean;
+}) {
   const [selectedEntry, setSelectedEntry] = useState<PlayerFormEntry | null>(null);
   const [scrollRatio, setScrollRatio] = useState(0);
   const formScrollRef = useRef<HTMLDivElement>(null);
@@ -250,7 +276,7 @@ export default function PlayerDrawer({ playerId, isTopScorer = false }: { player
             <div className="h-3 w-10 animate-pulse rounded bg-[rgba(15,61,52,0.12)]" />
             <div className="flex gap-1">
               {Array.from({ length: 5 }).map((_, i) => (
-                <div key={i} className="animate-pulse rounded-[3px] bg-[rgba(15,61,52,0.12)]" style={{ width: 22, height: 30 }} />
+                <div key={i} className="animate-pulse rounded-[3px] bg-[rgba(15,61,52,0.12)]" style={{ width: 25, height: 30 }} />
               ))}
             </div>
           </div>
@@ -284,7 +310,7 @@ export default function PlayerDrawer({ playerId, isTopScorer = false }: { player
     <>
       {/* Row 1: Form + PPG Trend */}
       <div className="flex gap-6">
-        <div className="flex shrink-0 flex-col gap-1.5" style={{ width: FORM_W }}>
+        <div className="flex min-w-0 flex-1 flex-col gap-1.5">
           <div className="flex items-center text-[10px] font-semibold uppercase tracking-[0.14em] text-[var(--color-text-secondary)]">
             <span className="shrink-0">Form</span>
             <span className="ml-1.5 h-px flex-1 bg-current opacity-25" />
@@ -332,20 +358,47 @@ export default function PlayerDrawer({ playerId, isTopScorer = false }: { player
         </div>
       </div>
 
-      {/* Row 2: Goals For / Against */}
-      <div className="mt-4 grid grid-cols-2 gap-2">
-        <div className={`relative rounded-xl border bg-white px-3 py-3 text-center ${isTopScorer ? "border-[#E8B84B]" : "border-[rgba(31,122,99,0.18)]"}`}>
-          {isTopScorer && (
-            <span className="absolute -right-1 -top-1 inline-flex items-center rounded-full bg-[#E8B84B] px-2 py-0.5 text-[8px] font-bold uppercase tracking-[0.1em] text-white shadow-sm">
-              #1
+      {/* Row 2: Goals For / Avg FOR/GP / Avg CON/GP */}
+      <div className="mt-4 grid grid-cols-3 gap-2">
+        {/* Goals For */}
+        <div className={`relative rounded-xl border bg-white px-2 py-3 text-center ${goalsForRank ? RANK_BORDER[goalsForRank] : "border-[rgba(31,122,99,0.18)]"}`}>
+          {goalsForRank && (
+            <span className="absolute -right-1 -top-1 inline-flex items-center rounded-full px-2 py-0.5 text-[8px] font-bold uppercase tracking-[0.1em] text-white shadow-sm" style={{ background: RANK_BG[goalsForRank] }}>
+              #{goalsForRank}
             </span>
           )}
           <p className="text-base font-semibold tracking-[-0.02em] text-[var(--color-text)]">{data.goalsFor}</p>
           <p className="mt-0.5 text-[9px] font-semibold uppercase tracking-[0.12em] text-[var(--color-text-secondary)]">Goals For</p>
         </div>
-        <div className="rounded-xl border border-[rgba(31,122,99,0.18)] bg-white px-3 py-3 text-center">
-          <p className="text-base font-semibold tracking-[-0.02em] text-[var(--color-text)]">{data.goalsAgainst}</p>
-          <p className="mt-0.5 text-[9px] font-semibold uppercase tracking-[0.12em] text-[var(--color-text-secondary)]">Goals Against</p>
+        {/* Avg FOR/GP */}
+        <div className={`relative rounded-xl border bg-white px-2 py-3 text-center ${avgGoalsRank ? RANK_BORDER[avgGoalsRank] : isWorstAttacker ? "border-[#d6533f]" : "border-[rgba(31,122,99,0.18)]"}`}>
+          {avgGoalsRank && (
+            <span className="absolute -right-1 -top-1 inline-flex items-center rounded-full px-2 py-0.5 text-[8px] font-bold uppercase tracking-[0.1em] text-white shadow-sm" style={{ background: RANK_BG[avgGoalsRank] }}>
+              {avgGoalsRank === 1 ? "BEST" : avgGoalsRank === 2 ? "2ND" : "3RD"}
+            </span>
+          )}
+          {!avgGoalsRank && isWorstAttacker && (
+            <span className="absolute -right-1 -top-1 inline-flex items-center rounded-full bg-[#d6533f] px-2 py-0.5 text-[8px] font-bold uppercase tracking-[0.1em] text-white shadow-sm">
+              WORST
+            </span>
+          )}
+          <p className="text-base font-semibold tracking-[-0.02em] text-[var(--color-text)]">{data.avgGoalsPerGame}</p>
+          <p className="mt-0.5 text-[9px] font-semibold uppercase tracking-[0.12em] text-[var(--color-text-secondary)]">AVG FOR/GP</p>
+        </div>
+        {/* Avg CON/GP */}
+        <div className={`relative rounded-xl border bg-white px-2 py-3 text-center ${avgConcededRank ? RANK_BORDER[avgConcededRank] : isWorstDefender ? "border-[#d6533f]" : "border-[rgba(31,122,99,0.18)]"}`}>
+          {avgConcededRank && (
+            <span className="absolute -right-1 -top-1 inline-flex items-center rounded-full px-2 py-0.5 text-[8px] font-bold uppercase tracking-[0.1em] text-white shadow-sm" style={{ background: RANK_BG[avgConcededRank] }}>
+              {avgConcededRank === 1 ? "BEST" : avgConcededRank === 2 ? "2ND" : "3RD"}
+            </span>
+          )}
+          {!avgConcededRank && isWorstDefender && (
+            <span className="absolute -right-1 -top-1 inline-flex items-center rounded-full bg-[#d6533f] px-2 py-0.5 text-[8px] font-bold uppercase tracking-[0.1em] text-white shadow-sm">
+              WORST
+            </span>
+          )}
+          <p className="text-base font-semibold tracking-[-0.02em] text-[var(--color-text)]">{data.avgConcededPerGame}</p>
+          <p className="mt-0.5 text-[9px] font-semibold uppercase tracking-[0.12em] text-[var(--color-text-secondary)]">Avg Con/GP</p>
         </div>
       </div>
 
@@ -357,13 +410,15 @@ export default function PlayerDrawer({ playerId, isTopScorer = false }: { player
         <TeamPicksBar darks={data.teamPicks.darks} whites={data.teamPicks.whites} />
         {showTeamWinRates && (
           <div className="grid grid-cols-2 gap-2">
-            <div className="flex items-center justify-center gap-1.5 rounded-xl bg-[#0f3d34] px-3 py-1">
-              <p className="font-semibold tracking-[-0.02em] text-white">
+            <div className="flex items-center justify-center gap-1.5 px-3 py-1">
+              <span className="h-2.5 w-2.5 shrink-0 rounded-sm bg-[#0f3d34]" />
+              <p className="font-semibold tracking-[-0.02em] text-[var(--color-text)]">
                 {Math.round(data.darkWinRate! * 100)}%
               </p>
-              <p className="text-[10px] text-[rgba(255,255,255,0.45)]">win rate</p>
+              <p className="text-[10px] text-[var(--color-text-secondary)]">win rate</p>
             </div>
-            <div className="flex items-center justify-center gap-1.5 rounded-xl border border-[rgba(31,122,99,0.18)] bg-white px-3 py-1">
+            <div className="flex items-center justify-center gap-1.5 px-3 py-1">
+              <span className="h-2.5 w-2.5 shrink-0 rounded-sm border border-[rgba(15,61,52,0.3)] bg-white" />
               <p className="font-semibold tracking-[-0.02em] text-[var(--color-text)]">
                 {Math.round(data.whitesWinRate! * 100)}%
               </p>
@@ -379,7 +434,7 @@ export default function PlayerDrawer({ playerId, isTopScorer = false }: { player
       {(data.bestTeammates.length > 0 || data.toughestOpponent) && (
         <div className="mt-4 grid grid-cols-2 gap-3">
           {/* Best Teammates */}
-          <div>
+          <div className="flex flex-col">
             <p className={`mb-2 ${KICKER}`}>Best Teammates</p>
             {data.bestTeammates.length === 0 ? (
               <p className="text-[11px] text-[var(--color-text-secondary)]">No data</p>
@@ -404,12 +459,12 @@ export default function PlayerDrawer({ playerId, isTopScorer = false }: { player
           </div>
 
           {/* Toughest Opponent */}
-          <div>
+          <div className="flex flex-col">
             <p className={`mb-2 ${KICKER}`}>Toughest Opponent</p>
             {!data.toughestOpponent ? (
               <p className="text-[11px] text-[var(--color-text-secondary)]">No data</p>
             ) : (
-              <div className="rounded-xl border border-[rgba(31,122,99,0.18)] bg-white px-2.5 py-2">
+              <div className="flex flex-1 flex-col justify-center rounded-xl border border-[rgba(31,122,99,0.18)] bg-white px-2.5 py-2">
                 <div className="flex items-baseline justify-between gap-1">
                   <p className="min-w-0 truncate text-[13px] font-semibold text-[var(--color-text)]">{data.toughestOpponent.name}</p>
                   <p className="shrink-0 text-lg font-bold tracking-[-0.03em] text-[#d6533f]">
@@ -427,6 +482,8 @@ export default function PlayerDrawer({ playerId, isTopScorer = false }: { player
           </div>
         </div>
       )}
+
+      <div className="pb-3" />
 
       <Modal
         isOpen={selectedEntry !== null}

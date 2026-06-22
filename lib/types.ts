@@ -43,6 +43,7 @@ export type LeagueStatRow = {
   name: string;
   archived: boolean;
   gp: number;
+  gamesWithScore: number;
   w: number;
   d: number;
   l: number;
@@ -84,6 +85,8 @@ export type PlayerStats = {
   goalsFor: number;
   goalsAgainst: number;
   avgGdPerGame: number;
+  avgGoalsPerGame: number;
+  avgConcededPerGame: number;
   darkWinRate: number | null;
   whitesWinRate: number | null;
   bestTeammates: PlayerTeammate[];

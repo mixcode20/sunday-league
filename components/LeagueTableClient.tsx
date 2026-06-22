@@ -47,10 +47,52 @@ export default function LeagueTableClient({ rows }: { rows: LeagueStatRow[] }) {
     null
   );
 
-  const maxGoalsFor = useMemo(
-    () => Math.max(0, ...rows.map((r) => r.goalsFor)),
-    [rows]
-  );
+  const goalsForRankMap = useMemo(() => {
+    const eligible = rows.filter((r) => r.gp > 2 && r.goalsFor > 0);
+    const unique = [...new Set(eligible.map((r) => r.goalsFor))].sort((a, b) => b - a);
+    const map = new Map<string, 1 | 2 | 3>();
+    for (const row of eligible) {
+      const rank = unique.indexOf(row.goalsFor) + 1;
+      if (rank >= 1 && rank <= 3) map.set(row.id, rank as 1 | 2 | 3);
+    }
+    return map;
+  }, [rows]);
+
+  const avgGoalsRankMap = useMemo(() => {
+    const eligible = rows.filter((r) => r.gp > 2 && r.gamesWithScore > 0);
+    const unique = [...new Set(eligible.map((r) => r.goalsFor / r.gamesWithScore))].sort((a, b) => b - a);
+    const map = new Map<string, 1 | 2 | 3>();
+    for (const row of eligible) {
+      const rank = unique.indexOf(row.goalsFor / row.gamesWithScore) + 1;
+      if (rank >= 1 && rank <= 3) map.set(row.id, rank as 1 | 2 | 3);
+    }
+    return map;
+  }, [rows]);
+
+  const worstAttackerSet = useMemo(() => {
+    const eligible = rows.filter((r) => r.gp > 2 && r.gamesWithScore > 0);
+    if (eligible.length === 0) return new Set<string>();
+    const minAvg = Math.min(...eligible.map((r) => r.goalsFor / r.gamesWithScore));
+    return new Set(eligible.filter((r) => r.goalsFor / r.gamesWithScore === minAvg).map((r) => r.id));
+  }, [rows]);
+
+  const avgConcededRankMap = useMemo(() => {
+    const eligible = rows.filter((r) => r.gp > 2 && r.gamesWithScore > 0);
+    const unique = [...new Set(eligible.map((r) => r.goalsAgainst / r.gamesWithScore))].sort((a, b) => a - b);
+    const map = new Map<string, 1 | 2 | 3>();
+    for (const row of eligible) {
+      const rank = unique.indexOf(row.goalsAgainst / row.gamesWithScore) + 1;
+      if (rank >= 1 && rank <= 3) map.set(row.id, rank as 1 | 2 | 3);
+    }
+    return map;
+  }, [rows]);
+
+  const worstDefenderSet = useMemo(() => {
+    const eligible = rows.filter((r) => r.gp > 2 && r.gamesWithScore > 0);
+    if (eligible.length === 0) return new Set<string>();
+    const maxAvg = Math.max(...eligible.map((r) => r.goalsAgainst / r.gamesWithScore));
+    return new Set(eligible.filter((r) => r.goalsAgainst / r.gamesWithScore === maxAvg).map((r) => r.id));
+  }, [rows]);
 
   const { sorted, div2Sorted } = useMemo(() => {
     const div1 = rows.filter((r) => r.gp >= 3);
@@ -244,7 +286,14 @@ export default function LeagueTableClient({ rows }: { rows: LeagueStatRow[] }) {
                     {isExpanded && (
                       <tr className="bg-[#edf5f2]">
                         <td colSpan={8} className="px-3 py-3">
-                          <PlayerDrawer playerId={row.id} isTopScorer={row.goalsFor > 0 && row.goalsFor === maxGoalsFor} />
+                          <PlayerDrawer
+                            playerId={row.id}
+                            goalsForRank={goalsForRankMap.get(row.id)}
+                            avgGoalsRank={avgGoalsRankMap.get(row.id)}
+                            isWorstAttacker={worstAttackerSet.has(row.id)}
+                            avgConcededRank={avgConcededRankMap.get(row.id)}
+                            isWorstDefender={worstDefenderSet.has(row.id)}
+                          />
                         </td>
                       </tr>
                     )}

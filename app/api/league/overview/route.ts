@@ -42,6 +42,7 @@ export async function GET() {
       name: formatPlayerName(player),
       archived: player.archived,
       gp: 0,
+      gamesWithScore: 0,
       w: 0,
       d: 0,
       l: 0,
@@ -72,6 +73,9 @@ export async function GET() {
     const isDarks = entry.team === "darks";
     const goals = getGameweekGoals(gameweek, entry.team);
 
+    if (gameweek.darks_score !== null && gameweek.whites_score !== null) {
+      row.gamesWithScore += 1;
+    }
     row.goalsFor += goals.goalsFor;
     row.goalsAgainst += goals.goalsAgainst;
     if (result === "draw") {

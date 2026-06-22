@@ -102,6 +102,14 @@ export async function GET(
     gamesWithScore > 0
       ? parseFloat(((goalsFor - goalsAgainst) / gamesWithScore).toFixed(1))
       : 0;
+  const avgGoalsPerGame =
+    gamesWithScore > 0
+      ? parseFloat((goalsFor / gamesWithScore).toFixed(1))
+      : 0;
+  const avgConcededPerGame =
+    gamesWithScore > 0
+      ? parseFloat((goalsAgainst / gamesWithScore).toFixed(1))
+      : 0;
 
   // Win rate by team
   let darksGp = 0, darksWins = 0, whitesGp = 0, whitesWins = 0;
@@ -199,6 +207,8 @@ export async function GET(
     goalsFor,
     goalsAgainst,
     avgGdPerGame,
+    avgGoalsPerGame,
+    avgConcededPerGame,
     darkWinRate,
     whitesWinRate,
     bestTeammates,
