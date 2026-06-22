@@ -11,7 +11,7 @@ import type { Gameweek, GameweekPlayer, PlayerFormEntry, PlayerStats } from "@/l
 const BAR_W = 270;
 const DARK_FULL_PX = 66;
 const WHITE_FULL_PX = 72;
-const NUM_PX = 36;
+const NUM_PX = 24;
 
 const FORM_W = 5 * 25 + 4 * 4; // 141px — exactly 5 tiles
 
@@ -74,11 +74,14 @@ function TeamPicksBar({ darks, whites }: { darks: number; whites: number }) {
   const showWhiteFull = whitePx >= WHITE_FULL_PX;
   const showWhiteNum = !showWhiteFull && whitePx >= NUM_PX;
 
+  const darkPad = darkPx >= 40 ? "pl-[5px] pr-[9px]" : "px-[4px]";
+  const whitePad = whitePx >= 40 ? "pl-[9px] pr-[5px]" : "px-[4px]";
+
   return (
     <div className="flex h-[26px] w-full overflow-hidden rounded-full">
       {darkPct > 0 && (
         <div
-          className="flex shrink-0 items-center justify-end overflow-hidden px-[9px]"
+          className={`flex shrink-0 items-center justify-end overflow-hidden ${darkPad}`}
           style={{ width: `${darkPct}%`, background: "#0f3d34" }}
         >
           {showDarkFull ? (
@@ -94,7 +97,7 @@ function TeamPicksBar({ darks, whites }: { darks: number; whites: number }) {
       )}
       {whitePct > 0 && (
         <div
-          className="flex shrink-0 items-center justify-start overflow-hidden px-[9px]"
+          className={`flex shrink-0 items-center justify-start overflow-hidden ${whitePad}`}
           style={{ width: `${whitePct}%`, background: "#ffffff" }}
         >
           {showWhiteFull ? (
@@ -227,13 +230,13 @@ const KICKER = "text-[10px] font-semibold uppercase tracking-[0.14em] text-[var(
 
 const RANK_BG: Record<1 | 2 | 3, string> = {
   1: "#E8B84B",
-  2: "#9BA3AF",
+  2: "#6B7A8D",
   3: "#CD8B4E",
 };
 
 const RANK_BORDER: Record<1 | 2 | 3, string> = {
   1: "border-[#E8B84B]",
-  2: "border-[#9BA3AF]",
+  2: "border-[#6B7A8D]",
   3: "border-[#CD8B4E]",
 };
 
@@ -247,9 +250,9 @@ export default function PlayerDrawer({
 }: {
   playerId: string;
   goalsForRank?: 1 | 2 | 3;
-  avgGoalsRank?: 1 | 2 | 3;
+  avgGoalsRank?: number;
   isWorstAttacker?: boolean;
-  avgConcededRank?: 1 | 2 | 3;
+  avgConcededRank?: number;
   isWorstDefender?: boolean;
 }) {
   const [selectedEntry, setSelectedEntry] = useState<PlayerFormEntry | null>(null);
@@ -369,37 +372,47 @@ export default function PlayerDrawer({
             </span>
           )}
           <p className="text-base font-semibold tracking-[-0.02em] text-[var(--color-text)]">{data.goalsFor}</p>
-          <p className="mt-0.5 text-[9px] font-semibold uppercase tracking-[0.12em] text-[var(--color-text-secondary)]">Goals For</p>
+          <p className="mt-0.5 text-[9px] font-semibold uppercase tracking-[0.12em] text-[var(--color-text-secondary)]">ALL GOALS FOR</p>
         </div>
-        {/* Avg FOR/GP */}
-        <div className={`relative rounded-xl border bg-white px-2 py-3 text-center ${avgGoalsRank ? RANK_BORDER[avgGoalsRank] : isWorstAttacker ? "border-[#d6533f]" : "border-[rgba(31,122,99,0.18)]"}`}>
-          {avgGoalsRank && (
-            <span className="absolute -right-1 -top-1 inline-flex items-center rounded-full px-2 py-0.5 text-[8px] font-bold uppercase tracking-[0.1em] text-white shadow-sm" style={{ background: RANK_BG[avgGoalsRank] }}>
+        {/* GF PER GAME */}
+        <div className={`relative rounded-xl border bg-white px-2 py-3 text-center ${avgGoalsRank && avgGoalsRank <= 3 ? RANK_BORDER[avgGoalsRank as 1 | 2 | 3] : isWorstAttacker ? "border-[#d6533f]" : "border-[rgba(31,122,99,0.18)]"}`}>
+          {avgGoalsRank && avgGoalsRank <= 3 && (
+            <span className="absolute -right-1 -top-1 inline-flex items-center rounded-full px-2 py-0.5 text-[8px] font-bold uppercase tracking-[0.1em] text-white shadow-sm" style={{ background: RANK_BG[avgGoalsRank as 1 | 2 | 3] }}>
               {avgGoalsRank === 1 ? "BEST" : avgGoalsRank === 2 ? "2ND" : "3RD"}
             </span>
           )}
-          {!avgGoalsRank && isWorstAttacker && (
+          {avgGoalsRank && avgGoalsRank > 3 && !isWorstAttacker && (
+            <span className="absolute -right-1 -top-1 inline-flex items-center rounded-full bg-[#e0ede8] px-1.5 py-0.5 text-[8px] font-semibold text-[var(--color-text)]">
+              #{avgGoalsRank}
+            </span>
+          )}
+          {isWorstAttacker && (!avgGoalsRank || avgGoalsRank > 3) && (
             <span className="absolute -right-1 -top-1 inline-flex items-center rounded-full bg-[#d6533f] px-2 py-0.5 text-[8px] font-bold uppercase tracking-[0.1em] text-white shadow-sm">
               WORST
             </span>
           )}
           <p className="text-base font-semibold tracking-[-0.02em] text-[var(--color-text)]">{data.avgGoalsPerGame}</p>
-          <p className="mt-0.5 text-[9px] font-semibold uppercase tracking-[0.12em] text-[var(--color-text-secondary)]">AVG GOALS FOR</p>
+          <p className="mt-0.5 text-[9px] font-semibold uppercase tracking-[0.12em] text-[var(--color-text-secondary)]">GF PER GAME</p>
         </div>
-        {/* Avg CON/GP */}
-        <div className={`relative rounded-xl border bg-white px-2 py-3 text-center ${avgConcededRank ? RANK_BORDER[avgConcededRank] : isWorstDefender ? "border-[#d6533f]" : "border-[rgba(31,122,99,0.18)]"}`}>
-          {avgConcededRank && (
-            <span className="absolute -right-1 -top-1 inline-flex items-center rounded-full px-2 py-0.5 text-[8px] font-bold uppercase tracking-[0.1em] text-white shadow-sm" style={{ background: RANK_BG[avgConcededRank] }}>
+        {/* GA PER GAME */}
+        <div className={`relative rounded-xl border bg-white px-2 py-3 text-center ${avgConcededRank && avgConcededRank <= 3 ? RANK_BORDER[avgConcededRank as 1 | 2 | 3] : isWorstDefender ? "border-[#d6533f]" : "border-[rgba(31,122,99,0.18)]"}`}>
+          {avgConcededRank && avgConcededRank <= 3 && (
+            <span className="absolute -right-1 -top-1 inline-flex items-center rounded-full px-2 py-0.5 text-[8px] font-bold uppercase tracking-[0.1em] text-white shadow-sm" style={{ background: RANK_BG[avgConcededRank as 1 | 2 | 3] }}>
               {avgConcededRank === 1 ? "BEST" : avgConcededRank === 2 ? "2ND" : "3RD"}
             </span>
           )}
-          {!avgConcededRank && isWorstDefender && (
+          {avgConcededRank && avgConcededRank > 3 && !isWorstDefender && (
+            <span className="absolute -right-1 -top-1 inline-flex items-center rounded-full bg-[#e0ede8] px-1.5 py-0.5 text-[8px] font-semibold text-[var(--color-text)]">
+              #{avgConcededRank}
+            </span>
+          )}
+          {isWorstDefender && (!avgConcededRank || avgConcededRank > 3) && (
             <span className="absolute -right-1 -top-1 inline-flex items-center rounded-full bg-[#d6533f] px-2 py-0.5 text-[8px] font-bold uppercase tracking-[0.1em] text-white shadow-sm">
               WORST
             </span>
           )}
           <p className="text-base font-semibold tracking-[-0.02em] text-[var(--color-text)]">{data.avgConcededPerGame}</p>
-          <p className="mt-0.5 text-[9px] font-semibold uppercase tracking-[0.12em] text-[var(--color-text-secondary)]">AVG GOALS CON</p>
+          <p className="mt-0.5 text-[9px] font-semibold uppercase tracking-[0.12em] text-[var(--color-text-secondary)]">GA PER GAME</p>
         </div>
       </div>
 

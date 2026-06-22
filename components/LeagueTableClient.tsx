@@ -61,10 +61,10 @@ export default function LeagueTableClient({ rows }: { rows: LeagueStatRow[] }) {
   const avgGoalsRankMap = useMemo(() => {
     const eligible = rows.filter((r) => r.gp > 2 && r.gamesWithScore > 0);
     const unique = [...new Set(eligible.map((r) => r.goalsFor / r.gamesWithScore))].sort((a, b) => b - a);
-    const map = new Map<string, 1 | 2 | 3>();
+    const map = new Map<string, number>();
     for (const row of eligible) {
       const rank = unique.indexOf(row.goalsFor / row.gamesWithScore) + 1;
-      if (rank >= 1 && rank <= 3) map.set(row.id, rank as 1 | 2 | 3);
+      map.set(row.id, rank);
     }
     return map;
   }, [rows]);
@@ -79,10 +79,10 @@ export default function LeagueTableClient({ rows }: { rows: LeagueStatRow[] }) {
   const avgConcededRankMap = useMemo(() => {
     const eligible = rows.filter((r) => r.gp > 2 && r.gamesWithScore > 0);
     const unique = [...new Set(eligible.map((r) => r.goalsAgainst / r.gamesWithScore))].sort((a, b) => a - b);
-    const map = new Map<string, 1 | 2 | 3>();
+    const map = new Map<string, number>();
     for (const row of eligible) {
       const rank = unique.indexOf(row.goalsAgainst / row.gamesWithScore) + 1;
-      if (rank >= 1 && rank <= 3) map.set(row.id, rank as 1 | 2 | 3);
+      map.set(row.id, rank);
     }
     return map;
   }, [rows]);
