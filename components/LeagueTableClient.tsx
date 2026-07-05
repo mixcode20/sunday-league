@@ -37,7 +37,7 @@ const compareNumeric = (
 export default function LeagueTableClient({ rows }: { rows: LeagueStatRow[] }) {
   const { isUnlocked, organiserPin } = useOrganiserMode();
   const { mutate } = useSWRConfig();
-  const [sortKey, setSortKey] = useState<SortKey>("w");
+  const [sortKey, setSortKey] = useState<SortKey>("winPct");
   const [direction, setDirection] = useState<LeagueSortDirection>("desc");
   const [expandedPlayerId, setExpandedPlayerId] = useState<string | null>(null);
   const [playerPendingArchive, setPlayerPendingArchive] = useState<LeagueStatRow | null>(null);

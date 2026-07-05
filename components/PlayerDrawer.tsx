@@ -367,7 +367,7 @@ export default function PlayerDrawer({
         {/* Goals For */}
         <div className={`relative rounded-xl border bg-white px-2 py-3 text-center ${goalsForRank ? RANK_BORDER[goalsForRank] : "border-[rgba(31,122,99,0.18)]"}`}>
           {goalsForRank && (
-            <span className="absolute -right-1 -top-1 inline-flex items-center rounded-full px-2 py-0.5 text-[8px] font-bold uppercase tracking-[0.1em] text-white shadow-sm" style={{ background: RANK_BG[goalsForRank] }}>
+            <span className="absolute -right-1 -top-1 inline-flex items-center rounded-full px-2 py-[3px] text-[9px] font-bold uppercase tracking-[0.1em] text-white shadow-sm" style={{ background: RANK_BG[goalsForRank] }}>
               #{goalsForRank}
             </span>
           )}
@@ -377,17 +377,17 @@ export default function PlayerDrawer({
         {/* GF PER GAME */}
         <div className={`relative rounded-xl border bg-white px-2 py-3 text-center ${avgGoalsRank && avgGoalsRank <= 3 ? RANK_BORDER[avgGoalsRank as 1 | 2 | 3] : isWorstAttacker ? "border-[#d6533f]" : "border-[rgba(31,122,99,0.18)]"}`}>
           {avgGoalsRank && avgGoalsRank <= 3 && (
-            <span className="absolute -right-1 -top-1 inline-flex items-center rounded-full px-2 py-0.5 text-[8px] font-bold uppercase tracking-[0.1em] text-white shadow-sm" style={{ background: RANK_BG[avgGoalsRank as 1 | 2 | 3] }}>
+            <span className="absolute -right-1 -top-1 inline-flex items-center rounded-full px-2 py-[3px] text-[9px] font-bold uppercase tracking-[0.1em] text-white shadow-sm" style={{ background: RANK_BG[avgGoalsRank as 1 | 2 | 3] }}>
               {avgGoalsRank === 1 ? "BEST" : avgGoalsRank === 2 ? "2ND" : "3RD"}
             </span>
           )}
           {avgGoalsRank && avgGoalsRank > 3 && !isWorstAttacker && (
-            <span className="absolute -right-1 -top-1 inline-flex items-center rounded-full bg-[#e0ede8] px-1.5 py-0.5 text-[8px] font-semibold text-[var(--color-text)]">
+            <span className="absolute -right-1 -top-1 inline-flex items-center rounded-full bg-[#e0ede8] px-1.5 py-0.5 text-[9px] font-semibold text-[var(--color-text)]">
               #{avgGoalsRank}
             </span>
           )}
           {isWorstAttacker && (!avgGoalsRank || avgGoalsRank > 3) && (
-            <span className="absolute -right-1 -top-1 inline-flex items-center rounded-full bg-[#d6533f] px-2 py-0.5 text-[8px] font-bold uppercase tracking-[0.1em] text-white shadow-sm">
+            <span className="absolute -right-1 -top-1 inline-flex items-center rounded-full bg-[#d6533f] px-2 py-0.5 text-[9px] font-bold uppercase tracking-[0.1em] text-white shadow-sm">
               WORST
             </span>
           )}
@@ -397,17 +397,17 @@ export default function PlayerDrawer({
         {/* GA PER GAME */}
         <div className={`relative rounded-xl border bg-white px-2 py-3 text-center ${avgConcededRank && avgConcededRank <= 3 ? RANK_BORDER[avgConcededRank as 1 | 2 | 3] : isWorstDefender ? "border-[#d6533f]" : "border-[rgba(31,122,99,0.18)]"}`}>
           {avgConcededRank && avgConcededRank <= 3 && (
-            <span className="absolute -right-1 -top-1 inline-flex items-center rounded-full px-2 py-0.5 text-[8px] font-bold uppercase tracking-[0.1em] text-white shadow-sm" style={{ background: RANK_BG[avgConcededRank as 1 | 2 | 3] }}>
+            <span className="absolute -right-1 -top-1 inline-flex items-center rounded-full px-2 py-[3px] text-[9px] font-bold uppercase tracking-[0.1em] text-white shadow-sm" style={{ background: RANK_BG[avgConcededRank as 1 | 2 | 3] }}>
               {avgConcededRank === 1 ? "BEST" : avgConcededRank === 2 ? "2ND" : "3RD"}
             </span>
           )}
           {avgConcededRank && avgConcededRank > 3 && !isWorstDefender && (
-            <span className="absolute -right-1 -top-1 inline-flex items-center rounded-full bg-[#e0ede8] px-1.5 py-0.5 text-[8px] font-semibold text-[var(--color-text)]">
+            <span className="absolute -right-1 -top-1 inline-flex items-center rounded-full bg-[#e0ede8] px-1.5 py-0.5 text-[9px] font-semibold text-[var(--color-text)]">
               #{avgConcededRank}
             </span>
           )}
           {isWorstDefender && (!avgConcededRank || avgConcededRank > 3) && (
-            <span className="absolute -right-1 -top-1 inline-flex items-center rounded-full bg-[#d6533f] px-2 py-0.5 text-[8px] font-bold uppercase tracking-[0.1em] text-white shadow-sm">
+            <span className="absolute -right-1 -top-1 inline-flex items-center rounded-full bg-[#d6533f] px-2 py-0.5 text-[9px] font-bold uppercase tracking-[0.1em] text-white shadow-sm">
               WORST
             </span>
           )}
