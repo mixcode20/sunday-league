@@ -74,7 +74,6 @@ export default function ResultsPageClient() {
   const routeTimerArmed = useRef(false);
   const routeLabel = "route:results";
   const previousGameweekId = useRef<string | null>(gameweekId);
-  const pendingScrollRef = useRef(false);
 
   useEffect(() => {
     if (!debugPerfEnabled || routeTimerArmed.current) return;
@@ -84,7 +83,6 @@ export default function ResultsPageClient() {
 
   useEffect(() => {
     if (previousGameweekId.current === gameweekId) return;
-    pendingScrollRef.current = true;
     previousGameweekId.current = gameweekId;
     if (!debugPerfEnabled) return;
     console.time(routeLabel);
@@ -115,12 +113,6 @@ export default function ResultsPageClient() {
     if (data.newerId) {
       preload(`/api/results/overview?gameweekId=${data.newerId}`, fetcher);
     }
-  }, [data]);
-
-  useEffect(() => {
-    if (!data || !pendingScrollRef.current) return;
-    pendingScrollRef.current = false;
-    window.scrollTo({ top: document.documentElement.scrollHeight, behavior: "smooth" });
   }, [data]);
 
   if (error) {

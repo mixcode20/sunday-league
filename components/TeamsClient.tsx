@@ -56,6 +56,14 @@ function PlusIcon() {
   );
 }
 
+function CheckIcon() {
+  return (
+    <svg viewBox="0 0 20 20" aria-hidden="true" className="h-4 w-4 fill-current">
+      <path d="M16.7 5.3a1 1 0 0 1 0 1.4l-7.5 7.5a1 1 0 0 1-1.42 0l-3.5-3.5a1 1 0 1 1 1.42-1.42l2.8 2.8 6.8-6.8a1 1 0 0 1 1.4 0Z" />
+    </svg>
+  );
+}
+
 function MinusIcon() {
   return (
     <svg viewBox="0 0 20 20" aria-hidden="true" className="h-4 w-4 fill-current">
@@ -70,6 +78,7 @@ export default function TeamsClient({ gameweek, entries, onRefresh }: TeamsClien
   const [statusMessage, setStatusMessage] = useState("");
   const [dragged, setDragged] = useState<DragInfo | null>(null);
   const [openSlotKey, setOpenSlotKey] = useState<string | null>(null);
+  const [pendingPickIds, setPendingPickIds] = useState<string[]>([]);
   const [now, setNow] = useState(() => Date.now());
   const slotMenuRef = useRef<HTMLDivElement | null>(null);
 
@@ -135,6 +144,44 @@ export default function TeamsClient({ gameweek, entries, onRefresh }: TeamsClien
       playersThisWeek.filter((player) => !assignedTeamByPlayerId.get(player.player_id)),
     [assignedTeamByPlayerId, playersThisWeek]
   );
+  const teamSlots = useMemo(() => {
+    const build = (team: Team) => {
+      const limit = TEAM_LIMITS[team];
+      const slots: Array<{ entry: GameweekPlayer | null; position: number }> = Array.from(
+        { length: limit },
+        (_, index) => ({ entry: null, position: index + 1 })
+      );
+      const overflow: GameweekPlayer[] = [];
+
+      grouped[team].forEach((entry) => {
+        const slotPosition = entry.team_position;
+        if (
+          typeof slotPosition === "number" &&
+          slotPosition >= 1 &&
+          slotPosition <= limit &&
+          !slots[slotPosition - 1].entry
+        ) {
+          slots[slotPosition - 1].entry = entry;
+        } else {
+          overflow.push(entry);
+        }
+      });
+
+      let overflowIndex = 0;
+      slots.forEach((slot, index) => {
+        if (slot.entry || overflowIndex >= overflow.length) return;
+        slots[index].entry = overflow[overflowIndex];
+        overflowIndex += 1;
+      });
+
+      return slots;
+    };
+
+    return { darks: build("darks"), whites: build("whites") } as Record<
+      "darks" | "whites",
+      Array<{ entry: GameweekPlayer | null; position: number }>
+    >;
+  }, [grouped]);
   const teamsSelected = grouped.darks.length + grouped.whites.length > 0;
   const teamsComplete =
     grouped.darks.length === TEAM_LIMITS.darks &&
@@ -195,37 +242,6 @@ export default function TeamsClient({ gameweek, entries, onRefresh }: TeamsClien
     const timeoutId = window.setTimeout(() => setNow(Date.now()), 1000);
     return () => window.clearTimeout(timeoutId);
   }, [gameweekDateTime, now]);
-
-  useEffect(() => {
-    if (!openSlotKey) return;
-
-    const handlePointerDown = (event: MouseEvent) => {
-      if (slotMenuRef.current?.contains(event.target as Node)) return;
-      if (
-        event.target instanceof Element &&
-        event.target.closest(`[data-slot-trigger-key="${openSlotKey}"]`)
-      ) {
-        return;
-      }
-      setOpenSlotKey(null);
-    };
-
-    document.addEventListener("mousedown", handlePointerDown);
-    return () => document.removeEventListener("mousedown", handlePointerDown);
-  }, [openSlotKey]);
-
-  useEffect(() => {
-    if (!openSlotKey) return;
-
-    const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.key === "Escape") {
-        setOpenSlotKey(null);
-      }
-    };
-
-    document.addEventListener("keydown", handleKeyDown);
-    return () => document.removeEventListener("keydown", handleKeyDown);
-  }, [openSlotKey]);
 
   const formatErrorMessage = (data: unknown, fallback: string) => {
     if (!data) return fallback;
@@ -324,34 +340,7 @@ export default function TeamsClient({ gameweek, entries, onRefresh }: TeamsClien
     accent: string,
     isDark?: boolean
   ) => {
-    const limit = TEAM_LIMITS[team];
-    const slots: Array<{ entry: GameweekPlayer | null; position: number }> = Array.from(
-      { length: limit },
-      (_, index) => ({ entry: null, position: index + 1 })
-    );
-    const overflow: GameweekPlayer[] = [];
-
-    grouped[team].forEach((entry) => {
-      const slotPosition = entry.team_position;
-      if (
-        typeof slotPosition === "number" &&
-        slotPosition >= 1 &&
-        slotPosition <= limit &&
-        !slots[slotPosition - 1].entry
-      ) {
-        slots[slotPosition - 1].entry = entry;
-      } else {
-        overflow.push(entry);
-      }
-    });
-
-    let overflowIndex = 0;
-    slots.forEach((slot, index) => {
-      if (slot.entry || overflowIndex >= overflow.length) return;
-      slots[index].entry = overflow[overflowIndex];
-      overflowIndex += 1;
-    });
-
+    const slots = teamSlots[team as "darks" | "whites"];
     const isEditable = isUnlocked && !isLocked;
     return (
       <div className={`rounded-[1.35rem] border p-4 ${accent}`}>
@@ -470,6 +459,17 @@ export default function TeamsClient({ gameweek, entries, onRefresh }: TeamsClien
       }),
     [assignedTeamByPlayerId, visiblePlayers]
   );
+  const openTeamAvailablePositions = useMemo(() => {
+    if (!openSlotMeta) return [];
+    const positions = [openSlotMeta.position];
+    teamSlots[openSlotMeta.team as "darks" | "whites"].forEach((slot) => {
+      if (!slot.entry && slot.position !== openSlotMeta.position) {
+        positions.push(slot.position);
+      }
+    });
+    return positions;
+  }, [openSlotMeta, teamSlots]);
+  const remainingPickCount = Math.max(0, openTeamAvailablePositions.length - pendingPickIds.length);
   const darksPlayers = useMemo(
     () =>
       visiblePlayers.filter((player) => {
@@ -489,15 +489,72 @@ export default function TeamsClient({ gameweek, entries, onRefresh }: TeamsClien
 
   const closeSelector = () => {
     setOpenSlotKey(null);
+    setPendingPickIds([]);
+  };
+
+  const finalizeSelector = () => {
+    if (openSlotMeta && pendingPickIds.length > 0) {
+      const meta = openSlotMeta;
+      const positions = openTeamAvailablePositions;
+      const picks = pendingPickIds;
+      void (async () => {
+        for (let index = 0; index < picks.length; index += 1) {
+          await assignPlayer(picks[index], meta.team, positions[index]);
+        }
+      })();
+    }
+    closeSelector();
   };
 
   const openSelector = (slotKey: string) => {
     if (openSlotKey === slotKey) {
-      closeSelector();
+      finalizeSelector();
       return;
     }
 
+    setPendingPickIds([]);
     setOpenSlotKey(slotKey);
+  };
+
+  useEffect(() => {
+    if (!openSlotKey) return;
+
+    const handlePointerDown = (event: MouseEvent) => {
+      if (slotMenuRef.current?.contains(event.target as Node)) return;
+      if (
+        event.target instanceof Element &&
+        event.target.closest(`[data-slot-trigger-key="${openSlotKey}"]`)
+      ) {
+        return;
+      }
+      finalizeSelector();
+    };
+
+    document.addEventListener("mousedown", handlePointerDown);
+    return () => document.removeEventListener("mousedown", handlePointerDown);
+  }, [openSlotKey, finalizeSelector]);
+
+  useEffect(() => {
+    if (!openSlotKey) return;
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        finalizeSelector();
+      }
+    };
+
+    document.addEventListener("keydown", handleKeyDown);
+    return () => document.removeEventListener("keydown", handleKeyDown);
+  }, [openSlotKey, finalizeSelector]);
+
+  const togglePick = (playerId: string) => {
+    setPendingPickIds((prev) => {
+      if (prev.includes(playerId)) {
+        return prev.filter((id) => id !== playerId);
+      }
+      if (prev.length >= openTeamAvailablePositions.length) return prev;
+      return [...prev, playerId];
+    });
   };
 
   const renderPlayerRow = (
@@ -505,21 +562,22 @@ export default function TeamsClient({ gameweek, entries, onRefresh }: TeamsClien
     options?: { badge?: string; disabled?: boolean; selectable?: boolean }
   ) => {
     const selectable = options?.selectable ?? !options?.disabled;
+    const isPicked = selectable && pendingPickIds.includes(player.player_id);
 
     return (
       <button
         key={player.player_id}
         type="button"
         disabled={!selectable}
-        onClick={async () => {
+        onClick={() => {
           if (!selectable) return;
-          if (!openSlotMeta) return;
-          await assignPlayer(player.player_id, openSlotMeta.team, openSlotMeta.position);
-          closeSelector();
+          togglePick(player.player_id);
         }}
         className={`flex w-full items-center gap-3 border-b border-[rgba(226,232,240,0.82)] px-4 py-3 text-left ${
           selectable
-            ? "bg-white hover:bg-[rgba(15,61,52,0.05)]"
+            ? isPicked
+              ? "bg-[rgba(15,61,52,0.08)] hover:bg-[rgba(15,61,52,0.1)]"
+              : "bg-white hover:bg-[rgba(15,61,52,0.05)]"
             : "cursor-not-allowed bg-[rgba(248,250,252,0.96)] opacity-100"
         }`}
       >
@@ -534,8 +592,14 @@ export default function TeamsClient({ gameweek, entries, onRefresh }: TeamsClien
           {formatPlayerName(player.players)}
         </span>
         {selectable ? (
-          <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[rgba(15,61,52,0.1)] text-[var(--color-primary-dark)]">
-            <PlusIcon />
+          <span
+            className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full ${
+              isPicked
+                ? "bg-[var(--color-primary-dark)] text-white"
+                : "bg-[rgba(15,61,52,0.1)] text-[var(--color-primary-dark)]"
+            }`}
+          >
+            {isPicked ? <CheckIcon /> : <PlusIcon />}
           </span>
         ) : options?.badge ? (
           <span
@@ -685,19 +749,29 @@ export default function TeamsClient({ gameweek, entries, onRefresh }: TeamsClien
                   : "bg-white text-[var(--color-text)]"
               }`}
             >
-              <h3 className="text-[1.08rem] font-semibold tracking-[-0.02em]">
-                {openSlotTitle}
-              </h3>
+              <div>
+                <h3 className="text-[1.08rem] font-semibold tracking-[-0.02em]">
+                  {openSlotTitle}
+                </h3>
+                <p
+                  className={`text-xs ${
+                    openSlotMeta.team === "darks" ? "text-white/70" : "text-[var(--color-text-secondary)]"
+                  }`}
+                >
+                  Tap players to add them, then Done · {remainingPickCount} slot
+                  {remainingPickCount === 1 ? "" : "s"} left
+                </p>
+              </div>
               <button
-                className={`ui-btn ui-btn-secondary min-h-0 rounded-full px-3 py-2 text-sm ${
+                className={`ui-btn ui-btn-primary min-h-0 rounded-full px-4 py-2 text-sm ${
                   openSlotMeta.team === "darks"
                     ? "border-white/25 bg-white/10 text-white hover:bg-white/16"
                     : ""
                 }`}
-                onClick={closeSelector}
+                onClick={finalizeSelector}
                 type="button"
               >
-                Close
+                Done
               </button>
             </div>
             <div className="flex-1 overflow-y-auto">
