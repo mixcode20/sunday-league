@@ -182,10 +182,17 @@ export async function GET(
     }
   }
 
+  const TEAMMATE_QUALIFY_WIN_RATE = 0.75;
   const bestTeammates: PlayerTeammate[] = Array.from(teammateStats.entries())
     .filter(([, s]) => s.gp >= 2)
     .map(([pid, s]) => ({ id: pid, name: s.name, gp: s.gp, winRate: s.wins / s.gp }))
-    .sort((a, b) => b.winRate - a.winRate || b.gp - a.gp)
+    .sort((a, b) => {
+      const aQualifies = a.winRate >= TEAMMATE_QUALIFY_WIN_RATE;
+      const bQualifies = b.winRate >= TEAMMATE_QUALIFY_WIN_RATE;
+      if (aQualifies !== bQualifies) return aQualifies ? -1 : 1;
+      if (aQualifies) return b.gp - a.gp || b.winRate - a.winRate;
+      return b.winRate - a.winRate || b.gp - a.gp;
+    })
     .slice(0, 3);
 
   const toughestOpponent: PlayerOpponent | null =
@@ -198,7 +205,7 @@ export async function GET(
         losses: s.gp - s.wins,
         winRate: s.wins / s.gp,
       }))
-      .sort((a, b) => a.winRate - b.winRate || b.gp - a.gp)[0] ?? null;
+      .sort((a, b) => b.losses - a.losses || a.winRate - b.winRate)[0] ?? null;
 
   return NextResponse.json({
     form,

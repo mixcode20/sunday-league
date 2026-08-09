@@ -15,6 +15,10 @@ type ModalProps = {
   topOffsetClassName?: string;
   panelClassName?: string;
   panelMaxHeightClassName?: string;
+  onPrev?: () => void;
+  onNext?: () => void;
+  prevDisabled?: boolean;
+  nextDisabled?: boolean;
 };
 
 export default function Modal({
@@ -30,6 +34,10 @@ export default function Modal({
   topOffsetClassName,
   panelClassName,
   panelMaxHeightClassName,
+  onPrev,
+  onNext,
+  prevDisabled = false,
+  nextDisabled = false,
 }: ModalProps) {
   if (!isOpen) return null;
 
@@ -61,16 +69,44 @@ export default function Modal({
         className={panelClassName ? `${panelClass} ${panelClassName}` : panelClass}
         onClick={(event) => event.stopPropagation()}
       >
-        <div className="mb-4 flex items-center justify-between gap-4">
-          <div className="min-w-0 flex-1 text-left">
+        <div
+          className={
+            onPrev || onNext
+              ? "mb-4 grid grid-cols-[1.15fr_auto_0.85fr] items-center gap-4"
+              : "mb-4 flex items-center justify-between gap-4"
+          }
+        >
+          <div className="min-w-0 text-left">
             {subtitle ? (
               <p className="text-sm text-[var(--color-text-secondary)]">{subtitle}</p>
             ) : null}
             <h2 className="text-lg font-semibold tracking-[-0.02em]">{title}</h2>
           </div>
+          {(onPrev || onNext) && (
+            <div className="flex shrink-0 items-center gap-1 justify-self-center">
+              <button
+                className="ui-icon-btn h-9 w-9 text-base disabled:cursor-not-allowed disabled:opacity-30"
+                onClick={onPrev}
+                disabled={!onPrev || prevDisabled}
+                type="button"
+                aria-label="Previous gameweek"
+              >
+                ‹
+              </button>
+              <button
+                className="ui-icon-btn h-9 w-9 text-base disabled:cursor-not-allowed disabled:opacity-30"
+                onClick={onNext}
+                disabled={!onNext || nextDisabled}
+                type="button"
+                aria-label="Next gameweek"
+              >
+                ›
+              </button>
+            </div>
+          )}
           {closeVariant === "icon" ? (
             <button
-              className="ui-icon-btn h-9 w-9 text-base"
+              className="ui-icon-btn h-9 w-9 text-base justify-self-end"
               onClick={onClose}
               type="button"
               aria-label="Close"
@@ -79,7 +115,7 @@ export default function Modal({
             </button>
           ) : (
             <button
-              className="ui-btn ui-btn-secondary min-h-0 rounded-full px-3 py-2 text-sm"
+              className="ui-btn ui-btn-secondary min-h-0 rounded-full px-3 py-2 text-sm justify-self-end"
               onClick={onClose}
               type="button"
             >

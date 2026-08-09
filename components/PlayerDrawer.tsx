@@ -255,7 +255,7 @@ export default function PlayerDrawer({
   avgConcededRank?: number;
   isWorstDefender?: boolean;
 }) {
-  const [selectedEntry, setSelectedEntry] = useState<PlayerFormEntry | null>(null);
+  const [selectedIndex, setSelectedIndex] = useState<number | null>(null);
   const [scrollRatio, setScrollRatio] = useState(0);
   const formScrollRef = useRef<HTMLDivElement>(null);
 
@@ -298,6 +298,8 @@ export default function PlayerDrawer({
     );
   }
 
+  const selectedEntry = selectedIndex !== null ? data.form[selectedIndex] ?? null : null;
+
   const showTeamWinRates =
     data.darkWinRate !== null && data.whitesWinRate !== null;
 
@@ -335,7 +337,7 @@ export default function PlayerDrawer({
                     key={i}
                     result={entry.result}
                     team={entry.team}
-                    onClick={() => setSelectedEntry(entry)}
+                    onClick={() => setSelectedIndex(i)}
                   />
                 ))}
               </div>
@@ -500,13 +502,17 @@ export default function PlayerDrawer({
       <div className="pb-3" />
 
       <Modal
-        isOpen={selectedEntry !== null}
+        isOpen={selectedIndex !== null}
         title={selectedEntry ? formatGameweekDate(selectedEntry.gameDate) : ""}
-        onClose={() => setSelectedEntry(null)}
+        onClose={() => setSelectedIndex(null)}
         closeVariant="icon"
         position="top"
         topOffsetClassName="pt-3"
         panelMaxHeightClassName="max-h-[calc(100dvh-1.5rem)]"
+        onPrev={() => setSelectedIndex((i) => (i === null ? i : i + 1))}
+        onNext={() => setSelectedIndex((i) => (i === null ? i : i - 1))}
+        prevDisabled={selectedIndex === null || selectedIndex >= data.form.length - 1}
+        nextDisabled={selectedIndex === null || selectedIndex <= 0}
       >
         {selectedEntry && <GameweekDetail entry={selectedEntry} />}
       </Modal>
