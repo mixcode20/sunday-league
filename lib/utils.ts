@@ -24,6 +24,14 @@ export const getOrdinalSuffix = (day: number) => {
   }
 };
 
+export const formatShortGameweekDate = (dateString: string) => {
+  const date = new Date(dateString);
+  const weekday = date.toLocaleDateString("en-US", { weekday: "short" });
+  const month = date.toLocaleDateString("en-US", { month: "short" });
+  const day = date.getDate();
+  return `${weekday} ${day} ${month}`;
+};
+
 export const formatGameweekDate = (dateString: string) => {
   const date = new Date(dateString);
   const weekday = date.toLocaleDateString("en-US", { weekday: "long" });

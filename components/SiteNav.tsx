@@ -34,7 +34,7 @@ export default function SiteNav() {
       <header className="bg-white/96 backdrop-blur-sm">
         <div className="mx-auto flex w-full max-w-5xl items-center gap-3 px-4 py-2.5">
           <Link href="/" prefetch aria-label="Game">
-            <span className="flex h-10 w-10 items-center justify-center rounded-2xl border border-[rgba(15,61,52,0.08)] bg-white shadow-[0_6px_18px_rgba(15,61,52,0.05)]">
+            <span className="flex h-10 w-10 items-center justify-center rounded-[8px] border border-[rgba(15,61,52,0.08)] bg-white shadow-[0_6px_18px_rgba(15,61,52,0.05)]">
               <Image src="/Symbol.svg" alt="Symbol logo" width={24} height={24} className="h-6 w-6" />
             </span>
           </Link>

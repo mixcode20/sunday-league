@@ -250,7 +250,7 @@ export default function ConfirmResultPanel({
         ) : (
           <fieldset className="mt-4 space-y-2">
             <label
-              className={`flex cursor-pointer items-center gap-3 rounded-xl border px-3 py-3 text-sm transition ${
+              className={`flex cursor-pointer items-center gap-3 rounded-[8px] border px-3 py-3 text-sm transition ${
                 winner === "darks"
                   ? "border-[rgba(15,61,52,0.2)] bg-[rgba(15,61,52,0.06)] text-[var(--color-primary-dark)]"
                   : "border-[var(--color-border)] text-[var(--color-text)]"
@@ -270,7 +270,7 @@ export default function ConfirmResultPanel({
               Darks won
             </label>
             <label
-              className={`flex cursor-pointer items-center gap-3 rounded-xl border px-3 py-3 text-sm transition ${
+              className={`flex cursor-pointer items-center gap-3 rounded-[8px] border px-3 py-3 text-sm transition ${
                 winner === "whites"
                   ? "border-[rgba(15,61,52,0.2)] bg-[rgba(15,61,52,0.06)] text-[var(--color-primary-dark)]"
                   : "border-[var(--color-border)] text-[var(--color-text)]"
@@ -290,7 +290,7 @@ export default function ConfirmResultPanel({
               Whites won
             </label>
             <label
-              className={`flex cursor-pointer items-center gap-3 rounded-xl border px-3 py-3 text-sm transition ${
+              className={`flex cursor-pointer items-center gap-3 rounded-[8px] border px-3 py-3 text-sm transition ${
                 winner === "draw"
                   ? "border-[rgba(15,61,52,0.2)] bg-[rgba(15,61,52,0.06)] text-[var(--color-primary-dark)]"
                   : "border-[var(--color-border)] text-[var(--color-text)]"

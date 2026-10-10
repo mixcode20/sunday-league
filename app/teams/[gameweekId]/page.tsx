@@ -17,8 +17,8 @@ export default async function TeamsHistoryPage({
 
   if (!gameweek) {
     return (
-      <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
-        <h2 className="text-xl font-semibold text-slate-800">
+      <div className="ui-card p-6">
+        <h2 className="text-xl font-semibold text-[var(--color-text)]">
           Gameweek not found
         </h2>
       </div>
@@ -40,14 +40,12 @@ export default async function TeamsHistoryPage({
 
   return (
     <div className="space-y-6">
-      <section className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
-        <p className="text-xs uppercase tracking-wide text-slate-400">
-          Gameweek teams
-        </p>
-        <h2 className="text-2xl font-semibold text-slate-900">
+      <section className="ui-card p-6">
+        <p className="ui-kicker">Gameweek teams</p>
+        <h2 className="text-2xl font-semibold text-[var(--color-text)]">
           {formatDate(gameweek.game_date)}
         </h2>
-        <p className="mt-1 text-sm text-slate-500">
+        <p className="mt-1 text-sm text-[var(--color-text-secondary)]">
           Status: {gameweek.status}
         </p>
       </section>

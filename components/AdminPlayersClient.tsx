@@ -102,64 +102,52 @@ export default function AdminPlayersClient({ players }: AdminPlayersClientProps)
 
   return (
     <div className="space-y-4">
-      <section className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
+      <section className="ui-card p-6">
         <div className="flex items-start justify-between">
           <div>
-            <p className="text-xs uppercase tracking-wide text-slate-400">
-              Admin
-            </p>
-            <h2 className="text-2xl font-semibold text-slate-900">
+            <p className="ui-kicker">Admin</p>
+            <h2 className="text-2xl font-semibold text-[var(--color-text)]">
               Player management
             </h2>
-            <p className="mt-1 text-sm text-slate-500">
+            <p className="mt-1 text-sm text-[var(--color-text-secondary)]">
               Create, edit, or archive players.
             </p>
           </div>
         </div>
       </section>
 
-      {message ? (
-        <p className="rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-700">
-          {message}
-        </p>
-      ) : null}
+      {message ? <p className="ui-banner ui-banner-warning">{message}</p> : null}
 
       {isUnlocked ? (
-        <div className="rounded-2xl border border-slate-200 bg-white p-4 text-sm text-slate-600 shadow-sm">
-          <p className="text-xs uppercase tracking-wide text-slate-400">
-            Organiser menu
-          </p>
+        <div className="ui-card p-4 text-sm text-[var(--color-text)]">
+          <p className="ui-kicker">Organiser menu</p>
           <p className="mt-2">
             Add new players above, edit active players, or archive them below.
           </p>
         </div>
       ) : (
-        <p className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-500">
+        <p className="ui-banner ui-banner-warning">
           Unlock organiser tools to edit players.
         </p>
       )}
       {isUnlocked ? (
         <>
-          <section className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
-            <h3 className="text-sm font-semibold text-slate-700">Add player</h3>
+          <section className="ui-card p-4">
+            <h3 className="text-sm font-semibold text-[var(--color-text)]">Add player</h3>
             <div className="mt-3 grid gap-2 md:grid-cols-3">
               <input
-                className="rounded-xl border border-slate-200 px-3 py-2 text-sm"
+                className="ui-input"
                 placeholder="First name"
                 value={newFirstName}
                 onChange={(event) => setNewFirstName(event.target.value)}
               />
               <input
-                className="rounded-xl border border-slate-200 px-3 py-2 text-sm"
+                className="ui-input"
                 placeholder="Last name (optional)"
                 value={newLastName}
                 onChange={(event) => setNewLastName(event.target.value)}
               />
-              <button
-                type="button"
-                onClick={handleCreate}
-                className="rounded-xl bg-slate-900 px-3 py-2 text-sm font-semibold text-white"
-              >
+              <button type="button" onClick={handleCreate} className="ui-btn ui-btn-primary">
                 Create
               </button>
             </div>
@@ -167,7 +155,7 @@ export default function AdminPlayersClient({ players }: AdminPlayersClientProps)
 
           <section className="space-y-2">
             {sortedPlayers.length === 0 ? (
-              <div className="rounded-2xl border border-dashed border-slate-200 bg-white p-4 text-sm text-slate-400">
+              <div className="ui-empty p-4 text-sm">
                 No players yet. Add the first player above.
               </div>
             ) : (
@@ -177,20 +165,17 @@ export default function AdminPlayersClient({ players }: AdminPlayersClientProps)
                   last_name: player.last_name,
                 };
                 return (
-                  <div
-                    key={player.id}
-                    className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm"
-                  >
+                  <div key={player.id} className="ui-card p-4">
                     <div className="grid gap-2 md:grid-cols-3">
                       <input
-                        className="rounded-xl border border-slate-200 px-3 py-2 text-sm"
+                        className="ui-input"
                         value={draft.first_name}
                         onChange={(event) =>
                           updateDraft(player.id, "first_name", event.target.value)
                         }
                       />
                       <input
-                        className="rounded-xl border border-slate-200 px-3 py-2 text-sm"
+                        className="ui-input"
                         value={draft.last_name}
                         onChange={(event) =>
                           updateDraft(player.id, "last_name", event.target.value)
@@ -200,7 +185,7 @@ export default function AdminPlayersClient({ players }: AdminPlayersClientProps)
                         <button
                           type="button"
                           onClick={() => handleUpdate(player.id)}
-                          className="flex-1 rounded-xl border border-slate-200 px-3 py-2 text-sm text-slate-700"
+                          className="ui-btn ui-btn-secondary flex-1"
                         >
                           Save
                         </button>
@@ -208,14 +193,14 @@ export default function AdminPlayersClient({ players }: AdminPlayersClientProps)
                           type="button"
                           onClick={() => handleArchive(player.id)}
                           disabled={player.archived}
-                          className="flex-1 rounded-xl border border-amber-200 px-3 py-2 text-sm text-amber-700 disabled:cursor-not-allowed disabled:opacity-50"
+                          className="ui-btn ui-btn-secondary flex-1"
                         >
                           {player.archived ? "Archived" : "Archive"}
                         </button>
                       </div>
                     </div>
                     {player.archived ? (
-                      <p className="mt-2 text-xs font-medium uppercase tracking-wide text-amber-700">
+                      <p className="mt-2 text-xs font-medium uppercase tracking-wide text-[var(--color-warning)]">
                         Archived
                       </p>
                     ) : null}
@@ -226,25 +211,18 @@ export default function AdminPlayersClient({ players }: AdminPlayersClientProps)
           </section>
         </>
       ) : (
-        <section className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
-          <h3 className="text-sm font-semibold text-slate-700">Players</h3>
+        <section className="ui-card p-4">
+          <h3 className="text-sm font-semibold text-[var(--color-text)]">Players</h3>
           <div className="mt-3 grid gap-2 md:grid-cols-2">
             {sortedPlayers.length === 0 ? (
-              <div className="rounded-xl border border-dashed border-slate-200 px-3 py-4 text-sm text-slate-400">
-                No players yet.
-              </div>
+              <div className="ui-empty px-3 py-4 text-sm">No players yet.</div>
             ) : (
               sortedPlayers.map((player) => (
-                <div
-                  key={player.id}
-                  className="rounded-xl border border-slate-100 bg-slate-50 px-3 py-2 text-sm text-slate-700"
-                >
+                <div key={player.id} className="ui-slot-filled rounded-[8px] border px-3 py-2 text-sm">
                   <div className="flex items-center gap-2">
-                    <span>
-                      {formatPlayerName(player)}
-                    </span>
+                    <span>{formatPlayerName(player)}</span>
                     {player.archived ? (
-                      <span className="rounded-full border border-amber-200 bg-amber-50 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-amber-700">
+                      <span className="ui-chip px-2 py-0.5 text-[10px] uppercase tracking-wide text-[var(--color-warning)]">
                         Archived
                       </span>
                     ) : null}

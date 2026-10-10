@@ -871,7 +871,7 @@ export default function JoinSlots({
             return (
               <div
                 key={`main-${index}`}
-                className={`relative flex min-h-[60px] flex-col rounded-[14px] border px-4 py-2 text-xs ${
+                className={`relative flex min-h-[60px] flex-col rounded-[8px] border px-4 py-2 text-xs ${
                   entry?.remove_requested
                     ? "border-[rgba(229,72,77,0.18)] bg-[rgba(229,72,77,0.08)] text-[var(--color-danger)]"
                     : entry
@@ -1023,7 +1023,7 @@ export default function JoinSlots({
               return (
                 <div
                   key={`sub-${slotPosition}`}
-                  className={`relative flex min-h-[60px] flex-col rounded-[14px] border px-4 py-2 text-xs ${
+                  className={`relative flex min-h-[60px] flex-col rounded-[8px] border px-4 py-2 text-xs ${
                     entry?.remove_requested
                       ? "border-[rgba(229,72,77,0.18)] bg-[rgba(229,72,77,0.08)] text-[var(--color-danger)]"
                       : entry
@@ -1188,7 +1188,7 @@ export default function JoinSlots({
                   key={player.id}
                   type="button"
                   onClick={() => selectPlayer(player.id)}
-                  className="mb-2 flex w-full items-center gap-3 rounded-[16px] border border-[#d8dbe0] bg-[#eff1f3] px-4 py-3 text-left text-sm text-[var(--color-text)] transition hover:border-[#c6cbd2] hover:bg-[#e7eaee]"
+                  className="mb-2 flex w-full items-center gap-3 rounded-[8px] border border-[var(--color-border)] bg-[var(--off-white-green)] px-4 py-3 text-left text-sm text-[var(--color-text)] transition hover:border-[rgba(31,122,99,0.22)] hover:bg-[var(--color-surface-highlight)]"
                   disabled={openSlot === null ? true : isSlotPending(openSlot)}
                 >
                   <span className="min-w-0 flex flex-1 items-center gap-3">
@@ -1221,7 +1221,7 @@ export default function JoinSlots({
             <button
               type="button"
               onClick={handleAddNew}
-              className="flex w-full items-center justify-center gap-2 rounded-[16px] border border-[rgba(15,61,52,0.1)] bg-[var(--color-primary-dark)] px-4 py-3 text-sm font-semibold text-white shadow-[0_10px_24px_rgba(15,61,52,0.18)]"
+              className="flex w-full items-center justify-center gap-2 rounded-[8px] border border-[rgba(15,61,52,0.1)] bg-[var(--color-primary-dark)] px-4 py-3 text-sm font-semibold text-white shadow-[0_10px_24px_rgba(15,61,52,0.18)]"
               disabled={openSlot === null ? true : isSlotPending(openSlot)}
             >
               {plusIcon("h-[14px] w-[14px]")}

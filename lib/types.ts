@@ -78,6 +78,29 @@ export type PlayerOpponent = {
   winRate: number;
 };
 
+export type PotmEligiblePlayer = {
+  id: string;
+  name: string;
+  team: "darks" | "whites";
+};
+
+export type PotmTallyEntry = {
+  playerId: string;
+  name: string;
+  votes: number;
+  darksVotes: number;
+  whitesVotes: number;
+};
+
+export type PotmOverview = {
+  eligiblePlayers: PotmEligiblePlayer[];
+  votedVoterIds: string[];
+  hasVoted: boolean;
+  votedForId: string | null;
+  tally: PotmTallyEntry[];
+  totalVotes: number;
+};
+
 export type PlayerStats = {
   form: PlayerFormEntry[];
   teamPicks: { darks: number; whites: number };

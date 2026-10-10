@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { isPotmVotingClosed } from "@/lib/potm";
 import { supabaseServer } from "@/lib/supabase";
 import { normalizePlayerJoin } from "@/lib/utils";
 
@@ -65,10 +66,11 @@ export async function GET(request: Request) {
       entries: [],
       olderId: null,
       newerId: null,
+      votingClosed: true,
     });
   }
 
-  const [{ data: older }, { data: newer }, { data: entries }] = await Promise.all([
+  const [{ data: older }, { data: newer }, { data: entries }, votingClosed] = await Promise.all([
     fetchOlderGameweek(currentGameweek.game_date),
     fetchNewerGameweek(currentGameweek.game_date),
     supabase
@@ -77,6 +79,7 @@ export async function GET(request: Request) {
       .eq("gameweek_id", currentGameweek.id)
       .order("team", { ascending: true })
       .order("position", { ascending: true }),
+    isPotmVotingClosed(supabase, currentGameweek.game_date),
   ]);
 
   const normalizedEntries = (entries ?? []).map(normalizePlayerJoin);
@@ -90,5 +93,6 @@ export async function GET(request: Request) {
     entries: normalizedEntries,
     olderId: older?.id ?? null,
     newerId: newer?.id ?? null,
+    votingClosed,
   });
 }

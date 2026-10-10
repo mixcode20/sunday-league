@@ -66,7 +66,7 @@ export default function JoinForm({ gameweekId, players }: JoinFormProps) {
           type="button"
           disabled={loading}
           onClick={() => handleRequest("join")}
-          className="ui-btn flex-1 bg-[var(--color-primary)] text-white hover:bg-[#186650]"
+          className="ui-btn ui-btn-primary flex-1"
         >
           Join
         </button>

@@ -17,8 +17,8 @@ export default async function GameDetailPage({
 
   if (!gameweek) {
     return (
-      <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
-        <h2 className="text-xl font-semibold text-slate-800">
+      <div className="ui-card p-6">
+        <h2 className="text-xl font-semibold text-[var(--color-text)]">
           Gameweek not found
         </h2>
       </div>
@@ -42,19 +42,19 @@ export default async function GameDetailPage({
 
   return (
     <div className="space-y-6">
-      <section className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
-        <p className="text-xs uppercase tracking-wide text-slate-400">Game</p>
-        <h2 className="text-2xl font-semibold text-slate-900">
+      <section className="ui-card p-6">
+        <p className="ui-kicker">Game</p>
+        <h2 className="text-2xl font-semibold text-[var(--color-text)]">
           {formatDate(gameweek.game_date)}
         </h2>
         {gameweek.status === "locked" ? (
-          <p className="mt-2 text-lg font-semibold text-slate-800">
+          <p className="mt-2 text-lg font-semibold text-[var(--color-text)]">
             {hasScore
               ? `Darks ${gameweek.darks_score} - ${gameweek.whites_score} Whites`
               : winnerLabel(winner)}
           </p>
         ) : (
-          <p className="mt-2 text-sm text-slate-500">
+          <p className="mt-2 text-sm text-[var(--color-text-secondary)]">
             Score will appear after the game is locked.
           </p>
         )}

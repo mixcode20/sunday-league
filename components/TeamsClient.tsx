@@ -343,7 +343,7 @@ export default function TeamsClient({ gameweek, entries, onRefresh }: TeamsClien
     const slots = teamSlots[team as "darks" | "whites"];
     const isEditable = isUnlocked && !isLocked;
     return (
-      <div className={`rounded-[1.35rem] border p-4 ${accent}`}>
+      <div className={`rounded-[8px] border p-4 ${accent}`}>
         <div className="flex items-center justify-between">
           <h3
             className={`text-xs font-semibold uppercase tracking-[0.18em] ${
@@ -383,7 +383,7 @@ export default function TeamsClient({ gameweek, entries, onRefresh }: TeamsClien
                   event.preventDefault();
                 }}
                 onDrop={() => handleDrop(team, position, occupiedInfo)}
-                className={`flex min-h-[52px] items-center justify-between rounded-xl border px-3 py-2 text-sm ${
+                className={`flex min-h-[52px] items-center justify-between rounded-[8px] border px-3 py-2 text-sm ${
                   team === "darks"
                     ? "border-white/12 bg-white/8 text-white"
                     : entry
@@ -415,7 +415,7 @@ export default function TeamsClient({ gameweek, entries, onRefresh }: TeamsClien
                   </div>
                 ) : entry ? (
                   <div
-                    className={`w-full rounded-lg px-2 py-2 font-medium ${
+                    className={`w-full rounded-[8px] px-2 py-2 font-medium ${
                       team === "darks"
                         ? "text-white"
                         : "text-[var(--color-text)]"
@@ -740,7 +740,7 @@ export default function TeamsClient({ gameweek, entries, onRefresh }: TeamsClien
         <div className="fixed inset-0 z-40 flex justify-center bg-[rgba(15,30,28,0.34)] px-4 pt-[10vh] backdrop-blur-[2px]">
           <div
             ref={slotMenuRef}
-            className="flex max-h-[88vh] w-full max-w-md flex-col overflow-hidden rounded-[1.5rem] border border-[var(--color-border)] bg-white text-[var(--color-text)] shadow-[0_20px_40px_rgba(15,61,52,0.12)]"
+            className="flex max-h-[88vh] w-full max-w-md flex-col overflow-hidden rounded-[8px] border border-[var(--color-border)] bg-white text-[var(--color-text)] shadow-[0_20px_40px_rgba(15,61,52,0.12)]"
           >
             <div
               className={`flex items-center justify-between border-b border-[rgba(226,232,240,0.82)] px-5 py-4 ${
@@ -795,7 +795,7 @@ export default function TeamsClient({ gameweek, entries, onRefresh }: TeamsClien
             unassignedPlayers.map((entry) => (
               <div
                 key={entry.player_id}
-                className="flex items-center justify-between gap-3 rounded-xl border border-[rgba(229,231,235,0.9)] bg-[rgba(15,61,52,0.03)] px-3 py-2 text-sm"
+                className="flex items-center justify-between gap-3 rounded-[8px] border border-[rgba(229,231,235,0.9)] bg-[rgba(15,61,52,0.03)] px-3 py-2 text-sm"
               >
                 <span className="min-w-0 flex-1 truncate">
                   {formatPlayerName(entry.players)}

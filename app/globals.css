@@ -14,7 +14,16 @@
   --color-success: #16a34a;
   --color-warning: #f59e0b;
   --color-danger: #e5484d;
+  --color-draw: #c2c8c4;
+  --color-rank-gold: #e8b84b;
+  --color-rank-silver: #6b7a8d;
+  --color-rank-bronze: #cd8b4e;
+  --color-surface-highlight: #edf5f2;
   --shadow-subtle: 0 10px 24px rgba(15, 61, 52, 0.04);
+  --radius-sm: 0.5rem;
+  --radius-md: 0.5rem;
+  --radius-lg: 0.5rem;
+  --radius-xl: 0.5rem;
 }
 
 @layer base {
@@ -61,20 +70,20 @@
 
   .ui-card {
     border: 1px solid var(--color-border);
-    border-radius: 1.5rem;
+    border-radius: var(--radius-xl);
     background: var(--color-surface);
     box-shadow: var(--shadow-subtle);
   }
 
   .ui-card-muted {
     border: 1px solid var(--color-border);
-    border-radius: 1.25rem;
+    border-radius: var(--radius-lg);
     background: rgba(255, 255, 255, 0.7);
   }
 
   .ui-empty {
     border: 1px dashed var(--color-border);
-    border-radius: 1.25rem;
+    border-radius: var(--radius-lg);
     background: var(--color-surface);
     color: var(--color-text-secondary);
   }
@@ -86,7 +95,7 @@
   }
 
   .ui-banner {
-    border-radius: 1rem;
+    border-radius: var(--radius-md);
     border: 1px solid var(--color-border);
     padding: 0.75rem 0.875rem;
     font-size: 0.875rem;
@@ -116,7 +125,7 @@
     min-height: 2.75rem;
     align-items: center;
     justify-content: center;
-    border-radius: 0.95rem;
+    border-radius: var(--radius-md);
     padding: 0.7rem 1rem;
     font-size: 0.9375rem;
     font-weight: 600;
@@ -213,7 +222,7 @@
   .ui-input {
     width: 100%;
     border: 1px solid var(--color-border);
-    border-radius: 0.95rem;
+    border-radius: var(--radius-md);
     background: var(--color-surface);
     padding: 0.75rem 0.875rem;
     font-size: 1rem;
@@ -278,7 +287,7 @@
   }
 
   .ui-skeleton {
-    border-radius: 1rem;
+    border-radius: var(--radius-md);
     border: 1px solid var(--color-border);
     background: linear-gradient(90deg, #ffffff 0%, #f1f4f3 50%, #ffffff 100%);
     background-size: 200% 100%;
@@ -288,20 +297,20 @@
   .ui-table-shell {
     overflow: visible;
     border: 1px solid var(--color-border);
-    border-radius: 0.5rem;
+    border-radius: var(--radius-sm);
     background: var(--color-surface);
     box-shadow: var(--shadow-subtle);
   }
 
   .ui-segment {
     border: 1px solid var(--color-border);
-    border-radius: 1rem;
+    border-radius: var(--radius-md);
     background: #fbfcfc;
     padding: 0.25rem;
   }
 
   .ui-segment-option {
-    border-radius: 0.8rem;
+    border-radius: var(--radius-sm);
     padding: 0.65rem 0.85rem;
     font-size: 0.875rem;
     font-weight: 600;
@@ -324,5 +333,15 @@
 
   to {
     background-position: -200% 0;
+  }
+}
+
+@keyframes ui-bar-shimmer {
+  from {
+    transform: translateX(-100%);
+  }
+
+  to {
+    transform: translateX(100%);
   }
 }

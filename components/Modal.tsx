@@ -49,8 +49,8 @@ export default function Modal({
   const maxHClass = panelMaxHeightClassName ?? defaultMaxH;
   const panelClass =
     position === "center"
-      ? `w-full max-w-md overflow-hidden rounded-[1.5rem] border border-[var(--color-border)] bg-white p-5 text-[var(--color-text)] shadow-[0_20px_40px_rgba(15,61,52,0.08)]${maxHClass ? ` ${maxHClass}` : ""}`
-      : `flex w-full max-w-md ${maxHClass} flex-col overflow-hidden rounded-[1.5rem] border border-[var(--color-border)] bg-white p-5 text-[var(--color-text)] shadow-[0_20px_40px_rgba(15,61,52,0.08)]`;
+      ? `w-full max-w-md overflow-hidden rounded-[8px] border border-[var(--color-border)] bg-white p-5 text-[var(--color-text)] shadow-[0_20px_40px_rgba(15,61,52,0.08)]${maxHClass ? ` ${maxHClass}` : ""}`
+      : `flex w-full max-w-md ${maxHClass} flex-col overflow-hidden rounded-[8px] border border-[var(--color-border)] bg-white p-5 text-[var(--color-text)] shadow-[0_20px_40px_rgba(15,61,52,0.08)]`;
   const contentClass =
     contentScrollable
       ? position === "center"

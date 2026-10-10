@@ -184,7 +184,7 @@ export default function CreateGameweek({
       >
         <div className="relative flex h-full min-h-0 flex-col">
           {isSubmitting ? (
-            <div className="absolute inset-0 z-10 flex items-center justify-center rounded-[1rem] bg-white/88 text-center backdrop-blur-[2px]">
+            <div className="absolute inset-0 z-10 flex items-center justify-center rounded-[8px] bg-white/88 text-center backdrop-blur-[2px]">
               <div>
                 <p className="text-sm font-semibold uppercase tracking-[0.16em] text-[var(--color-primary-dark)]">
                   Creating game
@@ -272,14 +272,14 @@ export default function CreateGameweek({
                 </span>
               </div>
               {players.length > 0 ? (
-                <div className="mt-3 max-h-[188px] space-y-2 overflow-y-auto rounded-xl border border-[var(--color-border)] p-2">
+                <div className="mt-3 max-h-[188px] space-y-2 overflow-y-auto rounded-[8px] border border-[var(--color-border)] p-2">
                   {orderedPlayers.map((player) => {
                     const checked = selectedPlayerIds.includes(player.id);
                     const gamesPlayed = player.games_played ?? 0;
                     return (
                       <label
                         key={player.id}
-                        className="flex cursor-pointer items-center justify-between gap-3 rounded-lg px-2 py-2 text-sm text-[var(--color-text)] hover:bg-[rgba(15,61,52,0.04)]"
+                        className="flex cursor-pointer items-center justify-between gap-3 rounded-[8px] px-2 py-2 text-sm text-[var(--color-text)] hover:bg-[rgba(15,61,52,0.04)]"
                       >
                         <span className="flex items-center gap-3">
                           <input

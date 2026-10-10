@@ -212,14 +212,14 @@ export default function LeagueTableClient({ rows }: { rows: LeagueStatRow[] }) {
           </colgroup>
           <thead className="text-[11px] uppercase tracking-[0.14em] text-white">
             <tr>
-              <th className="sticky top-[69px] z-10 rounded-tl-lg bg-[var(--color-primary-dark)] px-2 py-[0.85rem] text-center" />
+              <th className="sticky top-[69px] z-10 rounded-tl-[8px] bg-[var(--color-primary-dark)] px-2 py-[0.85rem] text-center" />
               <th className="sticky top-[69px] z-10 bg-[var(--color-primary-dark)] px-3 py-[0.85rem]">
                 Player
               </th>
               {columns.map(([key, label]) => (
                 <th
                   key={key}
-                  className="relative sticky top-[69px] z-10 cursor-pointer bg-[var(--color-primary-dark)] px-2 py-[0.85rem] text-center align-middle last:rounded-tr-lg"
+                  className="relative sticky top-[69px] z-10 cursor-pointer bg-[var(--color-primary-dark)] px-2 py-[0.85rem] text-center align-middle last:rounded-tr-[8px]"
                   onClick={() => toggleSort(key)}
                 >
                   <div className="flex items-center justify-center leading-tight">
@@ -241,7 +241,7 @@ export default function LeagueTableClient({ rows }: { rows: LeagueStatRow[] }) {
                 return (
                   <Fragment key={row.id}>
                     <tr
-                      className={`cursor-pointer border-t ${isExpanded ? "border-[rgba(15,61,52,0.25)] bg-[#edf5f2]" : "border-[rgba(229,231,235,0.9)] bg-[var(--off-white-green)] hover:bg-[#edf5f2]"}`}
+                      className={`cursor-pointer border-t ${isExpanded ? "border-[rgba(15,61,52,0.25)] bg-[var(--color-surface-highlight)]" : "border-[rgba(229,231,235,0.9)] bg-[var(--off-white-green)] hover:bg-[var(--color-surface-highlight)]"}`}
                       onClick={() => setExpandedPlayerId(isExpanded ? null : row.id)}
                     >
                       <td className="px-2 py-2.5 align-middle text-center text-[10px] font-medium text-[var(--color-text-secondary)] opacity-50">
@@ -279,12 +279,12 @@ export default function LeagueTableClient({ rows }: { rows: LeagueStatRow[] }) {
                       <td className="px-2 py-2.5 align-middle text-center text-[var(--color-text-secondary)]">
                         {row.ppg.toFixed(2)}
                       </td>
-                      <td className={`px-2 py-2.5 align-middle text-center font-medium ${row.goalDifference > 0 ? "text-[#2f9e6a]" : row.goalDifference < 0 ? "text-[#d6533f]" : "text-[var(--color-text-secondary)]"}`}>
+                      <td className={`px-2 py-2.5 align-middle text-center font-medium ${row.goalDifference > 0 ? "text-[var(--color-success)]" : row.goalDifference < 0 ? "text-[var(--color-danger)]" : "text-[var(--color-text-secondary)]"}`}>
                         {row.goalDifference}
                       </td>
                     </tr>
                     {isExpanded && (
-                      <tr className="bg-[#edf5f2]">
+                      <tr className="bg-[var(--color-surface-highlight)]">
                         <td colSpan={8} className="border-b border-[rgba(15,61,52,0.25)] px-3 py-3">
                           <PlayerDrawer
                             playerId={row.id}
@@ -332,14 +332,14 @@ export default function LeagueTableClient({ rows }: { rows: LeagueStatRow[] }) {
               </colgroup>
               <thead className="text-[11px] uppercase tracking-[0.14em] text-white">
                 <tr>
-                  <th className="rounded-tl-lg bg-[var(--color-primary-dark)] px-2 py-[0.85rem] text-center" />
+                  <th className="rounded-tl-[8px] bg-[var(--color-primary-dark)] px-2 py-[0.85rem] text-center" />
                   <th className="bg-[var(--color-primary-dark)] px-3 py-[0.85rem]">
                     Player
                   </th>
                   {columns.map(([key, label]) => (
                     <th
                       key={key}
-                      className="bg-[var(--color-primary-dark)] px-2 py-[0.85rem] text-center align-middle last:rounded-tr-lg"
+                      className="bg-[var(--color-primary-dark)] px-2 py-[0.85rem] text-center align-middle last:rounded-tr-[8px]"
                     >
                       {label}
                     </th>
@@ -384,7 +384,7 @@ export default function LeagueTableClient({ rows }: { rows: LeagueStatRow[] }) {
                     <td className="px-2 py-2.5 align-middle text-center text-[var(--color-text-secondary)]">
                       {row.ppg.toFixed(2)}
                     </td>
-                    <td className={`px-2 py-2.5 align-middle text-center font-medium ${row.goalDifference > 0 ? "text-[#2f9e6a]" : row.goalDifference < 0 ? "text-[#d6533f]" : "text-[var(--color-text-secondary)]"}`}>
+                    <td className={`px-2 py-2.5 align-middle text-center font-medium ${row.goalDifference > 0 ? "text-[var(--color-success)]" : row.goalDifference < 0 ? "text-[var(--color-danger)]" : "text-[var(--color-text-secondary)]"}`}>
                       {row.goalDifference}
                     </td>
                   </tr>

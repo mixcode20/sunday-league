@@ -14,6 +14,7 @@ type ResultsOverviewResponse = {
   entries: GameweekPlayer[];
   olderId: string | null;
   newerId: string | null;
+  votingClosed: boolean;
 };
 
 function ChevronIcon({ direction }: { direction: "left" | "right" }) {
@@ -143,7 +144,7 @@ export default function ResultsPageClient() {
     );
   }
 
-  const { currentGameweek, entries, olderId, newerId } = data;
+  const { currentGameweek, entries, olderId, newerId, votingClosed } = data;
   const normalized = entries ?? [];
   const summary = buildSummary(currentGameweek);
 
@@ -182,7 +183,7 @@ export default function ResultsPageClient() {
         </Link>
       </div>
 
-      <div className="mt-6 border-t border-[rgba(31,122,99,0.1)] bg-[rgba(31,122,99,0.05)] px-4 pb-6 pt-5 sm:px-6">
+      <div className="mt-6 border-t border-[rgba(31,122,99,0.1)] bg-[var(--color-surface)] px-4 pb-6 pt-5 sm:px-6">
         <div className="grid grid-cols-[1fr_auto_1fr] items-start gap-2 sm:gap-5">
           <div className="relative pb-6 text-left">
             <div className="text-3xl font-semibold tracking-[-0.04em] text-[var(--color-primary-dark)] sm:text-5xl">
@@ -210,9 +211,23 @@ export default function ResultsPageClient() {
             </span>
           </div>
         </div>
+
+        {votingClosed ? null : (
+          <Link
+            href={`/vote/${currentGameweek.id}`}
+            prefetch
+            className="mt-2 flex items-center justify-center gap-1.5 text-[0.7rem] font-bold uppercase tracking-[0.08em] text-[var(--color-success)] transition hover:opacity-75"
+          >
+            <span className="relative flex h-1.5 w-1.5">
+              <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-[var(--color-success)] opacity-75 motion-reduce:animate-none" />
+              <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-[var(--color-success)]" />
+            </span>
+            POTM voting <span className="underline decoration-2 underline-offset-2">open</span>
+          </Link>
+        )}
       </div>
 
-      <div className="bg-[rgba(31,122,99,0.05)] px-4 pb-5 pt-[10px] sm:px-6 sm:pb-6 sm:pt-[14px]">
+      <div className="bg-[rgba(31,122,99,0.05)] pb-5 pt-[10px] sm:pb-6 sm:pt-[14px]">
         <TeamsReadOnly entries={normalized} winner={summary.winner} showCounts={false} />
       </div>
     </section>

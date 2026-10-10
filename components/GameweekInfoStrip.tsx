@@ -13,6 +13,7 @@ import { buildEntryPositionMap, getSlotCounts } from "@/lib/slots";
 import { useOrganiserMode } from "@/components/OrganiserModeProvider";
 import Modal from "@/components/Modal";
 import ShareGameButton from "@/components/ShareGameButton";
+import CollectPotmVotesButton from "@/components/CollectPotmVotesButton";
 import type { Gameweek, GameweekPlayer, Player } from "@/lib/types";
 
 type GameweekInfoStripProps = {
@@ -311,6 +312,16 @@ export default function GameweekInfoStrip({
                     {resultLabel}
                   </span>
                 </div>
+              </div>
+            ) : null}
+
+            {gameweekId && gameweek?.status === "locked" ? (
+              <div className="mt-4">
+                <CollectPotmVotesButton
+                  gameweekId={gameweekId}
+                  gameDate={gameDate}
+                  status={gameweek.status}
+                />
               </div>
             ) : null}
 
