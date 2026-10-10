@@ -14,7 +14,6 @@ import {
   getPotmVoteStorageKey,
   mergePotmVoteMaps,
   parsePotmVoteCookie,
-  removePotmVoteRecord,
   serializePotmVoteCookie,
   setPotmVoteRecord,
   type PotmVoteMap,
@@ -292,10 +291,6 @@ const persistVoteRecord = (gameweekId: string, record: PotmVoteRecord) => {
   writeVoteMap(setPotmVoteRecord(readVoteMap(), gameweekId, record));
 };
 
-const clearVoteRecord = (gameweekId: string) => {
-  writeVoteMap(removePotmVoteRecord(readVoteMap(), gameweekId));
-};
-
 export default function PotmVoteFlow({
   gameweekId,
   gameDate,
@@ -414,32 +409,6 @@ export default function PotmVoteFlow({
     } finally {
       setSubmitting(false);
     }
-  };
-
-  const handleRetake = async () => {
-    const currentVoterId = voteRecord?.voterPlayerId;
-    if (!currentVoterId) return;
-    setSubmitting(true);
-    try {
-      await fetch(`/api/gameweeks/${gameweekId}/potm`, {
-        method: "DELETE",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ voterPlayerId: currentVoterId }),
-      });
-    } catch {
-      // Ignore network errors here — resetting local state below still lets the
-      // flow be re-run; a stale server-side vote will just 409 if re-selected.
-    } finally {
-      setSubmitting(false);
-    }
-    clearVoteRecord(gameweekId);
-    setVoteRecord(null);
-    setLocalResult(null);
-    setVoterId(null);
-    setVotedId(null);
-    setConfirmOpen(false);
-    setError("");
-    setPhase("voter");
   };
 
   if (hasVoted || spectating) {
@@ -568,17 +537,6 @@ export default function PotmVoteFlow({
             <ChevronRightIcon />
           </Link>
         </div>
-
-        {hasVoted ? (
-          <button
-            type="button"
-            onClick={() => void handleRetake()}
-            disabled={submitting}
-            className="mt-4 inline-flex w-full items-center justify-center text-xs font-medium text-[var(--color-text-secondary)] underline decoration-dotted underline-offset-2"
-          >
-            Retake vote (testing only)
-          </button>
-        ) : null}
       </div>
     );
   }
@@ -637,7 +595,7 @@ export default function PotmVoteFlow({
         <button
           type="button"
           onClick={() => setSpectating(true)}
-          className="ui-btn ui-btn-secondary mt-3 w-full"
+          className="ui-btn mt-3 w-full border border-[var(--color-border)] bg-[var(--off-white-green)] text-[var(--color-text)]"
         >
           I didn&apos;t play
         </button>

@@ -230,30 +230,3 @@ export async function POST(
     totalVotes,
   });
 }
-
-// Testing-only: lets a voter clear their own vote so the flow can be re-run.
-export async function DELETE(
-  request: NextRequest,
-  context: { params: Promise<{ gameweekId: string }> }
-) {
-  const { gameweekId } = await context.params;
-  const payload = await request.json();
-  const voterPlayerId = String(payload?.voterPlayerId ?? "").trim();
-
-  if (!voterPlayerId) {
-    return NextResponse.json({ error: "voterPlayerId is required." }, { status: 400 });
-  }
-
-  const supabase = supabaseServer();
-  const { error } = await supabase
-    .from("potm_votes")
-    .delete()
-    .eq("gameweek_id", gameweekId)
-    .eq("voter_player_id", voterPlayerId);
-
-  if (error) {
-    return NextResponse.json({ error: "Failed to reset vote." }, { status: 500 });
-  }
-
-  return NextResponse.json({ ok: true });
-}
