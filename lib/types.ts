@@ -92,6 +92,18 @@ export type PotmTallyEntry = {
   whitesVotes: number;
 };
 
+export type PotmVoterAuditEntry = {
+  voterId: string;
+  voterName: string;
+  voterTeam: "darks" | "whites";
+  votedPlayerId: string | null;
+  votedPlayerName: string | null;
+};
+
+export type PotmVoterAudit = {
+  voters: PotmVoterAuditEntry[];
+};
+
 export type PotmOverview = {
   eligiblePlayers: PotmEligiblePlayer[];
   votedVoterIds: string[];
