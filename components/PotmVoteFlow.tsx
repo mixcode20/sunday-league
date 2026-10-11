@@ -20,6 +20,7 @@ import {
   type PotmVoteRecord,
 } from "@/lib/potmVoteCookie";
 import { useOrganiserMode } from "@/components/OrganiserModeProvider";
+import WhatsAppIcon from "@/components/WhatsAppIcon";
 import type { PotmOverview, PotmVoterAuditEntry } from "@/lib/types";
 
 type PotmVoteFlowProps = {
@@ -284,7 +285,13 @@ function TeamChip({ team }: { team: "darks" | "whites" }) {
   );
 }
 
-function AdminVoterAudit({ gameweekId }: { gameweekId: string }) {
+function AdminVoterAudit({
+  gameweekId,
+  gameweekLabel,
+}: {
+  gameweekId: string;
+  gameweekLabel: string;
+}) {
   const { isUnlocked, organiserPin } = useOrganiserMode();
   const { data, error } = useSWR<{ voters: PotmVoterAuditEntry[] }>(
     isUnlocked && organiserPin ? [`/api/gameweeks/${gameweekId}/potm/voters`, organiserPin] : null,
@@ -305,6 +312,34 @@ function AdminVoterAudit({ gameweekId }: { gameweekId: string }) {
   const voters = data?.voters ?? [];
   const voted = voters.filter((voter) => voter.votedPlayerId);
   const notVoted = voters.filter((voter) => !voter.votedPlayerId);
+
+  const remindNonVoters = async () => {
+    if (notVoted.length === 0 || typeof window === "undefined") return;
+    const voteUrl = `${window.location.origin}/vote/${gameweekId}`;
+    const text = [
+      `Still waiting on ${notVoted.length} Player of the Match vote${
+        notVoted.length === 1 ? "" : "s"
+      } — ${gameweekLabel}`,
+      "",
+      ...notVoted.map((voter) => `• ${voter.voterName}`),
+      "",
+      `Vote here: ${voteUrl}`,
+    ].join("\n");
+
+    try {
+      const whatsappUrl = `https://wa.me/?text=${encodeURIComponent(text)}`;
+      const popup = window.open(whatsappUrl, "_blank", "noopener,noreferrer");
+      if (popup) return;
+    } catch {
+      // Fall back to copying the reminder text below.
+    }
+
+    try {
+      await navigator.clipboard.writeText(text);
+    } catch {
+      // Ignore failures here; the reminder button should not surface a warning state.
+    }
+  };
 
   return (
     <section className="mt-8">
@@ -363,6 +398,17 @@ function AdminVoterAudit({ gameweekId }: { gameweekId: string }) {
           )}
         </div>
       )}
+
+      {data && notVoted.length > 0 ? (
+        <button
+          type="button"
+          onClick={() => void remindNonVoters()}
+          className="ui-btn ui-btn-secondary mt-2 inline-flex w-full items-center justify-center gap-2"
+        >
+          <WhatsAppIcon />
+          Remind {notVoted.length} non-voter{notVoted.length === 1 ? "" : "s"}
+        </button>
+      ) : null}
     </section>
   );
 }
@@ -663,7 +709,7 @@ export default function PotmVoteFlow({
           </Link>
         </div>
 
-        <AdminVoterAudit gameweekId={gameweekId} />
+        <AdminVoterAudit gameweekId={gameweekId} gameweekLabel={gameweekLabel} />
       </div>
     );
   }
