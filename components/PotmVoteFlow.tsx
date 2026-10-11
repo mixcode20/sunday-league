@@ -19,7 +19,8 @@ import {
   type PotmVoteMap,
   type PotmVoteRecord,
 } from "@/lib/potmVoteCookie";
-import type { PotmOverview } from "@/lib/types";
+import { useOrganiserMode } from "@/components/OrganiserModeProvider";
+import type { PotmOverview, PotmVoterAuditEntry } from "@/lib/types";
 
 type PotmVoteFlowProps = {
   gameweekId: string;
@@ -269,6 +270,129 @@ function TeamVotePicker({
   );
 }
 
+function TeamChip({ team }: { team: "darks" | "whites" }) {
+  return (
+    <span
+      className={`inline-flex h-5 shrink-0 items-center rounded-full px-2 text-[0.65rem] font-bold uppercase tracking-[0.04em] ${
+        team === "darks"
+          ? "bg-[var(--color-primary-dark)] text-white"
+          : "border border-[var(--color-border)] bg-white text-[var(--color-text)]"
+      }`}
+    >
+      {team === "darks" ? "D" : "W"}
+    </span>
+  );
+}
+
+function AdminVoterAudit({ gameweekId }: { gameweekId: string }) {
+  const { isUnlocked, organiserPin } = useOrganiserMode();
+  const { data, error } = useSWR<{ voters: PotmVoterAuditEntry[] }>(
+    isUnlocked && organiserPin ? [`/api/gameweeks/${gameweekId}/potm/voters`, organiserPin] : null,
+    ([url, pin]: [string, string]) =>
+      fetch(url, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ pin }),
+      }).then(async (response) => {
+        const body = await response.json();
+        if (!response.ok) throw new Error(body?.error ?? "Failed to load voters.");
+        return body;
+      })
+  );
+
+  if (!isUnlocked) return null;
+
+  const voters = data?.voters ?? [];
+  const voted = voters.filter((voter) => voter.votedPlayerId);
+  const notVoted = voters.filter((voter) => !voter.votedPlayerId);
+
+  return (
+    <section className="mt-8">
+      <div className="flex items-center justify-between">
+        <p className="ui-kicker">Organiser · vote tracker</p>
+        {data ? (
+          <span className="text-xs text-[var(--color-text-secondary)]">
+            {voted.length}/{voters.length} voted
+          </span>
+        ) : null}
+      </div>
+
+      {error ? (
+        <p className="ui-banner ui-banner-danger mt-2">{(error as Error).message}</p>
+      ) : !data ? (
+        <div className="ui-skeleton mt-2 h-40" />
+      ) : (
+        <div className="mt-2 overflow-hidden rounded-[8px] border border-[var(--color-border)] bg-white">
+          <AuditGroupHeading label="Voted" count={voted.length} />
+          {voted.length === 0 ? (
+            <AuditEmptyRow text="Nobody has voted yet." />
+          ) : (
+            <ul>
+              {voted.map((voter) => (
+                <li key={voter.voterId} className="flex items-center gap-2.5 border-b border-[var(--color-border)] px-3.5 py-2.5 last:border-b-0">
+                  <TeamChip team={voter.voterTeam} />
+                  <span className="min-w-0 flex-1 truncate text-sm font-semibold text-[var(--color-text)]">
+                    {voter.voterName}
+                  </span>
+                  <ChevronRightIcon />
+                  <span className="min-w-0 max-w-[45%] truncate text-sm font-semibold text-[var(--color-primary-dark)]">
+                    {voter.votedPlayerName}
+                  </span>
+                </li>
+              ))}
+            </ul>
+          )}
+
+          <AuditGroupHeading label="Not voted" count={notVoted.length} withTopBorder />
+          {notVoted.length === 0 ? (
+            <AuditEmptyRow text="Everyone has voted." />
+          ) : (
+            <ul>
+              {notVoted.map((voter) => (
+                <li key={voter.voterId} className="flex items-center gap-2.5 border-b border-[var(--color-border)] px-3.5 py-2.5 last:border-b-0">
+                  <TeamChip team={voter.voterTeam} />
+                  <span className="min-w-0 flex-1 truncate text-sm font-semibold text-[var(--color-text)]">
+                    {voter.voterName}
+                  </span>
+                  <span className="shrink-0 text-xs text-[var(--color-text-secondary)]">
+                    Awaiting vote
+                  </span>
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+      )}
+    </section>
+  );
+}
+
+function AuditGroupHeading({
+  label,
+  count,
+  withTopBorder,
+}: {
+  label: string;
+  count: number;
+  withTopBorder?: boolean;
+}) {
+  return (
+    <p
+      className={`${
+        withTopBorder ? "border-y" : "border-b"
+      } border-[var(--color-border)] bg-[var(--off-white-green)] px-3.5 py-2 text-[0.7rem] font-bold uppercase tracking-[0.08em] text-[var(--color-text-secondary)]`}
+    >
+      {label} ({count})
+    </p>
+  );
+}
+
+function AuditEmptyRow({ text }: { text: string }) {
+  return (
+    <p className="px-3.5 py-3 text-sm italic text-[var(--color-text-secondary)]">{text}</p>
+  );
+}
+
 const readVoteMap = (): PotmVoteMap => {
   if (typeof document === "undefined") return {};
   const rawCookie = document.cookie
@@ -317,13 +441,13 @@ export default function PotmVoteFlow({
     setVoteRecord(getPotmVoteRecord(readVoteMap(), gameweekId));
   }, [gameweekId]);
 
-  const voterParam = voteRecord
-    ? `?voterPlayerId=${voteRecord.voterPlayerId}`
-    : spectating
-      ? "?spectate=true"
-      : "";
-  const { data, isLoading } = useSWR<PotmOverview>(
-    `/api/gameweeks/${gameweekId}/potm${voterParam}`,
+  const query = new URLSearchParams();
+  if (voteRecord) query.set("voterPlayerId", voteRecord.voterPlayerId);
+  else if (spectating) query.set("spectate", "true");
+  const queryString = query.toString();
+
+  const { data, isLoading, mutate } = useSWR<PotmOverview>(
+    `/api/gameweeks/${gameweekId}/potm${queryString ? `?${queryString}` : ""}`,
     fetcher
   );
 
@@ -404,6 +528,7 @@ export default function PotmVoteFlow({
         tally: body.tally,
         totalVotes: body.totalVotes,
       });
+      void mutate();
     } catch {
       setError("Network error. Try again.");
     } finally {
@@ -537,6 +662,8 @@ export default function PotmVoteFlow({
             <ChevronRightIcon />
           </Link>
         </div>
+
+        <AdminVoterAudit gameweekId={gameweekId} />
       </div>
     );
   }
