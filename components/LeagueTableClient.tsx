@@ -7,34 +7,15 @@ import PlayerDrawer from "@/components/PlayerDrawer";
 import { useOrganiserMode } from "@/components/OrganiserModeProvider";
 import type { LeagueSortDirection, LeagueStatRow } from "@/lib/types";
 
-type SortKey =
-  | "gp"
-  | "ppg"
-  | "winPct"
-  | "gfPerGame"
-  | "gaPerGame"
-  | "goalDifference";
+type SortKey = "gp" | "w" | "l" | "winPct" | "goalDifference";
 
 const columns: [SortKey, string][] = [
   ["gp", "GP"],
+  ["w", "W"],
+  ["l", "L"],
   ["winPct", "W%"],
-  ["ppg", "PPG"],
-  ["gfPerGame", "GF/G"],
-  ["gaPerGame", "GA/G"],
   ["goalDifference", "GD"],
 ];
-
-const gfPerGame = (r: { goalsFor: number; gamesWithScore: number }) =>
-  r.gamesWithScore > 0 ? r.goalsFor / r.gamesWithScore : 0;
-const gaPerGame = (r: { goalsAgainst: number; gamesWithScore: number }) =>
-  r.gamesWithScore > 0 ? r.goalsAgainst / r.gamesWithScore : 0;
-const fmt = (n: number, decimals: number) => parseFloat(n.toFixed(decimals)).toString();
-
-const rankPinColor: Record<number, string> = {
-  1: "#d4a017",
-  2: "#9ca3af",
-  3: "#cd7c3b",
-};
 
 const compareByName = (a: LeagueStatRow, b: LeagueStatRow) =>
   a.name.localeCompare(b.name, undefined, { sensitivity: "base" });
@@ -121,18 +102,6 @@ export default function LeagueTableClient({ rows }: { rows: LeagueStatRow[] }) {
         const gpDiff = a.gp - b.gp;
         if (gpDiff !== 0) return gpDiff;
 
-        return compareByName(a, b);
-      }
-
-      if (sortKey === "gfPerGame") {
-        const diff = compareNumeric(gfPerGame(a), gfPerGame(b), direction);
-        if (diff !== 0) return diff;
-        return compareByName(a, b);
-      }
-
-      if (sortKey === "gaPerGame") {
-        const diff = compareNumeric(gaPerGame(a), gaPerGame(b), direction);
-        if (diff !== 0) return diff;
         return compareByName(a, b);
       }
 
@@ -224,13 +193,12 @@ export default function LeagueTableClient({ rows }: { rows: LeagueStatRow[] }) {
       <div className="ui-table-shell">
         <table className="w-full table-fixed text-left text-xs">
           <colgroup>
-            <col style={{ width: "5%" }} />
-            <col style={{ width: "32%" }} />
-            <col style={{ width: "8%" }} />
-            <col style={{ width: "10%" }} />
-            <col style={{ width: "10%" }} />
+            <col style={{ width: "6%" }} />
+            <col style={{ width: "34%" }} />
             <col style={{ width: "11%" }} />
             <col style={{ width: "11%" }} />
+            <col style={{ width: "11%" }} />
+            <col style={{ width: "14%" }} />
             <col style={{ width: "13%" }} />
           </colgroup>
           <thead className="text-[11px] uppercase tracking-[0.14em] text-white">
@@ -294,31 +262,10 @@ export default function LeagueTableClient({ rows }: { rows: LeagueStatRow[] }) {
                         </div>
                       </td>
                       <td className="px-2 py-2.5 align-middle text-center text-[var(--color-text-secondary)]">{row.gp}</td>
+                      <td className="px-2 py-2.5 align-middle text-center text-[var(--color-text-secondary)]">{row.w}</td>
+                      <td className="px-2 py-2.5 align-middle text-center text-[var(--color-text-secondary)]">{row.l}</td>
                       <td className="px-2 py-2.5 align-middle text-center text-[var(--color-text-secondary)]">
                         {row.winPct.toFixed(0)}%
-                      </td>
-                      <td className="px-2 py-2.5 align-middle text-center text-[var(--color-text-secondary)]">
-                        {fmt(row.ppg, 2)}
-                      </td>
-                      <td className="px-2 py-2.5 align-middle text-center text-[var(--color-text-secondary)]">
-                        {row.gamesWithScore > 0 ? (
-                          (avgGoalsRankMap.get(row.id) ?? 99) <= 3 ? (
-                            <span className="flex flex-col items-center gap-[2px]">
-                              <span>{fmt(gfPerGame(row), 1)}</span>
-                              <span className="block h-[2px] w-4/5" style={{ backgroundColor: rankPinColor[avgGoalsRankMap.get(row.id)!] }} />
-                            </span>
-                          ) : fmt(gfPerGame(row), 1)
-                        ) : "—"}
-                      </td>
-                      <td className="px-2 py-2.5 align-middle text-center text-[var(--color-text-secondary)]">
-                        {row.gamesWithScore > 0 ? (
-                          (avgConcededRankMap.get(row.id) ?? 99) <= 3 ? (
-                            <span className="flex flex-col items-center gap-[2px]">
-                              <span>{fmt(gaPerGame(row), 1)}</span>
-                              <span className="block h-[2px] w-4/5" style={{ backgroundColor: rankPinColor[avgConcededRankMap.get(row.id)!] }} />
-                            </span>
-                          ) : fmt(gaPerGame(row), 1)
-                        ) : "—"}
                       </td>
                       <td className={`px-2 py-2.5 align-middle text-center font-medium ${row.goalDifference > 0 ? "text-[var(--color-success)]" : row.goalDifference < 0 ? "text-[var(--color-danger)]" : "text-[var(--color-text-secondary)]"}`}>
                         {row.goalDifference}
@@ -326,7 +273,7 @@ export default function LeagueTableClient({ rows }: { rows: LeagueStatRow[] }) {
                     </tr>
                     {isExpanded && (
                       <tr className="bg-[var(--color-surface-highlight)]">
-                        <td colSpan={8} className="border-b border-[rgba(15,61,52,0.25)] px-3 py-3">
+                        <td colSpan={7} className="border-b border-[rgba(15,61,52,0.25)] px-3 py-3">
                           <PlayerDrawer
                             playerId={row.id}
                             goalsForRank={goalsForRankMap.get(row.id)}
@@ -343,7 +290,7 @@ export default function LeagueTableClient({ rows }: { rows: LeagueStatRow[] }) {
               })
             ) : (
               <tr className="bg-[var(--off-white-green)]">
-                <td colSpan={8} className="px-4 py-6 text-center text-[var(--color-text-secondary)]">
+                <td colSpan={7} className="px-4 py-6 text-center text-[var(--color-text-secondary)]">
                   No locked results yet.
                 </td>
               </tr>
@@ -362,13 +309,12 @@ export default function LeagueTableClient({ rows }: { rows: LeagueStatRow[] }) {
           <div className="ui-table-shell opacity-80">
             <table className="w-full table-fixed text-left text-xs">
               <colgroup>
-                <col style={{ width: "5%" }} />
-                <col style={{ width: "32%" }} />
-                <col style={{ width: "8%" }} />
-                <col style={{ width: "8%" }} />
-                <col style={{ width: "8%" }} />
-                <col style={{ width: "13%" }} />
-                <col style={{ width: "13%" }} />
+                <col style={{ width: "6%" }} />
+                <col style={{ width: "34%" }} />
+                <col style={{ width: "11%" }} />
+                <col style={{ width: "11%" }} />
+                <col style={{ width: "11%" }} />
+                <col style={{ width: "14%" }} />
                 <col style={{ width: "13%" }} />
               </colgroup>
               <thead className="text-[11px] uppercase tracking-[0.14em] text-white">
@@ -417,17 +363,10 @@ export default function LeagueTableClient({ rows }: { rows: LeagueStatRow[] }) {
                       </div>
                     </td>
                     <td className="px-2 py-2.5 align-middle text-center text-[var(--color-text-secondary)]">{row.gp}</td>
+                    <td className="px-2 py-2.5 align-middle text-center text-[var(--color-text-secondary)]">{row.w}</td>
+                    <td className="px-2 py-2.5 align-middle text-center text-[var(--color-text-secondary)]">{row.l}</td>
                     <td className="px-2 py-2.5 align-middle text-center text-[var(--color-text-secondary)]">
                       {row.winPct.toFixed(0)}%
-                    </td>
-                    <td className="px-2 py-2.5 align-middle text-center text-[var(--color-text-secondary)]">
-                      {fmt(row.ppg, 2)}
-                    </td>
-                    <td className="px-2 py-2.5 align-middle text-center text-[var(--color-text-secondary)]">
-                      {row.gamesWithScore > 0 ? fmt(gfPerGame(row), 1) : "—"}
-                    </td>
-                    <td className="px-2 py-2.5 align-middle text-center text-[var(--color-text-secondary)]">
-                      {row.gamesWithScore > 0 ? fmt(gaPerGame(row), 1) : "—"}
                     </td>
                     <td className={`px-2 py-2.5 align-middle text-center font-medium ${row.goalDifference > 0 ? "text-[var(--color-success)]" : row.goalDifference < 0 ? "text-[var(--color-danger)]" : "text-[var(--color-text-secondary)]"}`}>
                       {row.goalDifference}

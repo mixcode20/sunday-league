@@ -54,12 +54,19 @@ export async function GET() {
     };
   });
 
+  const teamRecord = { darksWins: 0, whitesWins: 0, draws: 0, games: 0 };
   const gameweekResultMap = new Map<string, "darks" | "whites" | "draw">();
   const gameweekMap = new Map<string, (typeof gameweeks)[number]>();
   gameweeks.forEach((gameweek) => {
     gameweekMap.set(gameweek.id, gameweek);
     const winner = getGameweekWinner(gameweek);
-    if (winner) gameweekResultMap.set(gameweek.id, winner);
+    if (winner) {
+      gameweekResultMap.set(gameweek.id, winner);
+      teamRecord.games += 1;
+      if (winner === "darks") teamRecord.darksWins += 1;
+      else if (winner === "whites") teamRecord.whitesWins += 1;
+      else teamRecord.draws += 1;
+    }
   });
 
   (entries ?? []).forEach((entry) => {
@@ -103,5 +110,6 @@ export async function GET() {
   return NextResponse.json({
     rows,
     playersCount: players.length,
+    teamRecord,
   });
 }

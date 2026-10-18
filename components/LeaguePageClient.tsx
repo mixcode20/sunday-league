@@ -4,12 +4,14 @@ import { useEffect, useRef } from "react";
 import Link from "next/link";
 import useSWR from "swr";
 import LeagueTableClient from "@/components/LeagueTableClient";
-import type { LeagueStatRow } from "@/lib/types";
+import TeamSplitBar from "@/components/TeamSplitBar";
+import type { LeagueStatRow, LeagueTeamRecord } from "@/lib/types";
 import { fetcher, debugPerfEnabled } from "@/lib/swr";
 
 type LeagueOverviewResponse = {
   rows: LeagueStatRow[];
   playersCount: number;
+  teamRecord: LeagueTeamRecord;
 };
 
 export default function LeaguePageClient() {
@@ -47,6 +49,7 @@ export default function LeaguePageClient() {
   if (!data) {
     return (
       <div className="space-y-4">
+        <div className="ui-skeleton h-12" />
         <div className="ui-skeleton h-8 w-32" />
         <div className="ui-skeleton h-64" />
       </div>
@@ -55,6 +58,7 @@ export default function LeaguePageClient() {
 
   return (
     <div className="space-y-4">
+      {data.teamRecord ? <TeamSplitBar record={data.teamRecord} /> : null}
       <LeagueTableClient rows={data.rows} />
       {data.playersCount === 0 ? (
         <p className="text-sm text-[var(--color-text-secondary)]">

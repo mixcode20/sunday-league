@@ -54,6 +54,13 @@ export type LeagueStatRow = {
   goalDifference: number;
 };
 
+export type LeagueTeamRecord = {
+  darksWins: number;
+  whitesWins: number;
+  draws: number;
+  games: number;
+};
+
 export type PlayerFormEntry = {
   result: "w" | "l" | "d";
   team: "darks" | "whites";
