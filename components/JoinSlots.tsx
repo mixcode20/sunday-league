@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import type { GameweekPlayer, Player } from "@/lib/types";
 import Modal from "@/components/Modal";
 import { useOrganiserMode } from "@/components/OrganiserModeProvider";
-import { buildEntryPositionMap, getSubSlotPositions, MAIN_SLOT_CAPACITY } from "@/lib/slots";
+import { buildEntryPositionMap, capacityForFormat, getSubSlotPositions } from "@/lib/slots";
 import { debugPerfEnabled } from "@/lib/swr";
 import {
   getSelfRemovalJoinedAt,
@@ -28,9 +28,9 @@ type JoinSlotsProps = {
   gameDate?: string | null;
   players: Player[];
   entries: GameweekPlayer[];
+  format?: string | null;
 };
 
-const MAIN_CAPACITY = MAIN_SLOT_CAPACITY;
 const UNDO_WINDOW_MS = 5 * 60 * 1000;
 
 export default function JoinSlots({
@@ -39,7 +39,9 @@ export default function JoinSlots({
   gameDate,
   players,
   entries,
+  format,
 }: JoinSlotsProps) {
+  const MAIN_CAPACITY = capacityForFormat(format);
   const router = useRouter();
   const { isUnlocked, organiserPin } = useOrganiserMode();
   const [message, setMessage] = useState("");
@@ -257,10 +259,10 @@ export default function JoinSlots({
       { length: MAIN_CAPACITY },
       (_, index) => mergedPositionMap[index + 1] ?? null
     );
-    const subPositions = getSubSlotPositions(mergedPositionMap);
+    const subPositions = getSubSlotPositions(mergedPositionMap, MAIN_CAPACITY);
     const subsSlots = subPositions.map((position) => mergedPositionMap[position] ?? null);
     return { mainSlots, subsSlots, subPositions };
-  }, [mergedPositionMap]);
+  }, [mergedPositionMap, MAIN_CAPACITY]);
   const isSlotPending = (position: number) => Boolean(pendingPositions[position]);
 
   const getNextAvailableMainSlot = (assumeEmptyPosition?: number) => {
@@ -303,7 +305,7 @@ export default function JoinSlots({
     const subIndex = slotEntries.subPositions.indexOf(openSlot);
     const subNumber = subIndex >= 0 ? subIndex + 1 : openSlot - MAIN_CAPACITY;
     return `Sub #${subNumber}`;
-  }, [openSlot, slotEntries.subPositions]);
+  }, [openSlot, slotEntries.subPositions, MAIN_CAPACITY]);
 
   const refreshEntries = async () => {
     if (!gameweekId) return;

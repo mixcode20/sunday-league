@@ -9,7 +9,7 @@ import {
   getGameweekWinner,
   hasGameweekStarted,
 } from "@/lib/utils";
-import { buildEntryPositionMap, getSlotCounts } from "@/lib/slots";
+import { buildEntryPositionMap, capacityForFormat, getSlotCounts } from "@/lib/slots";
 import { useOrganiserMode } from "@/components/OrganiserModeProvider";
 import Modal from "@/components/Modal";
 import ShareGameButton from "@/components/ShareGameButton";
@@ -86,6 +86,8 @@ export default function GameweekInfoStrip({
     countsSourceRef.current = countsSource;
   }, [countsSource]);
 
+  const mainCapacity = capacityForFormat(gameweek?.format ?? null);
+
   useEffect(() => {
     if (!gameweekId) return;
     const interval = setInterval(async () => {
@@ -95,7 +97,7 @@ export default function GameweekInfoStrip({
       if (Array.isArray(data.entries)) {
         setLiveEntries(data.entries);
         const { positionMap } = buildEntryPositionMap(data.entries);
-        const { main, subs } = getSlotCounts(positionMap);
+        const { main, subs } = getSlotCounts(positionMap, mainCapacity);
         setLiveCounts({
           main,
           subs,
@@ -105,7 +107,7 @@ export default function GameweekInfoStrip({
     }, 10000);
 
     return () => clearInterval(interval);
-  }, [gameweekId]);
+  }, [gameweekId, mainCapacity]);
 
   const formatTimeFromInput = (value: string) => {
     if (!value) return "";
@@ -333,6 +335,7 @@ export default function GameweekInfoStrip({
                   time={time}
                   location={location}
                   entries={shareEntries}
+                  format={gameweek?.format ?? null}
                 />
               </div>
             ) : null}

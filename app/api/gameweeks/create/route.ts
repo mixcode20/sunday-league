@@ -1,9 +1,10 @@
 import { NextResponse } from "next/server";
 import { supabaseServer } from "@/lib/supabase";
 import { isOrganiserPinConfigured, verifyOrganiserPin } from "@/lib/organiser";
+import { DEFAULT_GAME_FORMAT, parseGameFormat } from "@/lib/slots";
 
 export async function POST(request: Request) {
-  const { date, time, location, pin, playerIds } = await request.json();
+  const { date, time, location, format, pin, playerIds } = await request.json();
 
   if (!isOrganiserPinConfigured()) {
     return NextResponse.json(
@@ -47,6 +48,7 @@ export async function POST(request: Request) {
     typeof location === "string" && location.trim().length > 0
       ? location.trim()
       : "Mill Hill";
+  const safeFormat = parseGameFormat(format);
   const selectedPlayerIds = Array.isArray(playerIds)
     ? Array.from(
         new Set(
@@ -58,23 +60,44 @@ export async function POST(request: Request) {
       )
     : [];
 
-  const { data, error } = await supabase
-    .from("gameweeks")
-    .insert({
-      game_date: date,
-      game_time: safeTime,
-      location: safeLocation,
-      status: "open",
-    })
-    .select("id")
-    .single();
+  const insertGameweek = (includeFormat: boolean) =>
+    supabase
+      .from("gameweeks")
+      .insert({
+        game_date: date,
+        game_time: safeTime,
+        location: safeLocation,
+        status: "open",
+        ...(includeFormat ? { format: safeFormat } : {}),
+      })
+      .select("id")
+      .single();
 
-  if (error) {
+  let { data, error } = await insertGameweek(true);
+
+  // Pre-migration fallback: supabase/migrations/20261108120000_gameweek_format.sql
+  // adds gameweeks.format. Until it is applied, 7s (the default) still works, but
+  // 5s cannot be stored - fail loudly rather than silently creating a 7s game.
+  // Remove this block once the migration is applied everywhere.
+  if (error?.code === "42703") {
+    if (safeFormat !== DEFAULT_GAME_FORMAT) {
+      return NextResponse.json(
+        {
+          error:
+            "5-a-side needs the gameweek format migration (20261108120000_gameweek_format.sql) applied to the database first.",
+        },
+        { status: 500 }
+      );
+    }
+    ({ data, error } = await insertGameweek(false));
+  }
+
+  if (error || !data) {
     return NextResponse.json(
       {
-        error: error.message || "Failed to create gameweek.",
-        details: error.details ?? null,
-        hint: error.hint ?? null,
+        error: error?.message || "Failed to create gameweek.",
+        details: error?.details ?? null,
+        hint: error?.hint ?? null,
       },
       { status: 500 }
     );

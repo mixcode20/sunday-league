@@ -1,3 +1,5 @@
+import type { GameFormat } from "@/lib/slots";
+
 export type GameweekStatus = "open" | "locked";
 export type Team = "darks" | "whites" | "subs";
 export type ResultMode = "score" | "result";
@@ -19,6 +21,7 @@ export type Gameweek = {
   game_time: string;
   location: string;
   payment_link?: string | null;
+  format?: GameFormat | null;
   status: GameweekStatus;
   darks_score: number | null;
   whites_score: number | null;

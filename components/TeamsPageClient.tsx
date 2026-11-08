@@ -9,7 +9,7 @@ import TeamsClient from "@/components/TeamsClient";
 import TeamsReadOnly from "@/components/TeamsReadOnly";
 import type { Gameweek, GameweekPlayer, Player } from "@/lib/types";
 import { fetcher, debugPerfEnabled } from "@/lib/swr";
-import { buildEntryPositionMap, getSlotCounts } from "@/lib/slots";
+import { buildEntryPositionMap, capacityForFormat, getSlotCounts } from "@/lib/slots";
 
 type TeamsOverviewResponse = {
   gameweek: Gameweek | null;
@@ -75,10 +75,11 @@ export default function TeamsPageClient() {
 
   const entries = useMemo(() => data?.entries ?? [], [data?.entries]);
   const players = useMemo(() => data?.players ?? [], [data?.players]);
+  const gameFormat = data?.gameweek?.format ?? null;
   const { main: mainCount, subs: subsCount } = useMemo(() => {
     const { positionMap } = buildEntryPositionMap(entries);
-    return getSlotCounts(positionMap);
-  }, [entries]);
+    return getSlotCounts(positionMap, capacityForFormat(gameFormat));
+  }, [entries, gameFormat]);
 
   if (error && !data) {
     return (

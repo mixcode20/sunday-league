@@ -56,7 +56,11 @@ export default function Modal({
       ? position === "center"
         ? "max-h-[70vh] overflow-y-auto text-left"
         : "min-h-0 flex-1 overflow-y-auto text-left"
-      : "text-left";
+      : position === "center"
+        ? "text-left"
+        : // Keep the flex chain definite so children can own their own scrolling
+          // instead of overflowing (and silently scrolling) the hidden panel.
+          "min-h-0 flex-1 text-left";
 
   return (
     <div

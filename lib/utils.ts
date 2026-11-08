@@ -40,6 +40,20 @@ export const formatGameweekDate = (dateString: string) => {
   return `${weekday}, ${month} ${day}${getOrdinalSuffix(day)}`;
 };
 
+/**
+ * "Sunday, 15 November" - parses the ISO parts directly so a date-only string
+ * is never shifted a day by the local timezone offset.
+ */
+export const formatFullDayDate = (dateString: string) => {
+  const [year, month, day] = dateString.split("-").map(Number);
+  if (!year || !month || !day) return "";
+  const date = new Date(year, month - 1, day);
+  if (Number.isNaN(date.getTime())) return "";
+  const weekday = date.toLocaleDateString("en-GB", { weekday: "long" });
+  const monthName = date.toLocaleDateString("en-GB", { month: "long" });
+  return `${weekday}, ${day} ${monthName}`;
+};
+
 export const getNextSundayISO = () => {
   const today = new Date();
   const day = today.getDay();

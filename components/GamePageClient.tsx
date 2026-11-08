@@ -8,7 +8,7 @@ import GameweekInfoStrip from "@/components/GameweekInfoStrip";
 import { useOrganiserMode } from "@/components/OrganiserModeProvider";
 import type { Gameweek, GameweekPlayer, Player } from "@/lib/types";
 import { fetcher, debugPerfEnabled } from "@/lib/swr";
-import { buildEntryPositionMap, getSlotCounts } from "@/lib/slots";
+import { buildEntryPositionMap, capacityForFormat, getSlotCounts } from "@/lib/slots";
 
 type GameOverviewResponse = {
   openGameweek: Gameweek | null;
@@ -44,10 +44,11 @@ export default function GamePageClient() {
   }, [data]);
 
   const normalizedEntries = useMemo(() => data?.entries ?? [], [data?.entries]);
+  const gameFormat = data?.gameweek?.format ?? null;
   const { main: mainCount, subs: subsCount } = useMemo(() => {
     const { positionMap } = buildEntryPositionMap(normalizedEntries);
-    return getSlotCounts(positionMap);
-  }, [normalizedEntries]);
+    return getSlotCounts(positionMap, capacityForFormat(gameFormat));
+  }, [normalizedEntries, gameFormat]);
 
   if (error) {
     return (
@@ -106,6 +107,7 @@ export default function GamePageClient() {
             gameDate={openGameweek?.game_date ?? null}
             players={players}
             entries={normalizedEntries}
+            format={openGameweek?.format ?? null}
           />
         ) : (
           <div className="ui-empty p-4 text-sm">

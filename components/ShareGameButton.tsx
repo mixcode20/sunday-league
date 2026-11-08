@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo } from "react";
-import { MAIN_SLOT_CAPACITY } from "@/lib/slots";
+import { capacityForFormat } from "@/lib/slots";
 import type { GameweekPlayer } from "@/lib/types";
 import { formatGameweekDate, formatPlayerName } from "@/lib/utils";
 import { useOrganiserMode } from "@/components/OrganiserModeProvider";
@@ -13,6 +13,7 @@ type ShareGameButtonProps = {
   time?: string | null;
   location?: string | null;
   entries?: GameweekPlayer[];
+  format?: string | null;
 };
 
 export default function ShareGameButton({
@@ -21,8 +22,10 @@ export default function ShareGameButton({
   time,
   location,
   entries = [],
+  format,
 }: ShareGameButtonProps) {
   const { isUnlocked } = useOrganiserMode();
+  const mainCapacity = capacityForFormat(format);
 
   const shareText = useMemo(() => {
     if (typeof window === "undefined") return "";
@@ -33,11 +36,11 @@ export default function ShareGameButton({
     const sortedEntries = [...entries].sort((left, right) => left.position - right.position);
     const playerLines = sortedEntries.map((entry) => {
       const name = formatPlayerName(entry.players) || "Unknown player";
-      return entry.position > MAIN_SLOT_CAPACITY ? `${name} (sub)` : name;
+      return entry.position > mainCapacity ? `${name} (sub)` : name;
     });
     const spacesLeft = Math.max(
-      MAIN_SLOT_CAPACITY -
-        sortedEntries.filter((entry) => entry.position <= MAIN_SLOT_CAPACITY).length,
+      mainCapacity -
+        sortedEntries.filter((entry) => entry.position <= mainCapacity).length,
       0
     );
 
@@ -58,19 +61,19 @@ export default function ShareGameButton({
     }
 
     return lines.join("\n");
-  }, [entries, gameDate, location, time]);
+  }, [entries, gameDate, location, time, mainCapacity]);
 
   const nudgeText = useMemo(() => {
     const mainEntries = entries.filter(
-      (entry) => entry.position <= MAIN_SLOT_CAPACITY
+      (entry) => entry.position <= mainCapacity
     ).length;
-    const spacesLeft = Math.max(MAIN_SLOT_CAPACITY - mainEntries, 0);
+    const spacesLeft = Math.max(mainCapacity - mainEntries, 0);
     const spacesLabel = spacesLeft === 1 ? "space" : "spaces";
 
     return spacesLeft > 0
       ? [`Still ${spacesLeft} ${spacesLabel} for this game`, formatGameweekDate(gameDate)].join("\n\n")
       : formatGameweekDate(gameDate);
-  }, [entries, gameDate]);
+  }, [entries, gameDate, mainCapacity]);
 
   if (!isUnlocked || !gameweekId) return null;
 
