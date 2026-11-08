@@ -54,6 +54,53 @@ export const formatFullDayDate = (dateString: string) => {
   return `${weekday}, ${day} ${monthName}`;
 };
 
+/**
+ * Whole weeks between a player's last game and a reference date (defaults to
+ * today), bucketed Monday-to-Monday. `isMostRecent` means they played the
+ * latest game relative to that reference. Returns null for missing/invalid
+ * dates.
+ */
+export const getWeeksSince = (
+  dateString?: string | null,
+  referenceDateString?: string | null
+): { weeks: number; isMostRecent: boolean } | null => {
+  if (!dateString) return null;
+  const parseDateOnly = (value: string) => {
+    const match = value.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+    if (!match) return null;
+    return new Date(Date.UTC(Number(match[1]), Number(match[2]) - 1, Number(match[3])));
+  };
+
+  const lastPlayed = parseDateOnly(dateString);
+  if (!lastPlayed) return null;
+
+  const referenceDate = referenceDateString ? parseDateOnly(referenceDateString) : null;
+  const today = new Date();
+  const fallbackCurrentDate = new Date(
+    Date.UTC(today.getUTCFullYear(), today.getUTCMonth(), today.getUTCDate())
+  );
+  const currentDate = referenceDate ?? fallbackCurrentDate;
+  const getWeekStart = (date: Date) => {
+    const weekStart = new Date(date);
+    const daysSinceMonday = (weekStart.getUTCDay() + 6) % 7;
+    weekStart.setUTCDate(weekStart.getUTCDate() - daysSinceMonday);
+    return weekStart;
+  };
+
+  const weeks = Math.max(
+    0,
+    Math.floor(
+      (getWeekStart(currentDate).getTime() - getWeekStart(lastPlayed).getTime()) /
+        (7 * 24 * 60 * 60 * 1000)
+    )
+  );
+
+  return {
+    weeks,
+    isMostRecent: currentDate.getTime() >= lastPlayed.getTime() && weeks <= 1,
+  };
+};
+
 export const getNextSundayISO = () => {
   const today = new Date();
   const day = today.getDay();

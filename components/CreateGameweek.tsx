@@ -2,12 +2,24 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { formatFullDayDate, getNextSundayISO } from "@/lib/utils";
+import { formatFullDayDate, getNextSundayISO, getWeeksSince } from "@/lib/utils";
 import { useOrganiserMode } from "@/components/OrganiserModeProvider";
 import Modal from "@/components/Modal";
 import type { GameweekStatus, Player } from "@/lib/types";
 import { capacityForFormat, DEFAULT_GAME_FORMAT, type GameFormat } from "@/lib/slots";
 import { formatPlayerName } from "@/lib/utils";
+
+function CalendarIcon() {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      aria-hidden="true"
+      className="h-4 w-4 shrink-0 fill-current text-[var(--color-text-secondary)]"
+    >
+      <path d="M7 2v2H5.5A2.5 2.5 0 0 0 3 6.5v13A2.5 2.5 0 0 0 5.5 22h13a2.5 2.5 0 0 0 2.5-2.5v-13A2.5 2.5 0 0 0 18.5 4H17V2h-2v2H9V2H7Zm12 8v9.5a.5.5 0 0 1-.5.5h-13a.5.5 0 0 1-.5-.5V10h14Z" />
+    </svg>
+  );
+}
 
 type CreateGameweekProps = {
   activeGameweekStatus?: GameweekStatus | null;
@@ -232,9 +244,12 @@ export default function CreateGameweek({
                   />
                   <div
                     aria-hidden="true"
-                    className="ui-input pointer-events-none py-2 peer-focus-visible:border-[var(--color-primary-dark)]"
+                    className="ui-input pointer-events-none flex items-center justify-between gap-2 py-2 peer-focus-visible:border-[var(--color-primary-dark)]"
                   >
-                    {formatFullDayDate(date) || "Select a date"}
+                    <span className="truncate">
+                      {formatFullDayDate(date) || "Select a date"}
+                    </span>
+                    <CalendarIcon />
                   </div>
                 </div>
               </div>
@@ -308,7 +323,7 @@ export default function CreateGameweek({
                         type="button"
                         onClick={() => setFormat(option)}
                         aria-pressed={isSelected}
-                        className={`rounded-full px-3 py-1 text-xs font-semibold transition-colors ${
+                        className={`rounded-full px-5 py-1 text-xs font-semibold transition-colors ${
                           isSelected
                             ? "bg-[var(--color-primary-dark)] text-white"
                             : "text-[var(--color-text-secondary)]"
@@ -334,12 +349,15 @@ export default function CreateGameweek({
                   {orderedPlayers.map((player) => {
                     const checked = selectedPlayerIds.includes(player.id);
                     const gamesPlayed = player.games_played ?? 0;
+                    // Weeks since their last game, counted up to the game being
+                    // created: 1w means they played the most recent one.
+                    const weeksSince = getWeeksSince(player.last_game_date, date);
                     return (
                       <label
                         key={player.id}
-                        className="flex cursor-pointer items-center justify-between gap-3 rounded-[8px] px-2 py-2 text-sm text-[var(--color-text)] hover:bg-[rgba(15,61,52,0.04)]"
+                        className="flex cursor-pointer items-center gap-3 rounded-[8px] px-2 py-2 text-sm text-[var(--color-text)] hover:bg-[rgba(15,61,52,0.04)]"
                       >
-                        <span className="flex items-center gap-3">
+                        <span className="flex min-w-0 flex-1 items-center gap-3">
                           <span
                             className={`relative flex h-5 w-5 shrink-0 items-center justify-center rounded-full border has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-[var(--color-primary-dark)] ${
                               checked
@@ -357,10 +375,20 @@ export default function CreateGameweek({
                               className={`h-2 w-2 rounded-full bg-white ${checked ? "opacity-100" : "opacity-0"}`}
                             />
                           </span>
-                          <span>{formatPlayerName(player)}</span>
+                          <span className="truncate">{formatPlayerName(player)}</span>
                         </span>
-                        <span className="text-xs text-[var(--color-text-secondary)]">
+                        <span className="shrink-0 text-xs text-[var(--color-text-secondary)]">
                           {gamesPlayed} GP
+                        </span>
+                        <span
+                          className="w-8 shrink-0 text-right text-xs tabular-nums text-[var(--color-text-secondary)]"
+                          title={
+                            weeksSince
+                              ? `Last played ${weeksSince.weeks} week(s) before this game`
+                              : "No games played yet"
+                          }
+                        >
+                          {weeksSince ? `${weeksSince.weeks}w` : "-"}
                         </span>
                       </label>
                     );

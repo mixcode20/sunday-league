@@ -20,7 +20,7 @@ import {
   serializeSelfRemovalCookie,
   type SelfRemovalGrantMap,
 } from "@/lib/selfRemovalCookie";
-import { formatPlayerName } from "@/lib/utils";
+import { formatPlayerName, getWeeksSince } from "@/lib/utils";
 
 type JoinSlotsProps = {
   isOpen: boolean;
@@ -67,43 +67,15 @@ export default function JoinSlots({
   const debugJoinFlow =
     typeof window !== "undefined" &&
     process.env.NEXT_PUBLIC_DEBUG_JOIN_FLOW === "true";
-  const formatLastSeenWeeksAgo = useCallback((dateString?: string | null) => {
-    if (!dateString) return "-";
-    const parseDateOnly = (value: string) => {
-      const match = value.match(/^(\d{4})-(\d{2})-(\d{2})$/);
-      if (!match) return null;
-      return new Date(Date.UTC(Number(match[1]), Number(match[2]) - 1, Number(match[3])));
-    };
-
-    const lastPlayed = parseDateOnly(dateString);
-    if (!lastPlayed) return "-";
-
-    const referenceDate = gameDate ? parseDateOnly(gameDate) : null;
-    const today = new Date();
-    const fallbackCurrentDate = new Date(
-      Date.UTC(today.getUTCFullYear(), today.getUTCMonth(), today.getUTCDate())
-    );
-    const currentDate = referenceDate ?? fallbackCurrentDate;
-    const getWeekStart = (date: Date) => {
-      const weekStart = new Date(date);
-      const daysSinceMonday = (weekStart.getUTCDay() + 6) % 7;
-      weekStart.setUTCDate(weekStart.getUTCDate() - daysSinceMonday);
-      return weekStart;
-    };
-
-    const lastWeekStart = getWeekStart(lastPlayed);
-    const currentWeekStart = getWeekStart(currentDate);
-    const diffWeeks = Math.max(
-      0,
-      Math.floor((currentWeekStart.getTime() - lastWeekStart.getTime()) / (7 * 24 * 60 * 60 * 1000))
-    );
-
-    if (currentDate.getTime() >= lastPlayed.getTime() && diffWeeks <= 1) {
-      return "Played last game";
-    }
-
-    return `Played ${diffWeeks} weeks ago`;
-  }, [gameDate]);
+  const formatLastSeenWeeksAgo = useCallback(
+    (dateString?: string | null) => {
+      const since = getWeeksSince(dateString, gameDate);
+      if (!since) return "-";
+      if (since.isMostRecent) return "Played last game";
+      return `Played ${since.weeks} weeks ago`;
+    },
+    [gameDate]
+  );
 
   const getLastSeenSortBucket = useCallback((dateString?: string | null) => {
     if (!dateString) return Number.MAX_SAFE_INTEGER;
