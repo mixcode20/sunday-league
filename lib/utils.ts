@@ -101,6 +101,17 @@ export const getWeeksSince = (
   };
 };
 
+/** "Sun 8 Nov" - compact date for tight captions. */
+export const formatShortGameDate = (dateString: string) => {
+  const [year, month, day] = dateString.split("-").map(Number);
+  if (!year || !month || !day) return "";
+  const date = new Date(year, month - 1, day);
+  if (Number.isNaN(date.getTime())) return "";
+  const weekday = date.toLocaleDateString("en-GB", { weekday: "short" });
+  const monthName = date.toLocaleDateString("en-GB", { month: "short" });
+  return `${weekday} ${day} ${monthName}`;
+};
+
 export const getNextSundayISO = () => {
   const today = new Date();
   const day = today.getDay();

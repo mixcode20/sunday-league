@@ -1,11 +1,11 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import useSWR from "swr";
 import { fetcher } from "@/lib/swr";
 import Modal from "@/components/Modal";
 import TeamsReadOnly from "@/components/TeamsReadOnly";
-import { formatGameweekDate, getGameweekWinner } from "@/lib/utils";
+import { formatGameweekDate, formatShortGameDate, getGameweekWinner } from "@/lib/utils";
 import type { Gameweek, GameweekPlayer, PlayerFormEntry, PlayerStats } from "@/lib/types";
 
 const BAR_W = 270;
@@ -52,7 +52,12 @@ function FormTile({
       className="flex shrink-0 flex-col overflow-hidden rounded-[3px] active:opacity-70"
       style={{ width: 25, height: 38, border: "1px solid var(--color-text-secondary)" }}
     >
-      <div style={{ flex: 3, background: RESULT_BG[result] }} />
+      <div
+        className="flex items-center justify-center text-[11px] font-bold leading-none text-white"
+        style={{ flex: 3, background: RESULT_BG[result] }}
+      >
+        {result.toUpperCase()}
+      </div>
       <div style={{ flex: 1, background: TEAM_STRIPE[team] }} />
     </button>
   );
@@ -78,7 +83,7 @@ function TeamPicksBar({ darks, whites }: { darks: number; whites: number }) {
   const whitePad = whitePx >= 40 ? "pl-[9px] pr-[5px]" : "px-[4px]";
 
   return (
-    <div className="flex h-[26px] w-full overflow-hidden rounded-full">
+    <div className="flex h-[26px] w-full overflow-hidden rounded-[6px]">
       {darkPct > 0 && (
         <div
           className={`flex shrink-0 items-center justify-end overflow-hidden ${darkPad}`}
@@ -86,7 +91,7 @@ function TeamPicksBar({ darks, whites }: { darks: number; whites: number }) {
         >
           {showDarkFull ? (
             <span className="whitespace-nowrap text-[11px] font-semibold text-white">
-              Dark {darkPct}%
+              Darks · {darkPct}%
             </span>
           ) : showDarkNum ? (
             <span className="whitespace-nowrap text-[11px] font-semibold text-white">
@@ -134,7 +139,6 @@ function PpgSparkline({ data }: { data: number[] }) {
   const PAD_Y = 4;
 
   const min = 0;
-  const max = 3;
   const range = 3;
 
   const points = data.map((v, i) => [
@@ -145,7 +149,6 @@ function PpgSparkline({ data }: { data: number[] }) {
   const linePath = points.map((p, i) => `${i === 0 ? "M" : "L"}${p[0]},${p[1]}`).join(" ");
   const areaPath = `${linePath} L${points[points.length - 1][0]},${H} L${points[0][0]},${H} Z`;
   const last = points[points.length - 1];
-  const currentPpg = data[data.length - 1];
 
   return (
     <svg
@@ -228,32 +231,170 @@ function GameweekDetail({ entry }: { entry: PlayerFormEntry }) {
 
 const KICKER = "text-[10px] font-semibold uppercase tracking-[0.14em] text-[var(--color-text-secondary)]";
 
+function SectionHeader({
+  label,
+  meta,
+  className,
+}: {
+  label: string;
+  meta?: string;
+  className?: string;
+}) {
+  return (
+    <div className={`flex items-center justify-between gap-2 ${className ?? ""}`}>
+      <p className={KICKER}>{label}</p>
+      {meta ? (
+        <p className="flex items-center gap-1 text-[10px] text-[var(--color-text-secondary)]">
+          {meta}
+        </p>
+      ) : null}
+    </div>
+  );
+}
+
+function Card({ children }: { children: React.ReactNode }) {
+  return (
+    <div className="mt-1.5 rounded-[8px] border border-[rgba(31,122,99,0.14)] bg-white p-3">
+      {children}
+    </div>
+  );
+}
+
+function Stat({
+  value,
+  label,
+  topLabel,
+  labelTone = "kicker",
+  valueClass,
+  badge,
+  badgeClass,
+  badgeStyle,
+}: {
+  value: string;
+  label: string;
+  topLabel?: string;
+  labelTone?: "kicker" | "caption";
+  valueClass?: string;
+  badge?: string;
+  badgeClass?: string;
+  badgeStyle?: React.CSSProperties;
+}) {
+  return (
+    <div className="px-3 first:pl-0 last:pr-0">
+      {topLabel ? (
+        <p className="text-[9px] font-semibold uppercase tracking-[0.14em] text-[var(--color-text-secondary)]">
+          {topLabel}
+        </p>
+      ) : null}
+      <div className={`flex items-center gap-2 ${topLabel ? "mt-1" : ""}`}>
+        <p
+          className={`font-semibold tracking-[-0.03em] ${
+            topLabel ? "text-[20px] leading-none" : "text-[17px]"
+          } ${valueClass ?? "text-[var(--color-text)]"}`}
+        >
+          {value}
+        </p>
+        {badge ? (
+          <span
+            className={`inline-flex shrink-0 items-center rounded-full px-2 py-[2px] text-[10px] font-bold uppercase tracking-[0.08em] ${
+              badgeClass ?? "bg-[rgba(31,122,99,0.12)] text-[var(--color-text)]"
+            }`}
+            style={badgeStyle}
+          >
+            {badge}
+          </span>
+        ) : null}
+      </div>
+      <p
+        className={
+          labelTone === "caption"
+            ? "mt-1 text-[11px] font-normal text-[var(--color-text-secondary)] opacity-70"
+            : "mt-0.5 text-[9px] font-semibold uppercase tracking-[0.12em] text-[var(--color-text-secondary)]"
+        }
+      >
+        {label}
+      </p>
+    </div>
+  );
+}
+
+function RecordBar({ w, d, l }: { w: number; d: number; l: number }) {
+  const total = w + d + l;
+  if (total === 0) {
+    return <p className="text-[11px] text-[var(--color-text-secondary)]">No data</p>;
+  }
+  const segments: { count: number; label: string; bg: string; text: string }[] = [
+    { count: w, label: `${w} W`, bg: "var(--color-success)", text: "#ffffff" },
+    { count: d, label: `${d}`, bg: "var(--color-draw)", text: "var(--color-text)" },
+    { count: l, label: `${l} L`, bg: "var(--color-danger)", text: "#ffffff" },
+  ];
+  return (
+    <div className="flex h-[26px] w-full overflow-hidden rounded-[6px]">
+      {segments.map((segment) =>
+        segment.count === 0 ? null : (
+          <div
+            key={segment.label}
+            className="flex shrink-0 items-center justify-center overflow-hidden"
+            style={{ width: `${(segment.count / total) * 100}%`, background: segment.bg }}
+          >
+            {/* Hide the label when the segment is too narrow to hold it. */}
+            {(segment.count / total) * 100 >= 9 ? (
+              <span
+                className="whitespace-nowrap text-[11px] font-bold"
+                style={{ color: segment.text }}
+              >
+                {segment.label}
+              </span>
+            ) : null}
+          </div>
+        )
+      )}
+    </div>
+  );
+}
+
 const RANK_BG: Record<1 | 2 | 3, string> = {
   1: "var(--color-rank-gold)",
   2: "var(--color-rank-silver)",
   3: "var(--color-rank-bronze)",
 };
 
-const RANK_BORDER: Record<1 | 2 | 3, string> = {
-  1: "border-[var(--color-rank-gold)]",
-  2: "border-[var(--color-rank-silver)]",
-  3: "border-[var(--color-rank-bronze)]",
+type BadgeProps = {
+  badge?: string;
+  badgeClass?: string;
+  badgeStyle?: React.CSSProperties;
+};
+
+/** BEST / 2ND / 3RD at the top, WORST at the bottom, plain "#12" in between. */
+const wordRankBadge = (rank?: number, isWorst?: boolean): BadgeProps => {
+  if (rank && rank <= 3) {
+    return {
+      badge: rank === 1 ? "BEST" : rank === 2 ? "2ND" : "3RD",
+      badgeClass: "text-white",
+      badgeStyle: { background: RANK_BG[rank as 1 | 2 | 3] },
+    };
+  }
+  if (isWorst) {
+    return { badge: "WORST", badgeClass: "bg-[var(--color-danger)] text-white" };
+  }
+  if (rank) return { badge: `#${rank}` };
+  return {};
 };
 
 export default function PlayerDrawer({
   playerId,
-  goalsForRank,
   avgGoalsRank,
   isWorstAttacker = false,
   avgConcededRank,
   isWorstDefender = false,
+  totalGdRank,
 }: {
   playerId: string;
-  goalsForRank?: 1 | 2 | 3;
   avgGoalsRank?: number;
   isWorstAttacker?: boolean;
   avgConcededRank?: number;
   isWorstDefender?: boolean;
+  totalGdRank?: number;
 }) {
   const [selectedIndex, setSelectedIndex] = useState<number | null>(null);
   const [scrollRatio, setScrollRatio] = useState(0);
@@ -270,6 +411,16 @@ export default function PlayerDrawer({
     `/api/players/${playerId}/stats`,
     fetcher
   );
+
+  const formCount = data?.form.length ?? 0;
+  // Form runs oldest -> newest, so open scrolled to the newest end.
+  useEffect(() => {
+    const el = formScrollRef.current;
+    if (!el || formCount === 0) return;
+    // Assigning scrollLeft fires a scroll event, so handleFormScroll keeps the
+    // progress indicator in sync without setting state here.
+    el.scrollLeft = el.scrollWidth;
+  }, [formCount]);
 
   if (isLoading || !data) {
     return (
@@ -303,186 +454,218 @@ export default function PlayerDrawer({
   const showTeamWinRates =
     data.darkWinRate !== null && data.whitesWinRate !== null;
 
-  const gdSign = data.avgGdPerGame > 0 ? "+" : "";
-  const gdColor =
-    data.avgGdPerGame > 0
-      ? "text-[var(--color-success)]"
-      : data.avgGdPerGame < 0
-        ? "text-[var(--color-danger)]"
-        : "text-[var(--color-text-secondary)]";
+  const winRate = data.gamesPlayed > 0 ? data.record.w / data.gamesPlayed : null;
+  const totalGd = data.goalsFor - data.goalsAgainst;
 
   return (
     <>
-      {/* Row 1: Form + PPG Trend */}
-      <div className="flex gap-6">
-        <div className="flex min-w-0 flex-1 flex-col gap-1.5">
-          <div className="flex items-center gap-2 text-[10px] font-semibold uppercase tracking-[0.14em] text-[var(--color-text-secondary)]">
-            <span className="shrink-0">Form</span>
-            <svg width="40" height="8" viewBox="0 0 40 8" fill="none" className="shrink-0 opacity-40">
-              <path d="M0 4h36M33 1l3 3-3 3" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-            </svg>
-          </div>
-          {data.form.length === 0 ? (
-            <p className="text-[11px] text-[var(--color-text-secondary)]">No data</p>
-          ) : (
-            <div className="flex flex-1 flex-col">
-              <div
-                ref={formScrollRef}
-                onScroll={handleFormScroll}
-                className="flex gap-1 overflow-x-auto [&::-webkit-scrollbar]:hidden"
-                style={{ scrollbarWidth: "none" }}
-              >
-                {data.form.map((entry, i) => (
-                  <FormTile
-                    key={i}
-                    result={entry.result}
-                    team={entry.team}
-                    onClick={() => setSelectedIndex(i)}
-                  />
-                ))}
-              </div>
-              {data.form.length > 5 && (
-                <div className="mt-auto pt-2">
-                  <div className="h-[2px] w-full overflow-hidden rounded-full bg-[rgba(15,61,52,0.08)]">
-                    <div
-                      className="h-full w-2/5 rounded-full bg-[rgba(15,61,52,0.2)]"
-                      style={{
-                        transform: `translateX(${scrollRatio * 150}%)`,
-                        transition: "transform 60ms linear",
-                      }}
-                    />
-                  </div>
+      {/* Form + PPG */}
+      <SectionHeader
+        label="Form"
+        meta="oldest → latest"
+        className="mt-4"
+      />
+      <Card>
+        <div className="flex items-stretch gap-3">
+          <div className="flex min-w-0 flex-1 flex-col">
+            {data.form.length === 0 ? (
+              <p className="text-[11px] text-[var(--color-text-secondary)]">No data</p>
+            ) : (
+              <>
+                <div
+                  ref={formScrollRef}
+                  onScroll={handleFormScroll}
+                  className="flex gap-1 overflow-x-auto [&::-webkit-scrollbar]:hidden"
+                  style={{ scrollbarWidth: "none" }}
+                >
+                  {data.form
+                    .map((entry, i) => ({ entry, i }))
+                    .reverse()
+                    .map(({ entry, i }) => (
+                      <FormTile
+                        key={i}
+                        result={entry.result}
+                        team={entry.team}
+                        onClick={() => setSelectedIndex(i)}
+                      />
+                    ))}
                 </div>
-              )}
+                {data.form.length > 5 && (
+                  <div className="mt-auto pt-2">
+                    <div className="h-[2px] w-full overflow-hidden rounded-full bg-[rgba(15,61,52,0.08)]">
+                      <div
+                        className="h-full w-2/5 rounded-full bg-[rgba(15,61,52,0.2)]"
+                        style={{
+                          transform: `translateX(${scrollRatio * 150}%)`,
+                          transition: "transform 60ms linear",
+                        }}
+                      />
+                    </div>
+                  </div>
+                )}
+              </>
+            )}
+          </div>
+          <div className="w-px shrink-0 bg-[rgba(15,61,52,0.08)]" />
+          <div className="flex min-w-0 flex-1 flex-col">
+            <div className="flex items-baseline justify-between gap-2">
+              <p className={KICKER}>PPG</p>
+              <p className="text-[17px] font-semibold tracking-[-0.03em] text-[var(--color-text)]">
+                {data.ppg.toFixed(2)}
+              </p>
             </div>
-          )}
+            <PpgSparkline data={data.ppgTrend} />
+          </div>
         </div>
+      </Card>
 
-        <div className="flex min-w-0 flex-1 flex-col gap-1">
-          <p className={KICKER}>PPG Trend</p>
-          <PpgSparkline data={data.ppgTrend} />
-        </div>
-      </div>
+      {data.lastPlayedDate ? (
+        <p className="mt-3 text-[11px] text-[var(--color-text-secondary)]">
+          Last played{" "}
+          <span className="font-semibold text-[var(--color-text)]">
+            {formatShortGameDate(data.lastPlayedDate)}
+          </span>
+        </p>
+      ) : null}
 
-      {/* Row 2: Goals For / Avg FOR/GP / Avg CON/GP */}
-      <div className="mt-4 grid grid-cols-3 gap-2">
-        {/* Goals For */}
-        <div className={`relative rounded-[8px] border bg-white px-2 py-3 text-center ${goalsForRank ? RANK_BORDER[goalsForRank] : "border-[rgba(31,122,99,0.18)]"}`}>
-          {goalsForRank && (
-            <span className="absolute -right-1 -top-1 inline-flex items-center rounded-full px-2 py-[3px] text-[9px] font-bold uppercase tracking-[0.1em] text-white shadow-sm" style={{ background: RANK_BG[goalsForRank] }}>
-              #{goalsForRank}
-            </span>
-          )}
-          <p className="text-base font-semibold tracking-[-0.02em] text-[var(--color-text)]">{data.goalsFor}</p>
-          <p className="mt-0.5 text-[9px] font-semibold uppercase tracking-[0.12em] text-[var(--color-text-secondary)]">ALL GOALS FOR</p>
+      {/* Record */}
+      <SectionHeader
+        label="Record"
+        meta={`${data.gamesPlayed} GP`}
+        className="mt-4"
+      />
+      <Card>
+        <RecordBar w={data.record.w} d={data.record.d} l={data.record.l} />
+        <div className="mt-3 grid grid-cols-3 divide-x divide-[rgba(15,61,52,0.08)]">
+          <Stat
+            value={winRate !== null ? `${Math.round(winRate * 100)}%` : "-"}
+            label="Win rate"
+          />
+          <Stat
+            value={
+              data.biggestWin
+                ? `${data.biggestWin.goalsFor}–${data.biggestWin.goalsAgainst}`
+                : "-"
+            }
+            label="Biggest win"
+            valueClass={data.biggestWin ? "text-[var(--color-success)]" : undefined}
+          />
+          <Stat
+            value={
+              data.heaviestDefeat
+                ? `${data.heaviestDefeat.goalsFor}–${data.heaviestDefeat.goalsAgainst}`
+                : "-"
+            }
+            label="Heaviest loss"
+            valueClass={data.heaviestDefeat ? "text-[var(--color-danger)]" : undefined}
+          />
         </div>
-        {/* GF PER GAME */}
-        <div className={`relative rounded-[8px] border bg-white px-2 py-3 text-center ${avgGoalsRank && avgGoalsRank <= 3 ? RANK_BORDER[avgGoalsRank as 1 | 2 | 3] : isWorstAttacker ? "border-[var(--color-danger)]" : "border-[rgba(31,122,99,0.18)]"}`}>
-          {avgGoalsRank && avgGoalsRank <= 3 && (
-            <span className="absolute -right-1 -top-1 inline-flex items-center rounded-full px-2 py-[3px] text-[9px] font-bold uppercase tracking-[0.1em] text-white shadow-sm" style={{ background: RANK_BG[avgGoalsRank as 1 | 2 | 3] }}>
-              {avgGoalsRank === 1 ? "BEST" : avgGoalsRank === 2 ? "2ND" : "3RD"}
-            </span>
-          )}
-          {avgGoalsRank && avgGoalsRank > 3 && !isWorstAttacker && (
-            <span className="absolute -right-1 -top-1 inline-flex items-center rounded-full bg-[rgba(31,122,99,0.12)] px-1.5 py-0.5 text-[9px] font-semibold text-[var(--color-text)]">
-              #{avgGoalsRank}
-            </span>
-          )}
-          {isWorstAttacker && (!avgGoalsRank || avgGoalsRank > 3) && (
-            <span className="absolute -right-1 -top-1 inline-flex items-center rounded-full bg-[var(--color-danger)] px-2 py-0.5 text-[9px] font-bold uppercase tracking-[0.1em] text-white shadow-sm">
-              WORST
-            </span>
-          )}
-          <p className="text-base font-semibold tracking-[-0.02em] text-[var(--color-text)]">{data.avgGoalsPerGame}</p>
-          <p className="mt-0.5 text-[9px] font-semibold uppercase tracking-[0.12em] text-[var(--color-text-secondary)]">GF PER GAME</p>
-        </div>
-        {/* GA PER GAME */}
-        <div className={`relative rounded-[8px] border bg-white px-2 py-3 text-center ${avgConcededRank && avgConcededRank <= 3 ? RANK_BORDER[avgConcededRank as 1 | 2 | 3] : isWorstDefender ? "border-[var(--color-danger)]" : "border-[rgba(31,122,99,0.18)]"}`}>
-          {avgConcededRank && avgConcededRank <= 3 && (
-            <span className="absolute -right-1 -top-1 inline-flex items-center rounded-full px-2 py-[3px] text-[9px] font-bold uppercase tracking-[0.1em] text-white shadow-sm" style={{ background: RANK_BG[avgConcededRank as 1 | 2 | 3] }}>
-              {avgConcededRank === 1 ? "BEST" : avgConcededRank === 2 ? "2ND" : "3RD"}
-            </span>
-          )}
-          {avgConcededRank && avgConcededRank > 3 && !isWorstDefender && (
-            <span className="absolute -right-1 -top-1 inline-flex items-center rounded-full bg-[rgba(31,122,99,0.12)] px-1.5 py-0.5 text-[9px] font-semibold text-[var(--color-text)]">
-              #{avgConcededRank}
-            </span>
-          )}
-          {isWorstDefender && (!avgConcededRank || avgConcededRank > 3) && (
-            <span className="absolute -right-1 -top-1 inline-flex items-center rounded-full bg-[var(--color-danger)] px-2 py-0.5 text-[9px] font-bold uppercase tracking-[0.1em] text-white shadow-sm">
-              WORST
-            </span>
-          )}
-          <p className="text-base font-semibold tracking-[-0.02em] text-[var(--color-text)]">{data.avgConcededPerGame}</p>
-          <p className="mt-0.5 text-[9px] font-semibold uppercase tracking-[0.12em] text-[var(--color-text-secondary)]">GA PER GAME</p>
-        </div>
-      </div>
+      </Card>
 
-      <div className="mt-4 border-t border-[rgba(31,122,99,0.08)]" />
+      {/* Goals per game */}
+      <SectionHeader label="Goals per game" className="mt-4" />
+      <Card>
+        <div className="grid grid-cols-3 divide-x divide-[rgba(15,61,52,0.08)]">
+          <Stat
+            topLabel="For"
+            value={String(data.avgGoalsPerGame)}
+            label="Attack"
+            labelTone="caption"
+            {...wordRankBadge(avgGoalsRank, isWorstAttacker)}
+          />
+          <Stat
+            topLabel="Against"
+            value={String(data.avgConcededPerGame)}
+            label="Defence"
+            labelTone="caption"
+            {...wordRankBadge(avgConcededRank, isWorstDefender)}
+          />
+          <Stat
+            topLabel="Total GD"
+            value={`${totalGd > 0 ? "+" : ""}${totalGd}`}
+            label="Overall"
+            labelTone="caption"
+            valueClass={
+              totalGd > 0
+                ? "text-[var(--color-success)]"
+                : totalGd < 0
+                  ? "text-[var(--color-danger)]"
+                  : undefined
+            }
+            {...wordRankBadge(totalGdRank)}
+          />
+        </div>
+      </Card>
 
-      {/* Row 3: Team Picks + Win Rates */}
-      <div className="mt-4 space-y-2">
-        <p className={KICKER}>Team Picks</p>
+      {/* Team picks */}
+      <SectionHeader label="Team picks" className="mt-4" />
+      <div className="mt-1.5">
         <TeamPicksBar darks={data.teamPicks.darks} whites={data.teamPicks.whites} />
         {showTeamWinRates && (
-          <div className="grid grid-cols-2 gap-2">
-            <div className="flex items-center justify-center gap-1.5 px-3 py-1">
-              <span className="h-2.5 w-2.5 shrink-0 rounded-sm bg-[var(--color-primary-dark)]" />
-              <p className="font-semibold tracking-[-0.02em] text-[var(--color-text)]">
+          <div className="mt-1.5 flex items-baseline justify-between text-[11px] text-[var(--color-text-secondary)]">
+            <span>
+              <span className="font-semibold text-[var(--color-text)]">
                 {Math.round(data.darkWinRate! * 100)}%
-              </p>
-              <p className="text-[10px] text-[var(--color-text-secondary)]">win rate</p>
-            </div>
-            <div className="flex items-center justify-center gap-1.5 px-3 py-1">
-              <span className="h-2.5 w-2.5 shrink-0 rounded-sm border border-[rgba(15,61,52,0.3)] bg-white" />
-              <p className="font-semibold tracking-[-0.02em] text-[var(--color-text)]">
+              </span>{" "}
+              won
+            </span>
+            <span>
+              <span className="font-semibold text-[var(--color-text)]">
                 {Math.round(data.whitesWinRate! * 100)}%
-              </p>
-              <p className="text-[10px] text-[var(--color-text-secondary)]">win rate</p>
-            </div>
+              </span>{" "}
+              won
+            </span>
           </div>
         )}
       </div>
 
-      <div className="mt-4 border-t border-[rgba(31,122,99,0.08)]" />
-
-      {/* Row 5: Best Teammates + Toughest Opponent */}
+      {/* Best teammates + Toughest opponent, side by side */}
       {(data.bestTeammates.length > 0 || data.toughestOpponent) && (
         <div className="mt-4 grid grid-cols-2 gap-3">
-          {/* Best Teammates */}
-          <div className="flex flex-col">
-            <p className={`mb-2 ${KICKER}`}>Best Teammates</p>
+          <div className="flex min-w-0 flex-col">
+            <SectionHeader label="Best teammates" />
             {data.bestTeammates.length === 0 ? (
-              <p className="text-[11px] text-[var(--color-text-secondary)]">No data</p>
+              <p className="mt-1.5 text-[11px] text-[var(--color-text-secondary)]">
+                No data
+              </p>
             ) : (
-              <div className="space-y-1">
+              <div className="mt-1.5 space-y-1">
                 {data.bestTeammates.map((t) => (
                   <div key={t.id} className="flex items-center gap-1.5">
-                    <span className="w-14 shrink-0 truncate text-[11px] font-medium text-[var(--color-text)]">{t.name}</span>
+                    <span className="w-14 shrink-0 truncate text-[11px] font-medium text-[var(--color-text)]">
+                      {t.name}
+                    </span>
                     <div className="h-[18px] min-w-0 flex-1 overflow-hidden rounded-full bg-[rgba(15,61,52,0.08)]">
                       <div
-                        className="flex h-full items-center overflow-hidden rounded-full bg-[var(--color-success)] px-1.5"
+                        className="flex h-full items-center justify-end overflow-hidden rounded-full bg-[var(--color-success)] px-1.5"
                         style={{ width: `${t.winRate * 100}%` }}
                       >
-                        <span className="whitespace-nowrap text-[9px] font-bold text-white">{Math.round(t.winRate * 100)}%</span>
+                        <span className="whitespace-nowrap text-[9px] font-bold text-white">
+                          {Math.round(t.winRate * 100)}%
+                        </span>
                       </div>
                     </div>
-                    <span className="shrink-0 whitespace-nowrap text-[10px] text-[var(--color-text-secondary)]">{t.gp}GP</span>
+                    <span className="shrink-0 whitespace-nowrap text-[10px] text-[var(--color-text-secondary)]">
+                      {t.gp} GP
+                    </span>
                   </div>
                 ))}
               </div>
             )}
           </div>
 
-          {/* Toughest Opponent */}
-          <div className="flex flex-col">
-            <p className={`mb-2 ${KICKER}`}>Toughest Opponent</p>
+          <div className="flex min-w-0 flex-col">
+            <SectionHeader label="Toughest opponent" />
             {!data.toughestOpponent ? (
-              <p className="text-[11px] text-[var(--color-text-secondary)]">No data</p>
+              <p className="mt-1.5 text-[11px] text-[var(--color-text-secondary)]">
+                No data
+              </p>
             ) : (
-              <div className="flex flex-1 flex-col justify-center rounded-[8px] border border-[rgba(31,122,99,0.18)] bg-white px-2.5 py-2">
+              <div className="mt-1.5 flex flex-1 flex-col justify-center rounded-[8px] border border-[rgba(229,72,77,0.2)] bg-[var(--color-background)] px-2.5 py-2">
                 <div className="flex items-baseline justify-between gap-1">
-                  <p className="min-w-0 truncate text-[13px] font-semibold text-[var(--color-text)]">{data.toughestOpponent.name}</p>
+                  <p className="min-w-0 truncate text-[13px] font-semibold text-[var(--color-text)]">
+                    {data.toughestOpponent.name}
+                  </p>
                   <p className="shrink-0 text-lg font-bold tracking-[-0.03em] text-[var(--color-danger)]">
                     {Math.round(data.toughestOpponent.winRate * 100)}%
                   </p>
@@ -491,7 +674,9 @@ export default function PlayerDrawer({
                   <p className="text-[10px] text-[var(--color-text-secondary)]">
                     Lost {data.toughestOpponent.losses} of {data.toughestOpponent.gp}
                   </p>
-                  <p className="shrink-0 text-[9px] font-semibold uppercase tracking-[0.1em] text-[var(--color-text-secondary)]">Win Rate</p>
+                  <p className="shrink-0 text-[9px] font-semibold uppercase tracking-[0.1em] text-[var(--color-text-secondary)]">
+                    Win rate
+                  </p>
                 </div>
               </div>
             )}

@@ -1,7 +1,13 @@
 import { NextResponse } from "next/server";
 import { supabaseServer } from "@/lib/supabase";
 import { formatPlayerName, getGameweekWinner } from "@/lib/utils";
-import type { PlayerFormEntry, PlayerOpponent, PlayerStats, PlayerTeammate } from "@/lib/types";
+import type {
+  PlayerFormEntry,
+  PlayerOpponent,
+  PlayerScoreline,
+  PlayerStats,
+  PlayerTeammate,
+} from "@/lib/types";
 
 export async function GET(
   _request: Request,
@@ -85,6 +91,87 @@ export async function GET(
       ppgTrend.push(parseFloat((cumulativePoints / (i + 1)).toFixed(3)));
     }
   }
+
+  // Record, streaks and recent form all derive from `form` (newest first) so
+  // they can never disagree with the tiles rendered from it.
+  const results = form.map((entry) => entry.result);
+  const record = {
+    w: results.filter((r) => r === "w").length,
+    d: results.filter((r) => r === "d").length,
+    l: results.filter((r) => r === "l").length,
+  };
+
+  const currentStreak =
+    results.length > 0
+      ? {
+          result: results[0],
+          count: results.findIndex((r) => r !== results[0]) === -1
+            ? results.length
+            : results.findIndex((r) => r !== results[0]),
+        }
+      : null;
+
+  let longestUnbeaten = 0;
+  let unbeatenRun = 0;
+  for (const result of results) {
+    if (result === "l") {
+      unbeatenRun = 0;
+      continue;
+    }
+    unbeatenRun += 1;
+    if (unbeatenRun > longestUnbeaten) longestUnbeaten = unbeatenRun;
+  }
+
+  const recentResults = results.slice(0, 5);
+  const last5Ppg =
+    recentResults.length > 0
+      ? parseFloat(
+          (
+            recentResults.reduce(
+              (total, r) => total + (r === "w" ? 3 : r === "d" ? 1 : 0),
+              0
+            ) / recentResults.length
+          ).toFixed(2)
+        )
+      : null;
+
+  // Standout scorelines need actual scores.
+  let biggestWin: PlayerScoreline | null = null;
+  let heaviestDefeat: PlayerScoreline | null = null;
+  for (const entry of form) {
+    const { darksScore, whitesScore, team } = entry;
+    if (darksScore === null || whitesScore === null) continue;
+    const scored = team === "darks" ? darksScore : whitesScore;
+    const conceded = team === "darks" ? whitesScore : darksScore;
+    const scoreline = {
+      gameweekId: entry.gameweekId,
+      gameDate: entry.gameDate,
+      goalsFor: scored,
+      goalsAgainst: conceded,
+    };
+    const margin = scored - conceded;
+    if (margin > 0 && (!biggestWin || margin > biggestWin.goalsFor - biggestWin.goalsAgainst)) {
+      biggestWin = scoreline;
+    }
+    if (
+      margin < 0 &&
+      (!heaviestDefeat || margin < heaviestDefeat.goalsFor - heaviestDefeat.goalsAgainst)
+    ) {
+      heaviestDefeat = scoreline;
+    }
+  }
+
+  // Appearance rate: games played out of every locked gameweek since their debut.
+  const debutDate = lockedEntries[lockedEntries.length - 1]?.gameweek.game_date ?? null;
+  const eligibleGameweeks = debutDate
+    ? gameweeks.filter((gw) => gw.game_date >= debutDate).length
+    : 0;
+
+  // Career PPG over every locked game (ppgTrend omits the first two).
+  const gamesPlayed = chronological.length;
+  const ppg =
+    gamesPlayed > 0 ? parseFloat((cumulativePoints / gamesPlayed).toFixed(2)) : 0;
+  const lastPlayedDate = lockedEntries[0]?.gameweek.game_date ?? null;
 
   // Goals & GD
   let goalsFor = 0;
@@ -197,20 +284,34 @@ export async function GET(
 
   const toughestOpponent: PlayerOpponent | null =
     Array.from(opponentStats.entries())
-      .filter(([, s]) => s.gp >= 2)
-      .map(([pid, s]) => ({
-        id: pid,
-        name: s.name,
-        gp: s.gp,
-        losses: s.gp - s.wins,
-        winRate: s.wins / s.gp,
-      }))
+    .filter(([, s]) => s.gp >= 2)
+    .map(([pid, s]) => ({
+      id: pid,
+      name: s.name,
+      gp: s.gp,
+      losses: s.gp - s.wins,
+      winRate: s.wins / s.gp,
+    }))
       .sort((a, b) => b.losses - a.losses || a.winRate - b.winRate)[0] ?? null;
 
   return NextResponse.json({
     form,
     teamPicks,
     ppgTrend,
+    ppg,
+    gamesPlayed,
+    lastPlayedDate,
+    record,
+    currentStreak,
+    longestUnbeaten,
+    last5Ppg,
+    biggestWin,
+    heaviestDefeat,
+    eligibleGameweeks,
+    appearanceRate:
+      eligibleGameweeks > 0
+        ? parseFloat((gamesPlayed / eligibleGameweeks).toFixed(3))
+        : null,
     goalsFor,
     goalsAgainst,
     avgGdPerGame,

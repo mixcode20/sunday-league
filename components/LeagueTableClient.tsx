@@ -39,13 +39,12 @@ export default function LeagueTableClient({ rows }: { rows: LeagueStatRow[] }) {
     null
   );
 
-  const goalsForRankMap = useMemo(() => {
-    const eligible = rows.filter((r) => r.gp > 3 && r.goalsFor > 0);
-    const unique = [...new Set(eligible.map((r) => r.goalsFor))].sort((a, b) => b - a);
-    const map = new Map<string, 1 | 2 | 3>();
+  const goalDifferenceRankMap = useMemo(() => {
+    const eligible = rows.filter((r) => r.gp > 3);
+    const unique = [...new Set(eligible.map((r) => r.goalDifference))].sort((a, b) => b - a);
+    const map = new Map<string, number>();
     for (const row of eligible) {
-      const rank = unique.indexOf(row.goalsFor) + 1;
-      if (rank >= 1 && rank <= 3) map.set(row.id, rank as 1 | 2 | 3);
+      map.set(row.id, unique.indexOf(row.goalDifference) + 1);
     }
     return map;
   }, [rows]);
@@ -238,7 +237,7 @@ export default function LeagueTableClient({ rows }: { rows: LeagueStatRow[] }) {
                       <td className="px-2 py-2.5 align-middle text-center text-[10px] font-medium text-[var(--color-text-secondary)] opacity-50">
                         {index + 1}
                       </td>
-                      <td className="px-3 py-2.5 align-middle font-medium text-[var(--color-text)]">
+                      <td className="py-2.5 pl-0 pr-3 align-middle font-medium text-[var(--color-text)]">
                         <div className={`relative flex min-h-8 items-center ${isUnlocked ? "pr-[4.25rem]" : "pr-5"}`}>
                           <span>{row.name}</span>
                           <span className={`absolute top-1/2 -translate-y-1/2 select-none text-sm font-bold text-[var(--color-text-secondary)] opacity-[0.65] ${isUnlocked ? "right-9" : "right-0"}`}>
@@ -273,15 +272,21 @@ export default function LeagueTableClient({ rows }: { rows: LeagueStatRow[] }) {
                     </tr>
                     {isExpanded && (
                       <tr className="bg-[var(--color-surface-highlight)]">
-                        <td colSpan={7} className="border-b border-[rgba(15,61,52,0.25)] px-3 py-3">
-                          <PlayerDrawer
-                            playerId={row.id}
-                            goalsForRank={goalsForRankMap.get(row.id)}
-                            avgGoalsRank={avgGoalsRankMap.get(row.id)}
-                            isWorstAttacker={worstAttackerSet.has(row.id)}
-                            avgConcededRank={avgConcededRankMap.get(row.id)}
-                            isWorstDefender={worstDefenderSet.has(row.id)}
-                          />
+                        <td
+                          colSpan={7}
+                          className="border-b border-[rgba(15,61,52,0.25)] px-3 pb-3 pt-0"
+                        >
+                          <div className="mx-auto h-px w-[93%] bg-[var(--color-border)]" />
+                          <div className="pt-3">
+                            <PlayerDrawer
+                              playerId={row.id}
+                              avgGoalsRank={avgGoalsRankMap.get(row.id)}
+                              isWorstAttacker={worstAttackerSet.has(row.id)}
+                              avgConcededRank={avgConcededRankMap.get(row.id)}
+                              isWorstDefender={worstDefenderSet.has(row.id)}
+                              totalGdRank={goalDifferenceRankMap.get(row.id)}
+                            />
+                          </div>
                         </td>
                       </tr>
                     )}
@@ -342,7 +347,7 @@ export default function LeagueTableClient({ rows }: { rows: LeagueStatRow[] }) {
                     <td className="px-2 py-2.5 align-middle text-center text-[10px] font-medium text-[var(--color-text-secondary)] opacity-50">
                       {index + 1}
                     </td>
-                    <td className="px-3 py-2.5 align-middle font-medium text-[var(--color-text)]">
+                    <td className="py-2.5 pl-0 pr-3 align-middle font-medium text-[var(--color-text)]">
                       <div className={`relative flex min-h-8 items-center ${isUnlocked ? "pr-9" : ""}`}>
                         <span>{row.name}</span>
                         {isUnlocked ? (

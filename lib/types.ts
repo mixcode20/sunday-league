@@ -123,10 +123,30 @@ export type PotmOverview = {
   totalVotes: number;
 };
 
+export type PlayerStreak = { result: "w" | "l" | "d"; count: number };
+
+export type PlayerScoreline = {
+  gameweekId: string;
+  gameDate: string;
+  goalsFor: number;
+  goalsAgainst: number;
+};
+
 export type PlayerStats = {
   form: PlayerFormEntry[];
   teamPicks: { darks: number; whites: number };
   ppgTrend: number[];
+  ppg: number;
+  gamesPlayed: number;
+  lastPlayedDate: string | null;
+  record: { w: number; d: number; l: number };
+  currentStreak: PlayerStreak | null;
+  longestUnbeaten: number;
+  last5Ppg: number | null;
+  biggestWin: PlayerScoreline | null;
+  heaviestDefeat: PlayerScoreline | null;
+  eligibleGameweeks: number;
+  appearanceRate: number | null;
   goalsFor: number;
   goalsAgainst: number;
   avgGdPerGame: number;
