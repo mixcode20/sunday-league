@@ -1,3 +1,15 @@
+-- NOT IN USE. Decision on 2026-11-15: keep the 10s poll on / instead.
+-- Realtime needs anon SELECT on these tables (see below), which would re-open
+-- public read access that rls.sql just closed. The measured benefit is modest
+-- at this scale -- mainly fewer "slot already taken" collisions in the race for
+-- a last slot -- so it was not judged worth trading the lockdown for.
+--
+-- The publication statements below have already been applied, which is
+-- harmless: changes are published but no client can read them. The client code
+-- stays gated behind NEXT_PUBLIC_REALTIME_ENABLED, dynamically imported so it
+-- costs nothing while off. To enable later, add the read policies and set the
+-- env var.
+--
 -- Enables push updates for the join page, replacing the 10s poll in
 -- GamePageClient. Without this the client still subscribes successfully but
 -- never receives events, so polling remains the only refresh path.

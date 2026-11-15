@@ -24,13 +24,36 @@ values
   ('Jamie', 'Lee');
 ```
 
-4) Add environment variables
+4) Apply the migrations
+
+Run everything in `supabase/migrations/` in filename order, then:
+
+- `supabase/rls.sql` — enables Row Level Security. Required: the publishable
+  key ships in the browser bundle, so without RLS it can read and write every
+  table directly, bypassing the organiser PIN. The app is unaffected because it
+  only ever queries Supabase server-side with the service role.
+- `supabase/realtime.sql` — optional, currently not in use. See the notes in
+  that file; it needs read policies to actually deliver events.
+
+5) Add environment variables
 
 Create `.env.local` with:
 ```
-SUPABASE_URL=your-supabase-url
+NEXT_PUBLIC_SUPABASE_URL=your-supabase-url
+NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=your-publishable-key
 SUPABASE_SECRET_KEY=your-service-role-key
 ORGANISER_PIN=your-pin
+```
+
+`SUPABASE_URL` is accepted as a fallback for `NEXT_PUBLIC_SUPABASE_URL`.
+
+Optional:
+```
+NEXT_PUBLIC_REALTIME_ENABLED=true   # only after supabase/realtime.sql + read policies
+NEXT_BROWSER_SOURCE_MAPS=true       # emit production browser source maps
+DEBUG_PERF=true                     # server-side timing logs
+NEXT_PUBLIC_DEBUG_PERF=true         # client-side timing logs
+NEXT_PUBLIC_DEBUG_JOIN_FLOW=true    # verbose join-slot logging
 ```
 
 ## Run locally
@@ -45,7 +68,8 @@ Open http://localhost:3000
 
 1) Deploy the Next.js app to your host (Vercel, Netlify, Render, etc.)
 2) Add the same environment variables in your host’s settings:
-   - `SUPABASE_URL`
+   - `NEXT_PUBLIC_SUPABASE_URL`
+   - `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`
    - `SUPABASE_SECRET_KEY`
    - `ORGANISER_PIN`
 3) Build and start:
