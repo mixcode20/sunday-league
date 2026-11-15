@@ -157,3 +157,17 @@ export type PlayerStats = {
   bestTeammates: PlayerTeammate[];
   toughestOpponent: PlayerOpponent | null;
 };
+
+export type LeagueOverview = {
+  rows: LeagueStatRow[];
+  playersCount: number;
+  teamRecord: LeagueTeamRecord;
+};
+
+export type ResultsOverview = {
+  currentGameweek: Gameweek | null;
+  entries: GameweekPlayer[];
+  olderId: string | null;
+  newerId: string | null;
+  votingClosed: boolean;
+};

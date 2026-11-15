@@ -5,16 +5,14 @@ import Link from "next/link";
 import useSWR from "swr";
 import LeagueTableClient from "@/components/LeagueTableClient";
 import TeamSplitBar from "@/components/TeamSplitBar";
-import type { LeagueStatRow, LeagueTeamRecord } from "@/lib/types";
+import type { LeagueOverview } from "@/lib/types";
 import { fetcher, debugPerfEnabled } from "@/lib/swr";
 
-type LeagueOverviewResponse = {
-  rows: LeagueStatRow[];
-  playersCount: number;
-  teamRecord: LeagueTeamRecord;
-};
-
-export default function LeaguePageClient() {
+export default function LeaguePageClient({
+  fallback,
+}: {
+  fallback?: LeagueOverview;
+}) {
   const routeTimerArmed = useRef(false);
   const routeLabel = "route:league";
 
@@ -24,10 +22,11 @@ export default function LeaguePageClient() {
     routeTimerArmed.current = true;
   }, []);
 
-  const { data, error } = useSWR<LeagueOverviewResponse>(
+  const { data, error } = useSWR<LeagueOverview>(
     "/api/league/overview",
     fetcher,
     {
+      fallbackData: fallback,
       revalidateOnFocus: true,
     }
   );

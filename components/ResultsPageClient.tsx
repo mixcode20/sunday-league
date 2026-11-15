@@ -5,17 +5,9 @@ import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import useSWR, { preload } from "swr";
 import TeamsReadOnly from "@/components/TeamsReadOnly";
-import type { Gameweek, GameweekPlayer } from "@/lib/types";
+import type { Gameweek, ResultsOverview } from "@/lib/types";
 import { formatGameweekDate, getGameweekWinner } from "@/lib/utils";
 import { fetcher, debugPerfEnabled } from "@/lib/swr";
-
-type ResultsOverviewResponse = {
-  currentGameweek: Gameweek | null;
-  entries: GameweekPlayer[];
-  olderId: string | null;
-  newerId: string | null;
-  votingClosed: boolean;
-};
 
 function ChevronIcon({ direction }: { direction: "left" | "right" }) {
   return (
@@ -69,7 +61,13 @@ const buildSummary = (gameweek: Gameweek) => {
   };
 };
 
-export default function ResultsPageClient() {
+export default function ResultsPageClient({
+  fallback,
+  fallbackGameweekId = null,
+}: {
+  fallback?: ResultsOverview;
+  fallbackGameweekId?: string | null;
+}) {
   const searchParams = useSearchParams();
   const gameweekId = searchParams.get("gameweekId");
   const routeTimerArmed = useRef(false);
@@ -93,7 +91,10 @@ export default function ResultsPageClient() {
   const key = gameweekId
     ? `/api/results/overview?gameweekId=${gameweekId}`
     : "/api/results/overview";
-  const { data, error } = useSWR<ResultsOverviewResponse>(key, fetcher, {
+  // Only seed from the server payload for the gameweek it was fetched for;
+  // navigating to another gameweek must fetch rather than reuse it.
+  const { data, error } = useSWR<ResultsOverview>(key, fetcher, {
+    fallbackData: gameweekId === fallbackGameweekId ? fallback : undefined,
     keepPreviousData: true,
     revalidateOnFocus: false,
   });

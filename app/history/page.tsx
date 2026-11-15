@@ -1,7 +1,7 @@
 import { Suspense } from "react";
 import ResultsPageClient from "@/components/ResultsPageClient";
-
-export const dynamic = "force-dynamic";
+import { getResultsOverview } from "@/lib/resultsOverview";
+import { supabaseServer } from "@/lib/supabase";
 
 function ResultsSkeleton() {
   return (
@@ -12,10 +12,22 @@ function ResultsSkeleton() {
   );
 }
 
-export default function ResultsPage() {
+async function Results({ gameweekId }: { gameweekId?: string }) {
+  // Server-fetched so the result is in the first byte; SWR uses it as
+  // fallbackData and takes over for client-side gameweek navigation.
+  const overview = await getResultsOverview(supabaseServer(), gameweekId ?? null);
+  return <ResultsPageClient fallback={overview} fallbackGameweekId={gameweekId ?? null} />;
+}
+
+export default async function ResultsPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ gameweekId?: string }>;
+}) {
+  const { gameweekId } = await searchParams;
   return (
-    <Suspense fallback={<ResultsSkeleton />}>
-      <ResultsPageClient />
+    <Suspense key={gameweekId ?? "latest"} fallback={<ResultsSkeleton />}>
+      <Results gameweekId={gameweekId} />
     </Suspense>
   );
 }
