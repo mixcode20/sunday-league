@@ -95,6 +95,8 @@ export default function ResultsPageClient({
   // navigating to another gameweek must fetch rather than reuse it.
   const { data, error } = useSWR<ResultsOverview>(key, fetcher, {
     fallbackData: gameweekId === fallbackGameweekId ? fallback : undefined,
+    // Only skip the mount fetch when the server payload matches this gameweek.
+    revalidateOnMount: gameweekId !== fallbackGameweekId,
     keepPreviousData: true,
     revalidateOnFocus: false,
   });

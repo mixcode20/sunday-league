@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import { useRouter } from "next/navigation";
 import { useOrganiserMode } from "@/components/OrganiserModeProvider";
 import WhatsAppIcon from "@/components/WhatsAppIcon";
 import type { Gameweek, GameweekPlayer, Team } from "@/lib/types";
@@ -28,6 +27,11 @@ type DragInfo = {
 type SlotMeta = {
   team: Team;
   position: number;
+};
+
+type SlotOverride = {
+  team: Team;
+  team_position: number | null;
 };
 
 function ChevronDownIcon() {
@@ -73,16 +77,45 @@ function MinusIcon() {
 }
 
 export default function TeamsClient({ gameweek, entries, onRefresh }: TeamsClientProps) {
-  const router = useRouter();
   const { isUnlocked, organiserPin } = useOrganiserMode();
   const [statusMessage, setStatusMessage] = useState("");
   const [dragged, setDragged] = useState<DragInfo | null>(null);
   const [openSlotKey, setOpenSlotKey] = useState<string | null>(null);
   const [pendingPickIds, setPendingPickIds] = useState<string[]>([]);
   const [now, setNow] = useState(() => Date.now());
+  const [overrides, setOverrides] = useState<Record<string, SlotOverride>>({});
   const slotMenuRef = useRef<HTMLDivElement | null>(null);
 
   const isLocked = gameweek.status === "locked";
+
+  // Only the organiser edits this page, so local picks are authoritative until
+  // the server echoes them back. Overrides the server already agrees with are
+  // dropped here rather than in an effect, so this stays a pure derivation.
+  const pendingOverrides = useMemo(() => {
+    const out: Record<string, SlotOverride> = {};
+    Object.entries(overrides).forEach(([playerId, override]) => {
+      const live = entries.find((entry) => entry.player_id === playerId);
+      if (
+        live &&
+        live.team === override.team &&
+        (live.team_position ?? null) === override.team_position
+      ) {
+        return;
+      }
+      out[playerId] = override;
+    });
+    return out;
+  }, [entries, overrides]);
+
+  const effectiveEntries = useMemo(() => {
+    if (Object.keys(pendingOverrides).length === 0) return entries;
+    return entries.map((entry) => {
+      const override = pendingOverrides[entry.player_id];
+      return override
+        ? { ...entry, team: override.team, team_position: override.team_position }
+        : entry;
+    });
+  }, [entries, pendingOverrides]);
 
   const grouped = useMemo(() => {
     const base: Record<Team, GameweekPlayer[]> = {
@@ -90,7 +123,7 @@ export default function TeamsClient({ gameweek, entries, onRefresh }: TeamsClien
       whites: [],
       subs: [],
     };
-    entries.forEach((entry) => {
+    effectiveEntries.forEach((entry) => {
       base[entry.team].push(entry);
     });
     (Object.keys(base) as Team[]).forEach((team) => {
@@ -102,11 +135,11 @@ export default function TeamsClient({ gameweek, entries, onRefresh }: TeamsClien
       });
     });
     return base;
-  }, [entries]);
+  }, [effectiveEntries]);
 
   const playersThisWeek = useMemo(
-    () => [...entries].sort((a, b) => a.position - b.position),
-    [entries]
+    () => [...effectiveEntries].sort((a, b) => a.position - b.position),
+    [effectiveEntries]
   );
   const slotMetaByKey = useMemo(() => {
     const meta = new Map<string, SlotMeta>();
@@ -133,11 +166,11 @@ export default function TeamsClient({ gameweek, entries, onRefresh }: TeamsClien
   const assignedTeamByPlayerId = useMemo(
     () =>
       new Map(
-        entries
+        effectiveEntries
           .filter((entry) => entry.team !== "subs")
           .map((entry) => [entry.player_id, entry.team] as const)
       ),
-    [entries]
+    [effectiveEntries]
   );
   const unassignedPlayers = useMemo(
     () =>
@@ -262,32 +295,56 @@ export default function TeamsClient({ gameweek, entries, onRefresh }: TeamsClien
     return fallback;
   };
 
-  const assignPlayer = async (
-    playerId: string,
-    team: Team,
-    position?: number | null,
+  // One request for the whole batch, with the UI already updated optimistically.
+  // Previously each assignment was its own POST, and each POST re-ran the same
+  // validation queries and triggered both an SWR refetch and router.refresh().
+  const assignPlayers = async (
+    assignments: { playerId: string; team: Team; position?: number | null }[],
     allowReassign?: boolean
   ) => {
-    if (!organiserPin) return;
+    if (!organiserPin || assignments.length === 0) return;
     setStatusMessage("");
-    const response = await fetch(`/api/gameweeks/${gameweek.id}/assign`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        playerId,
+
+    const optimistic: Record<string, SlotOverride> = {};
+    assignments.forEach(({ playerId, team, position }) => {
+      optimistic[playerId] = {
         team,
-        position,
-        pin: organiserPin,
-        allowReassign: Boolean(allowReassign),
-      }),
+        team_position:
+          team === "subs" || typeof position !== "number" ? null : position,
+      };
     });
-    if (!response.ok) {
-      const data = await response.json().catch(() => null);
-      setStatusMessage(formatErrorMessage(data, "Failed to update player."));
-      return;
+    setOverrides((prev) => ({ ...prev, ...optimistic }));
+
+    try {
+      const response = await fetch(`/api/gameweeks/${gameweek.id}/assign/bulk`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          assignments,
+          pin: organiserPin,
+          allowReassign: Boolean(allowReassign),
+        }),
+      });
+      if (!response.ok) {
+        const data = await response.json().catch(() => null);
+        setStatusMessage(formatErrorMessage(data, "Failed to update player."));
+        // Roll the optimistic picks back; the server rejected them.
+        setOverrides((prev) => {
+          const next = { ...prev };
+          assignments.forEach(({ playerId }) => delete next[playerId]);
+          return next;
+        });
+        return;
+      }
+      onRefresh?.();
+    } catch {
+      setStatusMessage("Failed to update player.");
+      setOverrides((prev) => {
+        const next = { ...prev };
+        assignments.forEach(({ playerId }) => delete next[playerId]);
+        return next;
+      });
     }
-    onRefresh?.();
-    router.refresh();
   };
 
   const clearTeamSlot = async (playerId: string) => {
@@ -303,17 +360,26 @@ export default function TeamsClient({ gameweek, entries, onRefresh }: TeamsClien
       setStatusMessage(formatErrorMessage(data, "Failed to clear slot."));
       return;
     }
+    setOverrides((prev) => {
+      const next = { ...prev };
+      delete next[playerId];
+      return next;
+    });
     onRefresh?.();
-    router.refresh();
   };
 
   const handleDrop = async (team: Team, position: number, occupied?: DragInfo) => {
     if (!dragged || !organiserPin) return;
-    await assignPlayer(dragged.playerId, team, position, true);
+    const moves = [{ playerId: dragged.playerId, team, position }];
     if (occupied && (occupied.team !== dragged.team || occupied.position !== dragged.position)) {
-      await assignPlayer(occupied.playerId, dragged.team, dragged.position, true);
+      moves.push({
+        playerId: occupied.playerId,
+        team: dragged.team,
+        position: dragged.position,
+      });
     }
     setDragged(null);
+    await assignPlayers(moves, true);
   };
 
   const shareMessage = async (text: string) => {
@@ -497,11 +563,13 @@ export default function TeamsClient({ gameweek, entries, onRefresh }: TeamsClien
       const meta = openSlotMeta;
       const positions = openTeamAvailablePositions;
       const picks = pendingPickIds;
-      void (async () => {
-        for (let index = 0; index < picks.length; index += 1) {
-          await assignPlayer(picks[index], meta.team, positions[index]);
-        }
-      })();
+      void assignPlayers(
+        picks.map((playerId, index) => ({
+          playerId,
+          team: meta.team,
+          position: positions[index],
+        }))
+      );
     }
     closeSelector();
   };

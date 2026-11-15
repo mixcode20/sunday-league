@@ -58,7 +58,9 @@ export default function TeamsPageClient({
     fetcher,
     {
       fallbackData: fallback,
-      refreshInterval: 12000,
+      // No refreshInterval: only the organiser edits this page, and polling
+      // mid-edit fights the optimistic state in TeamsClient.
+      revalidateOnMount: false,
       revalidateOnFocus: true,
       keepPreviousData: true,
       onError: (err) => {

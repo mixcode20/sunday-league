@@ -2,7 +2,7 @@
 
 import dynamic from "next/dynamic";
 
-import { useEffect, useMemo, useRef } from "react";
+import { useCallback, useEffect, useMemo, useRef } from "react";
 import useSWR from "swr";
 const CreateGameweek = dynamic(() => import("@/components/CreateGameweek"), {
   ssr: false,
@@ -12,6 +12,7 @@ import GameweekInfoStrip from "@/components/GameweekInfoStrip";
 import { useOrganiserMode } from "@/components/OrganiserModeProvider";
 import type { GameOverview } from "@/lib/types";
 import { fetcher, debugPerfEnabled } from "@/lib/swr";
+import { useGameweekRealtime } from "@/lib/useGameweekRealtime";
 import { buildEntryPositionMap, capacityForFormat, getSlotCounts } from "@/lib/slots";
 
 export default function GamePageClient({
@@ -34,6 +35,8 @@ export default function GamePageClient({
     fetcher,
     {
       fallbackData: fallback,
+      // Server-rendered above; skip the duplicate fetch on mount.
+      revalidateOnMount: false,
       refreshInterval: 10000,
       revalidateOnFocus: true,
     }
@@ -44,6 +47,13 @@ export default function GamePageClient({
     console.timeEnd(routeLabel);
     routeTimerArmed.current = false;
   }, [data]);
+
+  // Slots fill in near-instantly once supabase/realtime.sql has been applied;
+  // refreshInterval above stays as the fallback until then.
+  const revalidate = useCallback(() => {
+    void mutate();
+  }, [mutate]);
+  useGameweekRealtime(revalidate);
 
   const normalizedEntries = useMemo(() => data?.entries ?? [], [data?.entries]);
   const gameFormat = data?.gameweek?.format ?? null;

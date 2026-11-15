@@ -27,6 +27,8 @@ export default function LeaguePageClient({
     fetcher,
     {
       fallbackData: fallback,
+      // Server-rendered above; skip the duplicate fetch on mount.
+      revalidateOnMount: false,
       revalidateOnFocus: true,
     }
   );
