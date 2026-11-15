@@ -6,8 +6,14 @@
 -- SUBSCRIBED but a row update produced no event, confirming the table is not
 -- in the publication.
 --
--- anon already has read access to both tables, so no RLS policy changes are
--- required for events to be delivered to the browser.
+-- IMPORTANT: this is necessary but NOT sufficient once RLS is enabled.
+-- Realtime authorises postgres_changes as the anon role, so anon needs SELECT
+-- on these tables or the channel reaches SUBSCRIBED and silently receives
+-- nothing. Verified on 2026-11-15 after rls.sql was applied: publication in
+-- place, channel SUBSCRIBED, zero events delivered.
+--
+-- To finish enabling realtime, also apply the two read policies at the bottom
+-- of rls.sql. That re-opens public READ (not write) on these two tables.
 
 alter publication supabase_realtime add table gameweek_players;
 alter publication supabase_realtime add table gameweeks;

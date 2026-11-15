@@ -6,7 +6,7 @@ import type { ResultsOverview } from "@/lib/types";
 import { normalizePlayerJoin } from "@/lib/utils";
 
 const GAMEWEEK_FIELDS =
-  "id, game_date, game_time, location, format, darks_score, whites_score, result_mode, winner, status, locked_at";
+  "id, game_date, game_time, location, payment_link, format, darks_score, whites_score, result_mode, winner, status, locked_at";
 
 // Shared by the /api/results/overview route and the /history server component.
 export const getResultsOverview = async (
