@@ -6,18 +6,15 @@ import CreateGameweek from "@/components/CreateGameweek";
 import JoinSlots from "@/components/JoinSlots";
 import GameweekInfoStrip from "@/components/GameweekInfoStrip";
 import { useOrganiserMode } from "@/components/OrganiserModeProvider";
-import type { Gameweek, GameweekPlayer, Player } from "@/lib/types";
+import type { GameOverview } from "@/lib/types";
 import { fetcher, debugPerfEnabled } from "@/lib/swr";
 import { buildEntryPositionMap, capacityForFormat, getSlotCounts } from "@/lib/slots";
 
-type GameOverviewResponse = {
-  openGameweek: Gameweek | null;
-  gameweek: Gameweek | null;
-  players: Player[];
-  entries: GameweekPlayer[];
-};
-
-export default function GamePageClient() {
+export default function GamePageClient({
+  fallback,
+}: {
+  fallback?: GameOverview;
+}) {
   const routeTimerArmed = useRef(false);
   const routeLabel = "route:game";
   const { isUnlocked } = useOrganiserMode();
@@ -28,10 +25,11 @@ export default function GamePageClient() {
     routeTimerArmed.current = true;
   }, []);
 
-  const { data, error, mutate } = useSWR<GameOverviewResponse>(
+  const { data, error, mutate } = useSWR<GameOverview>(
     "/api/game/overview",
     fetcher,
     {
+      fallbackData: fallback,
       refreshInterval: 10000,
       revalidateOnFocus: true,
     }

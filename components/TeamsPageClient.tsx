@@ -7,17 +7,15 @@ import GameweekInfoStrip from "@/components/GameweekInfoStrip";
 import { useOrganiserMode } from "@/components/OrganiserModeProvider";
 import TeamsClient from "@/components/TeamsClient";
 import TeamsReadOnly from "@/components/TeamsReadOnly";
-import type { Gameweek, GameweekPlayer, Player } from "@/lib/types";
+import type { TeamsOverview } from "@/lib/types";
 import { fetcher, debugPerfEnabled } from "@/lib/swr";
 import { buildEntryPositionMap, capacityForFormat, getSlotCounts } from "@/lib/slots";
 
-type TeamsOverviewResponse = {
-  gameweek: Gameweek | null;
-  entries: GameweekPlayer[];
-  players: Player[];
-};
-
-export default function TeamsPageClient() {
+export default function TeamsPageClient({
+  fallback,
+}: {
+  fallback?: TeamsOverview;
+}) {
   const routeTimerArmed = useRef(false);
   const routeLabel = "route:teams";
   const { isUnlocked } = useOrganiserMode();
@@ -51,10 +49,11 @@ export default function TeamsPageClient() {
     return message || "Failed to fetch team data.";
   };
 
-  const { data, error, mutate } = useSWR<TeamsOverviewResponse>(
+  const { data, error, mutate } = useSWR<TeamsOverview>(
     "/api/teams/overview",
     fetcher,
     {
+      fallbackData: fallback,
       refreshInterval: 12000,
       revalidateOnFocus: true,
       keepPreviousData: true,

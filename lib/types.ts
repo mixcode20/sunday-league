@@ -171,3 +171,16 @@ export type ResultsOverview = {
   newerId: string | null;
   votingClosed: boolean;
 };
+
+export type GameOverview = {
+  openGameweek: Gameweek | null;
+  gameweek: Gameweek | null;
+  players: Player[];
+  entries: GameweekPlayer[];
+};
+
+export type TeamsOverview = {
+  gameweek: Gameweek | null;
+  entries: GameweekPlayer[];
+  players: Player[];
+};

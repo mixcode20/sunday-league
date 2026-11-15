@@ -1,7 +1,6 @@
 import { NextResponse } from "next/server";
-import { listPlayersWithGamesPlayed } from "@/lib/players";
+import { getGameOverview } from "@/lib/gameOverview";
 import { supabaseServer } from "@/lib/supabase";
-import { normalizePlayerJoin } from "@/lib/utils";
 
 const debugPerf =
   process.env.DEBUG_PERF === "true" ||
@@ -12,44 +11,11 @@ export async function GET() {
     console.time("api:game:overview");
   }
 
-  const supabase = supabaseServer();
-
-  const [openResult, lockedResult, playersResult] = await Promise.all([
-    supabase.from("gameweeks").select("*").eq("status", "open").maybeSingle(),
-    supabase
-      .from("gameweeks")
-      .select("*")
-      .eq("status", "locked")
-      .order("game_date", { ascending: false })
-      .limit(1)
-      .maybeSingle(),
-    listPlayersWithGamesPlayed(supabase, { activeOnly: true }),
-  ]);
-
-  const openGameweek = openResult.data ?? null;
-  const latestLocked = lockedResult.data ?? null;
-  const gameweek = openGameweek ?? latestLocked;
-  const players = playersResult.data ?? [];
-
-  const { data: entries } = gameweek
-    ? await supabase
-        .from("gameweek_players")
-        .select("*, players(id, first_name, last_name, archived)")
-        .eq("gameweek_id", gameweek.id)
-        .order("position", { ascending: true })
-        .order("created_at", { ascending: true })
-    : { data: [] };
-
-  const normalizedEntries = (entries ?? []).map(normalizePlayerJoin);
+  const overview = await getGameOverview(supabaseServer());
 
   if (debugPerf) {
     console.timeEnd("api:game:overview");
   }
 
-  return NextResponse.json({
-    openGameweek,
-    gameweek,
-    players,
-    entries: normalizedEntries,
-  });
+  return NextResponse.json(overview);
 }
