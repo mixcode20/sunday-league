@@ -1,8 +1,13 @@
 "use client";
 
+import dynamic from "next/dynamic";
+
 import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
-import ConfirmResultPanel from "@/components/ConfirmResultPanel";
+const ConfirmResultPanel = dynamic(
+  () => import("@/components/ConfirmResultPanel"),
+  { ssr: false }
+);
 import {
   formatGameweekDate,
   getGameweekDateTime,
@@ -12,8 +17,13 @@ import {
 import { buildEntryPositionMap, capacityForFormat, getSlotCounts } from "@/lib/slots";
 import { useOrganiserMode } from "@/components/OrganiserModeProvider";
 import Modal from "@/components/Modal";
-import ShareGameButton from "@/components/ShareGameButton";
-import CollectPotmVotesButton from "@/components/CollectPotmVotesButton";
+const ShareGameButton = dynamic(() => import("@/components/ShareGameButton"), {
+  ssr: false,
+});
+const CollectPotmVotesButton = dynamic(
+  () => import("@/components/CollectPotmVotesButton"),
+  { ssr: false }
+);
 import type { Gameweek, GameweekPlayer, Player } from "@/lib/types";
 
 type GameweekInfoStripProps = {

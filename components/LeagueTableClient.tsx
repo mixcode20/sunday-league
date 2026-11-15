@@ -1,9 +1,13 @@
 "use client";
 
+import dynamic from "next/dynamic";
+
 import { Fragment, useMemo, useState } from "react";
 import { useSWRConfig } from "swr";
 import Modal from "@/components/Modal";
-import PlayerDrawer from "@/components/PlayerDrawer";
+const PlayerDrawer = dynamic(() => import("@/components/PlayerDrawer"), {
+  ssr: false,
+});
 import { useOrganiserMode } from "@/components/OrganiserModeProvider";
 import type { LeagueSortDirection, LeagueStatRow } from "@/lib/types";
 

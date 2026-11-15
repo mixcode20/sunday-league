@@ -1,8 +1,12 @@
 "use client";
 
+import dynamic from "next/dynamic";
+
 import { useEffect, useMemo, useRef, useState } from "react";
 import useSWR from "swr";
-import CreateGameweek from "@/components/CreateGameweek";
+const CreateGameweek = dynamic(() => import("@/components/CreateGameweek"), {
+  ssr: false,
+});
 import GameweekInfoStrip from "@/components/GameweekInfoStrip";
 import { useOrganiserMode } from "@/components/OrganiserModeProvider";
 import TeamsClient from "@/components/TeamsClient";
