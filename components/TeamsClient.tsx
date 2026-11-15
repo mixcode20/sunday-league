@@ -584,6 +584,11 @@ export default function TeamsClient({ gameweek, entries, onRefresh }: TeamsClien
     setOpenSlotKey(slotKey);
   };
 
+  const finalizeSelectorRef = useRef(finalizeSelector);
+  useEffect(() => {
+    finalizeSelectorRef.current = finalizeSelector;
+  });
+
   useEffect(() => {
     if (!openSlotKey) return;
 
@@ -595,25 +600,25 @@ export default function TeamsClient({ gameweek, entries, onRefresh }: TeamsClien
       ) {
         return;
       }
-      finalizeSelector();
+      finalizeSelectorRef.current();
     };
 
     document.addEventListener("mousedown", handlePointerDown);
     return () => document.removeEventListener("mousedown", handlePointerDown);
-  }, [openSlotKey, finalizeSelector]);
+  }, [openSlotKey]);
 
   useEffect(() => {
     if (!openSlotKey) return;
 
     const handleKeyDown = (event: KeyboardEvent) => {
       if (event.key === "Escape") {
-        finalizeSelector();
+        finalizeSelectorRef.current();
       }
     };
 
     document.addEventListener("keydown", handleKeyDown);
     return () => document.removeEventListener("keydown", handleKeyDown);
-  }, [openSlotKey, finalizeSelector]);
+  }, [openSlotKey]);
 
   const togglePick = (playerId: string) => {
     setPendingPickIds((prev) => {

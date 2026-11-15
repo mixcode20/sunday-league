@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useMemo, useState, useSyncExternalStore } from "react";
 import Link from "next/link";
 import useSWR from "swr";
 import { fetcher } from "@/lib/swr";
@@ -439,15 +439,21 @@ function AuditEmptyRow({ text }: { text: string }) {
   );
 }
 
-const readVoteMap = (): PotmVoteMap => {
-  if (typeof document === "undefined") return {};
-  const rawCookie = document.cookie
+const VOTE_STORE_EVENT = "potm-vote-store-change";
+const SNAPSHOT_SEPARATOR = "\u0000";
+
+const readCookieValue = () =>
+  document.cookie
     .split("; ")
     .find((part) => part.startsWith(`${getPotmVoteCookieName()}=`))
-    ?.slice(getPotmVoteCookieName().length + 1);
-  const cookieMap = parsePotmVoteCookie(rawCookie);
-  const storedMap = parsePotmVoteCookie(window.localStorage.getItem(getPotmVoteStorageKey()));
-  return mergePotmVoteMaps(cookieMap, storedMap);
+    ?.slice(getPotmVoteCookieName().length + 1) ?? "";
+
+const readVoteMap = (): PotmVoteMap => {
+  if (typeof document === "undefined") return {};
+  return mergePotmVoteMaps(
+    parsePotmVoteCookie(readCookieValue()),
+    parsePotmVoteCookie(window.localStorage.getItem(getPotmVoteStorageKey()))
+  );
 };
 
 const writeVoteMap = (map: PotmVoteMap) => {
@@ -455,6 +461,39 @@ const writeVoteMap = (map: PotmVoteMap) => {
   const serialized = serializePotmVoteCookie(map);
   document.cookie = `${getPotmVoteCookieName()}=${serialized}; max-age=${getPotmVoteCookieMaxAgeSeconds()}; path=/; samesite=lax`;
   window.localStorage.setItem(getPotmVoteStorageKey(), serialized);
+  window.dispatchEvent(new Event(VOTE_STORE_EVENT));
+};
+
+// The vote record lives in a cookie plus localStorage, i.e. an external store
+// the server cannot read. Reading it during render would disagree with the
+// server; reading it in an effect costs an extra render and trips
+// react-hooks/set-state-in-effect. useSyncExternalStore handles both: the
+// server snapshot is null ("not known yet"), which the component already
+// renders as a loading state.
+const subscribeVoteStore = (onStoreChange: () => void) => {
+  window.addEventListener("storage", onStoreChange);
+  window.addEventListener(VOTE_STORE_EVENT, onStoreChange);
+  return () => {
+    window.removeEventListener("storage", onStoreChange);
+    window.removeEventListener(VOTE_STORE_EVENT, onStoreChange);
+  };
+};
+
+// Must return a value that is Object.is-stable while nothing has changed, so
+// this is the raw strings rather than a freshly parsed object.
+const getVoteStoreSnapshot = () =>
+  `${readCookieValue()}${SNAPSHOT_SEPARATOR}${
+    window.localStorage.getItem(getPotmVoteStorageKey()) ?? ""
+  }`;
+
+const getServerVoteStoreSnapshot = (): string | null => null;
+
+const parseVoteSnapshot = (snapshot: string): PotmVoteMap => {
+  const [cookiePart, storedPart] = snapshot.split(SNAPSHOT_SEPARATOR);
+  return mergePotmVoteMaps(
+    parsePotmVoteCookie(cookiePart),
+    parsePotmVoteCookie(storedPart)
+  );
 };
 
 const persistVoteRecord = (gameweekId: string, record: PotmVoteRecord) => {
@@ -469,7 +508,6 @@ export default function PotmVoteFlow({
   whitesScore,
   votingClosed,
 }: PotmVoteFlowProps) {
-  const [voteRecord, setVoteRecord] = useState<PotmVoteRecord | null | undefined>(undefined);
   const [phase, setPhase] = useState<Phase>("voter");
   const [voterId, setVoterId] = useState<string | null>(null);
   const [votedId, setVotedId] = useState<string | null>(null);
@@ -483,9 +521,20 @@ export default function PotmVoteFlow({
     totalVotes: number;
   } | null>(null);
 
-  useEffect(() => {
-    setVoteRecord(getPotmVoteRecord(readVoteMap(), gameweekId));
-  }, [gameweekId]);
+  // undefined until the store has been read on the client, which the render
+  // below treats as "still loading" exactly as the previous effect did.
+  const voteSnapshot = useSyncExternalStore(
+    subscribeVoteStore,
+    getVoteStoreSnapshot,
+    getServerVoteStoreSnapshot
+  );
+  const voteRecord = useMemo(
+    () =>
+      voteSnapshot === null
+        ? undefined
+        : getPotmVoteRecord(parseVoteSnapshot(voteSnapshot), gameweekId),
+    [voteSnapshot, gameweekId]
+  );
 
   const query = new URLSearchParams();
   if (voteRecord) query.set("voterPlayerId", voteRecord.voterPlayerId);
@@ -561,14 +610,12 @@ export default function PotmVoteFlow({
       if (!response.ok) {
         if (response.status === 409) {
           persistVoteRecord(gameweekId, record);
-          setVoteRecord(record);
         }
         setError(body.error ?? "Failed to submit vote.");
         return;
       }
 
       persistVoteRecord(gameweekId, record);
-      setVoteRecord(record);
       setLocalResult({
         votedForId: body.votedForId,
         tally: body.tally,

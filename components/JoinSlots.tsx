@@ -86,15 +86,14 @@ export default function JoinSlots({
     return match ? Number(match[1]) : Number.MAX_SAFE_INTEGER;
   }, [formatLastSeenWeeksAgo]);
 
-  useEffect(() => {
+  // Re-sync from the server on every new entries prop. Done during render
+  // rather than in an effect: the poll in GamePageClient delivers a fresh
+  // array every 10s, and an effect made that two full renders each time.
+  const [syncedEntries, setSyncedEntries] = useState(entries);
+  if (syncedEntries !== entries) {
+    setSyncedEntries(entries);
     setLiveEntries(entries);
-  }, [entries]);
-
-  useEffect(() => {
-    if (openSlot === null) {
-      setPlayerSearch("");
-    }
-  }, [openSlot]);
+  }
 
   useEffect(() => {
     if (typeof document === "undefined") return;
@@ -161,39 +160,29 @@ export default function JoinSlots({
     }
   }, []);
 
-  useEffect(() => {
-    if (Object.keys(optimisticByPosition).length === 0) return;
-    const livePositions = new Set(liveEntries.map((entry) => entry.position));
-    setOptimisticByPosition((prev) => {
-      let changed = false;
-      const next = { ...prev };
-      Object.keys(next).forEach((key) => {
-        const position = Number(key);
-        if (livePositions.has(position)) {
-          delete next[position];
-          changed = true;
-        }
-      });
-      return changed ? next : prev;
-    });
-  }, [liveEntries, optimisticByPosition]);
+  // Once a position exists in live data, any optimistic placeholder or error
+  // for it is obsolete. Filtering here keeps that a pure derivation rather
+  // than a setState-in-effect that costs an extra render per poll.
+  const livePositions = useMemo(
+    () => new Set(liveEntries.map((entry) => entry.position)),
+    [liveEntries]
+  );
 
-  useEffect(() => {
-    if (Object.keys(slotErrors).length === 0) return;
-    const livePositions = new Set(liveEntries.map((entry) => entry.position));
-    setSlotErrors((prev) => {
-      let changed = false;
-      const next = { ...prev };
-      Object.keys(next).forEach((key) => {
-        const position = Number(key);
-        if (livePositions.has(position) && next[position]) {
-          delete next[position];
-          changed = true;
-        }
-      });
-      return changed ? next : prev;
+  const activeOptimisticByPosition = useMemo(() => {
+    const next: Record<number, GameweekPlayer> = {};
+    Object.entries(optimisticByPosition).forEach(([key, entry]) => {
+      if (!livePositions.has(Number(key))) next[Number(key)] = entry;
     });
-  }, [liveEntries, slotErrors]);
+    return next;
+  }, [optimisticByPosition, livePositions]);
+
+  const activeSlotErrors = useMemo(() => {
+    const next: Record<number, string> = {};
+    Object.entries(slotErrors).forEach(([key, message]) => {
+      if (message && !livePositions.has(Number(key))) next[Number(key)] = message;
+    });
+    return next;
+  }, [slotErrors, livePositions]);
 
   const { positionMap: basePositionMap, diagnostics } = useMemo(
     () => buildEntryPositionMap(liveEntries),
@@ -218,13 +207,13 @@ export default function JoinSlots({
 
   const mergedPositionMap = useMemo(() => {
     const next: Record<number, GameweekPlayer> = { ...basePositionMap };
-    Object.values(optimisticByPosition).forEach((entry) => {
+    Object.values(activeOptimisticByPosition).forEach((entry) => {
       if (!next[entry.position]) {
         next[entry.position] = entry;
       }
     });
     return next;
-  }, [basePositionMap, optimisticByPosition]);
+  }, [basePositionMap, activeOptimisticByPosition]);
 
   const slotEntries = useMemo(() => {
     const mainSlots = Array.from(
@@ -657,6 +646,7 @@ export default function JoinSlots({
 
   const openDropdown = (slotIndex: number) => {
     if (!isOpen || isSlotPending(slotIndex)) return;
+    setPlayerSearch("");
     setOpenSlot(slotIndex);
   };
 
@@ -671,6 +661,7 @@ export default function JoinSlots({
     if (result.ok) {
       setOpenSlot(null);
     } else {
+      setPlayerSearch("");
       setOpenSlot(targetSlot);
     }
   };
@@ -837,7 +828,7 @@ export default function JoinSlots({
               entry?.remove_requested && (isUnlocked || sessionState?.isCookieOwner)
             );
             const isHighlighted = highlightedPosition === slotPosition;
-            const slotError = slotErrors[slotPosition];
+            const slotError = activeSlotErrors[slotPosition];
             const isPending = isSlotPending(slotPosition);
             const isOptimistic = Boolean(
               entry && typeof entry.id === "string" && entry.id.startsWith("optimistic-")
@@ -989,7 +980,7 @@ export default function JoinSlots({
                 entry?.remove_requested && (isUnlocked || sessionState?.isCookieOwner)
               );
               const isHighlighted = highlightedPosition === slotPosition;
-              const slotError = slotErrors[slotPosition];
+              const slotError = activeSlotErrors[slotPosition];
               const isPending = isSlotPending(slotPosition);
               const isOptimistic = Boolean(
                 entry && typeof entry.id === "string" && entry.id.startsWith("optimistic-")
