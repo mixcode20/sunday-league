@@ -1,12 +1,31 @@
+import { Suspense } from "react";
 import GamePageClient from "@/components/GamePageClient";
 import { getGameOverview } from "@/lib/gameOverview";
 import { supabaseServer } from "@/lib/supabase";
 
-// Request-time, not build-time: the open gameweek and its slots change
-// constantly. Phase 4 should revisit this with tag-based revalidation.
 export const dynamic = "force-dynamic";
 
-export default async function Home() {
+function GameSkeleton() {
+  return (
+    <div className="space-y-4">
+      <div className="ui-skeleton h-24" />
+      <div className="space-y-3">
+        <div className="ui-skeleton h-10" />
+        <div className="ui-skeleton h-48" />
+      </div>
+    </div>
+  );
+}
+
+async function GameData() {
   const overview = await getGameOverview(supabaseServer());
   return <GamePageClient fallback={overview} />;
+}
+
+export default function Home() {
+  return (
+    <Suspense fallback={<GameSkeleton />}>
+      <GameData />
+    </Suspense>
+  );
 }
