@@ -3,7 +3,8 @@
 import dynamic from "next/dynamic";
 
 import { Fragment, useMemo, useState } from "react";
-import { useSWRConfig } from "swr";
+import { preload, useSWRConfig } from "swr";
+import { fetcher } from "@/lib/swr";
 import { archivePlayer } from "@/app/actions/players";
 import Modal from "@/components/Modal";
 const PlayerDrawer = dynamic(() => import("@/components/PlayerDrawer"), {
@@ -11,6 +12,14 @@ const PlayerDrawer = dynamic(() => import("@/components/PlayerDrawer"), {
 });
 import { useOrganiserMode } from "@/components/OrganiserModeProvider";
 import type { LeagueSortDirection, LeagueStatRow } from "@/lib/types";
+
+// Start the drawer's stats request as the pointer lands rather than on click.
+// The request takes ~126ms, so this usually lands before the drawer mounts and
+// it opens with data already in SWR's cache instead of a skeleton. Repeat
+// hovers dedupe through that cache.
+const preloadPlayerStats = (playerId: string) => {
+  void preload(`/api/players/${playerId}/stats`, fetcher);
+};
 
 type SortKey = "gp" | "w" | "l" | "winPct" | "goalDifference";
 
@@ -232,6 +241,8 @@ export default function LeagueTableClient({ rows }: { rows: LeagueStatRow[] }) {
                   <Fragment key={row.id}>
                     <tr
                       className={`cursor-pointer border-t ${isExpanded ? "border-[rgba(15,61,52,0.25)] bg-[var(--color-surface-highlight)]" : "border-[rgba(229,231,235,0.9)] bg-[var(--off-white-green)] hover:bg-[var(--color-surface-highlight)]"}`}
+                      onPointerEnter={() => preloadPlayerStats(row.id)}
+                      onTouchStart={() => preloadPlayerStats(row.id)}
                       onClick={() => setExpandedPlayerId(isExpanded ? null : row.id)}
                     >
                       <td className="px-2 py-2.5 align-middle text-center text-[10px] font-medium text-[var(--color-text-secondary)] opacity-50">
