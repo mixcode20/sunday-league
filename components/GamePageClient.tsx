@@ -10,15 +10,19 @@ const CreateGameweek = dynamic(() => import("@/components/CreateGameweek"), {
 import JoinSlots from "@/components/JoinSlots";
 import GameweekInfoStrip from "@/components/GameweekInfoStrip";
 import { useOrganiserMode } from "@/components/OrganiserModeProvider";
-import type { GameOverview } from "@/lib/types";
+import type { GameLive, Player } from "@/lib/types";
 import { fetcher, debugPerfEnabled } from "@/lib/swr";
 import { useGameweekRealtime } from "@/lib/useGameweekRealtime";
 import { buildEntryPositionMap, capacityForFormat, getSlotCounts } from "@/lib/slots";
 
+export const ROSTER_KEY = "/api/players/roster";
+
 export default function GamePageClient({
   fallback,
+  rosterFallback,
 }: {
-  fallback?: GameOverview;
+  fallback?: GameLive;
+  rosterFallback?: Player[];
 }) {
   const routeTimerArmed = useRef(false);
   const routeLabel = "route:game";
@@ -30,7 +34,7 @@ export default function GamePageClient({
     routeTimerArmed.current = true;
   }, []);
 
-  const { data, error, mutate } = useSWR<GameOverview>(
+  const { data, error, mutate } = useSWR<GameLive>(
     "/api/game/overview",
     fetcher,
     {
@@ -39,6 +43,18 @@ export default function GamePageClient({
       revalidateOnMount: false,
       refreshInterval: 10000,
       revalidateOnFocus: true,
+    }
+  );
+
+  // The roster rides a separate, unpolled key. It was 61% of the payload the
+  // 10s poll used to re-send, and it changes about once a month.
+  const { data: rosterData } = useSWR<{ players: Player[] }>(
+    ROSTER_KEY,
+    fetcher,
+    {
+      fallbackData: rosterFallback ? { players: rosterFallback } : undefined,
+      revalidateOnMount: false,
+      revalidateOnFocus: false,
     }
   );
 
@@ -72,7 +88,7 @@ export default function GamePageClient({
 
   const gameweek = data?.gameweek ?? null;
   const openGameweek = data?.openGameweek ?? null;
-  const players = data?.players ?? [];
+  const players = rosterData?.players ?? [];
 
   return (
     <div className="space-y-4">

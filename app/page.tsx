@@ -1,6 +1,7 @@
 import { Suspense } from "react";
 import GamePageClient from "@/components/GamePageClient";
-import { getGameOverview } from "@/lib/gameOverview";
+import { getGameLive } from "@/lib/gameOverview";
+import { listPlayersWithGamesPlayed } from "@/lib/players";
 import { supabaseServer } from "@/lib/supabase";
 
 export const dynamic = "force-dynamic";
@@ -18,8 +19,14 @@ function GameSkeleton() {
 }
 
 async function GameData() {
-  const overview = await getGameOverview(supabaseServer());
-  return <GamePageClient fallback={overview} />;
+  // Two payloads on different clocks: the live gameweek is polled, the roster
+  // is not. Both are seeded here so the first paint still has everything.
+  const supabase = supabaseServer();
+  const [live, roster] = await Promise.all([
+    getGameLive(supabase),
+    listPlayersWithGamesPlayed(supabase, { activeOnly: true }),
+  ]);
+  return <GamePageClient fallback={live} rosterFallback={roster.data ?? []} />;
 }
 
 export default function Home() {

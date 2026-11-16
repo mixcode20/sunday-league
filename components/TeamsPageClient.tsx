@@ -134,6 +134,7 @@ export default function TeamsPageClient({
         paymentLink={gameweek.payment_link ?? null}
         mainCount={mainCount}
         subsCount={subsCount}
+        entries={entries}
         onRefresh={() => mutate()}
         gameweek={gameweek}
         players={players}

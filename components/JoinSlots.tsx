@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
+import { useSWRConfig } from "swr";
 import type { GameweekPlayer, Player } from "@/lib/types";
 import Modal from "@/components/Modal";
 import { useOrganiserMode } from "@/components/OrganiserModeProvider";
@@ -43,6 +44,7 @@ export default function JoinSlots({
 }: JoinSlotsProps) {
   const MAIN_CAPACITY = capacityForFormat(format);
   const router = useRouter();
+  const { mutate: globalMutate } = useSWRConfig();
   const { isUnlocked, organiserPin } = useOrganiserMode();
   const [message, setMessage] = useState("");
   const [creating, setCreating] = useState(false);
@@ -604,6 +606,8 @@ export default function JoinSlots({
     setCreating(false);
     setNewFirst("");
     setNewLast("");
+    // The roster is its own unpolled SWR key now, so it needs invalidating.
+    void globalMutate("/api/players/roster");
     if (data.player?.id && typeof pendingSlot === "number") {
       await joinPlayer(data.player.id, pendingSlot);
     } else {

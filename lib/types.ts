@@ -184,3 +184,9 @@ export type TeamsOverview = {
   entries: GameweekPlayer[];
   players: Player[];
 };
+
+export type GameLive = {
+  openGameweek: Gameweek | null;
+  gameweek: Gameweek | null;
+  entries: GameweekPlayer[];
+};

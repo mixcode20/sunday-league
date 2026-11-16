@@ -2,7 +2,7 @@
 
 import dynamic from "next/dynamic";
 
-import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
 const ConfirmResultPanel = dynamic(
   () => import("@/components/ConfirmResultPanel"),
@@ -14,7 +14,6 @@ import {
   getGameweekWinner,
   hasGameweekStarted,
 } from "@/lib/utils";
-import { buildEntryPositionMap, capacityForFormat, getSlotCounts } from "@/lib/slots";
 import { useOrganiserMode } from "@/components/OrganiserModeProvider";
 import Modal from "@/components/Modal";
 const ShareGameButton = dynamic(() => import("@/components/ShareGameButton"), {
@@ -75,12 +74,6 @@ export default function GameweekInfoStrip({
 }: GameweekInfoStripProps) {
   const router = useRouter();
   const { isUnlocked, organiserPin } = useOrganiserMode();
-  const [liveCounts, setLiveCounts] = useState<{
-    main: number;
-    subs: number;
-    source: string;
-  } | null>(null);
-  const [liveEntries, setLiveEntries] = useState<GameweekPlayer[] | null>(null);
   const [editOpen, setEditOpen] = useState(false);
   const [editDate, setEditDate] = useState(gameDate ?? "");
   const [editTime, setEditTime] = useState("");
@@ -89,35 +82,6 @@ export default function GameweekInfoStrip({
   const [message, setMessage] = useState("");
   const [deleteConfirm, setDeleteConfirm] = useState("");
   const [now, setNow] = useState(() => Date.now());
-  const countsSource = `${gameweekId ?? "none"}:${mainCount}:${subsCount}`;
-  const countsSourceRef = useRef(countsSource);
-
-  useEffect(() => {
-    countsSourceRef.current = countsSource;
-  }, [countsSource]);
-
-  const mainCapacity = capacityForFormat(gameweek?.format ?? null);
-
-  useEffect(() => {
-    if (!gameweekId) return;
-    const interval = setInterval(async () => {
-      const response = await fetch(`/api/gameweeks/${gameweekId}/entries`);
-      if (!response.ok) return;
-      const data = await response.json();
-      if (Array.isArray(data.entries)) {
-        setLiveEntries(data.entries);
-        const { positionMap } = buildEntryPositionMap(data.entries);
-        const { main, subs } = getSlotCounts(positionMap, mainCapacity);
-        setLiveCounts({
-          main,
-          subs,
-          source: countsSourceRef.current,
-        });
-      }
-    }, 10000);
-
-    return () => clearInterval(interval);
-  }, [gameweekId, mainCapacity]);
 
   const formatTimeFromInput = (value: string) => {
     if (!value) return "";
@@ -233,12 +197,8 @@ export default function GameweekInfoStrip({
 
   const displayLocation =
     location === "MH" || !location ? "Mill Hill" : location;
-  const counts =
-    liveCounts && liveCounts.source === countsSource
-      ? liveCounts
-      : { main: mainCount, subs: subsCount };
-  const shareEntries =
-    liveEntries && liveCounts?.source === countsSource ? liveEntries : entries;
+  const counts = { main: mainCount, subs: subsCount };
+  const shareEntries = entries;
   const hideActionsAfterStart = hasGameweekStarted(gameDate, time, now);
   const lockedWinner = gameweek?.status === "locked" ? getGameweekWinner(gameweek) : null;
   const resultLabel =
