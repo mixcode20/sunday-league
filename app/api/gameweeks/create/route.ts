@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { supabaseServer } from "@/lib/supabase";
 import { isOrganiserPinConfigured, verifyOrganiserPin } from "@/lib/organiser";
-import { DEFAULT_GAME_FORMAT, parseGameFormat } from "@/lib/slots";
+import { parseGameFormat } from "@/lib/slots";
 
 export async function POST(request: Request) {
   const { date, time, location, format, pin, playerIds } = await request.json();
@@ -60,37 +60,17 @@ export async function POST(request: Request) {
       )
     : [];
 
-  const insertGameweek = (includeFormat: boolean) =>
-    supabase
-      .from("gameweeks")
-      .insert({
-        game_date: date,
-        game_time: safeTime,
-        location: safeLocation,
-        status: "open",
-        ...(includeFormat ? { format: safeFormat } : {}),
-      })
-      .select("id")
-      .single();
-
-  let { data, error } = await insertGameweek(true);
-
-  // Pre-migration fallback: supabase/migrations/20261108120000_gameweek_format.sql
-  // adds gameweeks.format. Until it is applied, 7s (the default) still works, but
-  // 5s cannot be stored - fail loudly rather than silently creating a 7s game.
-  // Remove this block once the migration is applied everywhere.
-  if (error?.code === "42703") {
-    if (safeFormat !== DEFAULT_GAME_FORMAT) {
-      return NextResponse.json(
-        {
-          error:
-            "5-a-side needs the gameweek format migration (20261108120000_gameweek_format.sql) applied to the database first.",
-        },
-        { status: 500 }
-      );
-    }
-    ({ data, error } = await insertGameweek(false));
-  }
+  const { data, error } = await supabase
+    .from("gameweeks")
+    .insert({
+      game_date: date,
+      game_time: safeTime,
+      location: safeLocation,
+      status: "open",
+      format: safeFormat,
+    })
+    .select("id")
+    .single();
 
   if (error || !data) {
     return NextResponse.json(
