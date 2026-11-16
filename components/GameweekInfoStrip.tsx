@@ -3,7 +3,7 @@
 import dynamic from "next/dynamic";
 
 import { useEffect, useMemo, useState, type ReactNode } from "react";
-import { useRouter } from "next/navigation";
+import { deleteGameweek, updateGameweek } from "@/app/actions/gameweeks";
 const ConfirmResultPanel = dynamic(
   () => import("@/components/ConfirmResultPanel"),
   { ssr: false }
@@ -72,7 +72,6 @@ export default function GameweekInfoStrip({
   players = [],
   footerAction,
 }: GameweekInfoStripProps) {
-  const router = useRouter();
   const { isUnlocked, organiserPin } = useOrganiserMode();
   const [editOpen, setEditOpen] = useState(false);
   const [editDate, setEditDate] = useState(gameDate ?? "");
@@ -148,27 +147,20 @@ export default function GameweekInfoStrip({
     }
     setMessage("");
     const formattedTime = formatTimeFromInput(editTime) || (time ?? "9:15am");
-    const response = await fetch(`/api/gameweeks/${gameweekId}/update`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        date: editDate,
-        time: formattedTime,
-        location: editLocation,
-        paymentLink: editPaymentLink,
-        pin: organiserPin,
-      }),
+    // The action revalidates server-side, so the refreshed page arrives with
+    // its response instead of needing a separate router.refresh().
+    const result = await updateGameweek(organiserPin, gameweekId, {
+      date: editDate,
+      time: formattedTime,
+      location: editLocation,
+      paymentLink: editPaymentLink,
     });
-    const data = await response.json().catch(() => null);
-    if (!response.ok) {
-      const errorMessage =
-        data?.error?.message ?? data?.error ?? "Failed to update gameweek.";
-      setMessage(errorMessage);
+    if (!result.ok) {
+      setMessage(result.error);
       return;
     }
     setEditOpen(false);
     onRefresh?.();
-    router.refresh();
   };
 
   const handleDelete = async () => {
@@ -178,21 +170,13 @@ export default function GameweekInfoStrip({
       return;
     }
     setMessage("");
-    const response = await fetch(`/api/gameweeks/${gameweekId}/delete`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ pin: organiserPin }),
-    });
-    const data = await response.json().catch(() => null);
-    if (!response.ok) {
-      const errorMessage =
-        data?.error?.message ?? data?.error ?? "Failed to delete gameweek.";
-      setMessage(errorMessage);
+    const result = await deleteGameweek(organiserPin, gameweekId);
+    if (!result.ok) {
+      setMessage(result.error);
       return;
     }
     setEditOpen(false);
     onRefresh?.();
-    router.refresh();
   };
 
   const displayLocation =
