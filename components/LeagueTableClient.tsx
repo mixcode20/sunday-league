@@ -4,6 +4,7 @@ import dynamic from "next/dynamic";
 
 import { Fragment, useMemo, useState } from "react";
 import { useSWRConfig } from "swr";
+import { archivePlayer } from "@/app/actions/players";
 import Modal from "@/components/Modal";
 const PlayerDrawer = dynamic(() => import("@/components/PlayerDrawer"), {
   ssr: false,
@@ -154,17 +155,12 @@ export default function LeagueTableClient({ rows }: { rows: LeagueStatRow[] }) {
     setIsArchiving(true);
     setMessage(null);
 
-    const response = await fetch("/api/players/archive", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ id: playerPendingArchive.id, pin: organiserPin }),
-    });
-    const data = await response.json().catch(() => null);
+    const result = await archivePlayer(organiserPin, playerPendingArchive.id);
 
-    if (!response.ok) {
+    if (!result.ok) {
       setMessage({
         type: "error",
-        text: data?.error ?? "Failed to archive player.",
+        text: result.error,
       });
       setIsArchiving(false);
       return;

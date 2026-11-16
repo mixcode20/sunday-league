@@ -1,7 +1,11 @@
 "use client";
 
-import { useMemo, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useMemo, useState, useTransition } from "react";
+import {
+  archivePlayer,
+  createPlayer,
+  updatePlayer,
+} from "@/app/actions/players";
 import { useOrganiserMode } from "@/components/OrganiserModeProvider";
 import type { Player } from "@/lib/types";
 import { formatPlayerName } from "@/lib/utils";
@@ -16,7 +20,9 @@ type Draft = {
 };
 
 export default function AdminPlayersClient({ players }: AdminPlayersClientProps) {
-  const router = useRouter();
+  // The actions revalidate on the server, so the refreshed page arrives with
+  // the action response instead of needing a second router.refresh() round trip.
+  const [isPending, startTransition] = useTransition();
   const { isUnlocked, organiserPin } = useOrganiserMode();
   const [message, setMessage] = useState("");
   const [newFirstName, setNewFirstName] = useState("");
@@ -29,64 +35,42 @@ export default function AdminPlayersClient({ players }: AdminPlayersClientProps)
     [players]
   );
 
-  const handleCreate = async () => {
+  const handleCreate = () => {
     if (!organiserPin) return;
     setMessage("");
-    const response = await fetch("/api/players/create", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        firstName: newFirstName,
-        lastName: newLastName,
-        pin: organiserPin,
-      }),
+    startTransition(async () => {
+      const result = await createPlayer(organiserPin, newFirstName, newLastName);
+      if (!result.ok) {
+        setMessage(result.error);
+        return;
+      }
+      setNewFirstName("");
+      setNewLastName("");
     });
-    const data = await response.json();
-    if (!response.ok) {
-      setMessage(data.error ?? "Failed to create player.");
-      return;
-    }
-    setNewFirstName("");
-    setNewLastName("");
-    router.refresh();
   };
 
-  const handleUpdate = async (id: string) => {
+  const handleUpdate = (id: string) => {
     if (!organiserPin) return;
     setMessage("");
     const draft = drafts[id];
-    const response = await fetch("/api/players/update", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
+    startTransition(async () => {
+      const result = await updatePlayer(
+        organiserPin,
         id,
-        firstName: draft?.first_name ?? "",
-        lastName: draft?.last_name ?? "",
-        pin: organiserPin,
-      }),
+        draft?.first_name ?? "",
+        draft?.last_name ?? ""
+      );
+      if (!result.ok) setMessage(result.error);
     });
-    const data = await response.json();
-    if (!response.ok) {
-      setMessage(data.error ?? "Failed to update player.");
-      return;
-    }
-    router.refresh();
   };
 
-  const handleArchive = async (id: string) => {
+  const handleArchive = (id: string) => {
     if (!organiserPin) return;
     setMessage("");
-    const response = await fetch("/api/players/archive", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ id, pin: organiserPin }),
+    startTransition(async () => {
+      const result = await archivePlayer(organiserPin, id);
+      if (!result.ok) setMessage(result.error);
     });
-    const data = await response.json();
-    if (!response.ok) {
-      setMessage(data.error ?? "Failed to archive player.");
-      return;
-    }
-    router.refresh();
   };
 
   const updateDraft = (id: string, field: keyof Draft, value: string) => {
@@ -147,7 +131,12 @@ export default function AdminPlayersClient({ players }: AdminPlayersClientProps)
                 value={newLastName}
                 onChange={(event) => setNewLastName(event.target.value)}
               />
-              <button type="button" onClick={handleCreate} className="ui-btn ui-btn-primary">
+              <button
+                type="button"
+                onClick={handleCreate}
+                disabled={isPending}
+                className="ui-btn ui-btn-primary disabled:opacity-60"
+              >
                 Create
               </button>
             </div>
@@ -185,6 +174,7 @@ export default function AdminPlayersClient({ players }: AdminPlayersClientProps)
                         <button
                           type="button"
                           onClick={() => handleUpdate(player.id)}
+                          disabled={isPending}
                           className="ui-btn ui-btn-secondary flex-1"
                         >
                           Save
@@ -192,7 +182,7 @@ export default function AdminPlayersClient({ players }: AdminPlayersClientProps)
                         <button
                           type="button"
                           onClick={() => handleArchive(player.id)}
-                          disabled={player.archived}
+                          disabled={isPending || player.archived}
                           className="ui-btn ui-btn-secondary flex-1"
                         >
                           {player.archived ? "Archived" : "Archive"}
