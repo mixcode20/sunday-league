@@ -1,7 +1,6 @@
 import { Suspense } from "react";
 import GamePageClient from "@/components/GamePageClient";
 import { getGameLive } from "@/lib/gameOverview";
-import { listPlayersWithGamesPlayed } from "@/lib/players";
 import { supabaseServer } from "@/lib/supabase";
 
 export const dynamic = "force-dynamic";
@@ -19,14 +18,11 @@ function GameSkeleton() {
 }
 
 async function GameData() {
-  // Two payloads on different clocks: the live gameweek is polled, the roster
-  // is not. Both are seeded here so the first paint still has everything.
-  const supabase = supabaseServer();
-  const [live, roster] = await Promise.all([
-    getGameLive(supabase),
-    listPlayersWithGamesPlayed(supabase, { activeOnly: true }),
-  ]);
-  return <GamePageClient fallback={live} rosterFallback={roster.data ?? []} />;
+  // Only the live gameweek is sent with the page. The 9.7KB roster is fetched
+  // client-side on intent toward a slot, since most visitors read the slots
+  // and never open the picker.
+  const live = await getGameLive(supabaseServer());
+  return <GamePageClient fallback={live} />;
 }
 
 export default function Home() {

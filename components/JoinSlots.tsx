@@ -30,6 +30,10 @@ type JoinSlotsProps = {
   players: Player[];
   entries: GameweekPlayer[];
   format?: string | null;
+  /** Called on pointer/touch intent toward a slot, before the dropdown opens. */
+  onRosterIntent?: () => void;
+  /** False while the lazily-fetched roster is still in flight. */
+  rosterLoaded?: boolean;
 };
 
 const UNDO_WINDOW_MS = 5 * 60 * 1000;
@@ -41,6 +45,8 @@ export default function JoinSlots({
   players,
   entries,
   format,
+  onRosterIntent,
+  rosterLoaded = true,
 }: JoinSlotsProps) {
   const MAIN_CAPACITY = capacityForFormat(format);
   const router = useRouter();
@@ -805,7 +811,7 @@ export default function JoinSlots({
 
   return (
     <div className="space-y-4">
-      {players.length === 0 ? (
+      {rosterLoaded && players.length === 0 ? (
         <div className="ui-empty p-4 text-sm">
           No players yet. Use “+ New player” to add the first name.
         </div>
@@ -937,6 +943,8 @@ export default function JoinSlots({
                     type="button"
                     onClick={() => openDropdown(index + 1)}
                     className="flex w-full items-center justify-between gap-3 text-left"
+                    onPointerEnter={onRosterIntent}
+                    onTouchStart={onRosterIntent}
                     data-slot-trigger
                     aria-label="Add player"
                     disabled={isSlotPending(index + 1)}
@@ -1093,7 +1101,9 @@ export default function JoinSlots({
                       type="button"
                       onClick={() => openDropdown(slotPosition)}
                       className="flex w-full items-center justify-between gap-3 text-left"
-                      data-slot-trigger
+                      onPointerEnter={onRosterIntent}
+                      onTouchStart={onRosterIntent}
+                    data-slot-trigger
                       aria-label="Add player"
                       disabled={isSlotPending(slotPosition)}
                     >
@@ -1178,6 +1188,12 @@ export default function JoinSlots({
             ) : availablePlayers.length > 0 ? (
               <div className="px-1 py-2 text-xs text-[var(--color-text-secondary)]">
                 No players match your search
+              </div>
+            ) : !rosterLoaded ? (
+              <div className="space-y-1 px-1 py-2">
+                <div className="ui-skeleton h-8" />
+                <div className="ui-skeleton h-8" />
+                <div className="ui-skeleton h-8" />
               </div>
             ) : (
               <div className="px-1 py-2 text-xs text-[var(--color-text-secondary)]">

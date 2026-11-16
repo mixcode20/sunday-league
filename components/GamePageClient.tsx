@@ -2,7 +2,7 @@
 
 import dynamic from "next/dynamic";
 
-import { useCallback, useEffect, useMemo, useRef } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import useSWR from "swr";
 const CreateGameweek = dynamic(() => import("@/components/CreateGameweek"), {
   ssr: false,
@@ -19,10 +19,8 @@ export const ROSTER_KEY = "/api/players/roster";
 
 export default function GamePageClient({
   fallback,
-  rosterFallback,
 }: {
   fallback?: GameLive;
-  rosterFallback?: Player[];
 }) {
   const routeTimerArmed = useRef(false);
   const routeLabel = "route:game";
@@ -46,16 +44,17 @@ export default function GamePageClient({
     }
   );
 
-  // The roster rides a separate, unpolled key. It was 61% of the payload the
-  // 10s poll used to re-send, and it changes about once a month.
+  // The roster (9.7KB, 61 players) exists only so someone can pick a name.
+  // Most visitors read the slots and leave, so it is not shipped with the page
+  // or fetched on mount - only once intent toward a slot is detected, or when
+  // organiser mode unlocks and CreateGameweek needs it.
+  const [rosterNeeded, setRosterNeeded] = useState(false);
+  const requestRoster = useCallback(() => setRosterNeeded(true), []);
+
   const { data: rosterData } = useSWR<{ players: Player[] }>(
-    ROSTER_KEY,
+    rosterNeeded || isUnlocked ? ROSTER_KEY : null,
     fetcher,
-    {
-      fallbackData: rosterFallback ? { players: rosterFallback } : undefined,
-      revalidateOnMount: false,
-      revalidateOnFocus: false,
-    }
+    { revalidateOnFocus: false }
   );
 
   useEffect(() => {
@@ -128,8 +127,10 @@ export default function GamePageClient({
             <div className="ui-skeleton h-10" />
             <div className="ui-skeleton h-48" />
           </div>
-        ) : gameweek && players.length > 0 ? (
+        ) : gameweek ? (
           <JoinSlots
+            onRosterIntent={requestRoster}
+            rosterLoaded={Boolean(rosterData)}
             isOpen={Boolean(openGameweek)}
             gameweekId={openGameweek?.id}
             gameDate={openGameweek?.game_date ?? null}
