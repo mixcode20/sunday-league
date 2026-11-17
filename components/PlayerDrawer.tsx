@@ -26,8 +26,13 @@ const TEAM_STRIPE: Record<"darks" | "whites", string> = {
   whites: "#ffffff",
 };
 
+// A draw badges both sides rather than neither: previously winner === "draw"
+// matched no team, so both pins rendered transparent and nothing showed.
+const resultPinLabel = (winner: Gameweek["winner"]) =>
+  winner === "draw" ? "Draw" : "Winners";
+
 const winnerPin = (winner: Gameweek["winner"], team: "darks" | "whites") => {
-  if (winner !== team) {
+  if (winner !== team && winner !== "draw") {
     return "absolute bottom-0 left-0 inline-flex items-center rounded-full border border-transparent bg-transparent px-3 py-1 text-[0.65rem] font-semibold uppercase tracking-[0.18em] text-transparent shadow-none";
   }
   if (team === "darks") {
@@ -207,7 +212,7 @@ function GameweekDetail({ entry }: { entry: PlayerFormEntry }) {
             <div className="text-3xl font-semibold tracking-[-0.04em] text-[var(--color-primary-dark)]">
               Darks
             </div>
-            <span className={winnerPin(winner, "darks")}>Winners</span>
+            <span className={winnerPin(winner, "darks")}>{resultPinLabel(winner)}</span>
           </div>
           <div className="flex items-start justify-center gap-3 pt-0.5 text-4xl font-semibold tracking-[-0.05em] text-[var(--color-text-secondary)]">
             <span className="inline-block min-w-[1ch] text-center">{darksValue ?? ""}</span>
@@ -218,7 +223,9 @@ function GameweekDetail({ entry }: { entry: PlayerFormEntry }) {
             <div className="text-3xl font-semibold tracking-[-0.04em] text-[var(--color-primary-dark)]">
               Whites
             </div>
-            <span className={`${winnerPin(winner, "whites")} left-auto right-0`}>Winners</span>
+            <span className={`${winnerPin(winner, "whites")} left-auto right-0`}>
+              {resultPinLabel(winner)}
+            </span>
           </div>
         </div>
       </div>

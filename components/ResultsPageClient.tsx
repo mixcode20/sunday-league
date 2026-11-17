@@ -26,8 +26,13 @@ function ChevronIcon({ direction }: { direction: "left" | "right" }) {
   );
 }
 
+// A draw badges both sides rather than neither: previously winner === "draw"
+// matched no team, so both pins rendered transparent and nothing showed.
+const resultPinLabel = (winner: Gameweek["winner"]) =>
+  winner === "draw" ? "Draw" : "Winners";
+
 const winnerPin = (winner: Gameweek["winner"], team: "darks" | "whites") => {
-  if (winner !== team) {
+  if (winner !== team && winner !== "draw") {
     return "absolute bottom-0 left-0 inline-flex items-center rounded-full border border-transparent bg-transparent px-3 py-1 text-[0.65rem] font-semibold uppercase tracking-[0.18em] text-transparent shadow-none";
   }
 
@@ -192,7 +197,9 @@ export default function ResultsPageClient({
             <div className="text-3xl font-semibold tracking-[-0.04em] text-[var(--color-primary-dark)] sm:text-5xl">
               Darks
             </div>
-            <span className={winnerPin(summary.winner, "darks")}>Winners</span>
+            <span className={winnerPin(summary.winner, "darks")}>
+              {resultPinLabel(summary.winner)}
+            </span>
           </div>
 
           <div className="flex items-start justify-center gap-3 pt-0.5 text-4xl font-semibold tracking-[-0.05em] text-[var(--color-text-secondary)] sm:gap-5 sm:text-6xl">
@@ -210,7 +217,7 @@ export default function ResultsPageClient({
               Whites
             </div>
             <span className={`${winnerPin(summary.winner, "whites")} left-auto right-0`}>
-              Winners
+              {resultPinLabel(summary.winner)}
             </span>
           </div>
         </div>
