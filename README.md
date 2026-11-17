@@ -26,14 +26,24 @@ values
 
 4) Apply the migrations
 
-Run everything in `supabase/migrations/` in filename order, then:
+For a new project, run `supabase/schema.sql` — it is the complete current
+state and is idempotent.
 
-- `supabase/rls.sql` — enables Row Level Security. Required: the publishable
-  key ships in the browser bundle, so without RLS it can read and write every
-  table directly, bypassing the organiser PIN. The app is unaffected because it
-  only ever queries Supabase server-side with the service role.
-- `supabase/realtime.sql` — optional, currently not in use. See the notes in
-  that file; it needs read policies to actually deliver events.
+For an existing project, run anything missing from `supabase/migrations/` in
+filename order. Two are worth knowing about:
+
+- `20261115120000_enable_rls.sql` — enables Row Level Security. **Required.**
+  The publishable key ships in the browser bundle, so without RLS it can read
+  and write every table directly, bypassing the organiser PIN. The app is
+  unaffected because it only ever queries Supabase server-side with the
+  service role.
+- `20261115130000_realtime_publication.sql` — applied but intentionally inert.
+  It needs anon read policies to deliver events, which would undo part of the
+  RLS lockdown, so the client stays gated behind `NEXT_PUBLIC_REALTIME_ENABLED`.
+
+When you change the schema, write a migration **and** fold it into
+`supabase/schema.sql`. Those two drifting apart is what left
+`gameweeks.payment_link` declared but missing in production.
 
 5) Add environment variables
 
@@ -49,7 +59,7 @@ ORGANISER_PIN=your-pin
 
 Optional:
 ```
-NEXT_PUBLIC_REALTIME_ENABLED=true   # only after supabase/realtime.sql + read policies
+NEXT_PUBLIC_REALTIME_ENABLED=true   # only after the realtime migration + read policies
 NEXT_BROWSER_SOURCE_MAPS=true       # emit production browser source maps
 DEBUG_PERF=true                     # server-side timing logs
 NEXT_PUBLIC_DEBUG_PERF=true         # client-side timing logs

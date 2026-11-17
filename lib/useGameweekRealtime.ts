@@ -13,7 +13,8 @@ import { useEffect } from "react";
 //     a subscription reaches SUBSCRIBED but never receives an event, so it
 //     would download the client for nothing.
 //
-// To turn on: apply supabase/realtime.sql, then set the env var.
+// To turn on: apply supabase/migrations/20261115130000_realtime_publication.sql
+// plus the anon read policies it references, then set the env var.
 export const useGameweekRealtime = (onChange: () => void) => {
   useEffect(() => {
     if (process.env.NEXT_PUBLIC_REALTIME_ENABLED !== "true") return;

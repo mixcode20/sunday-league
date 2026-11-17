@@ -63,8 +63,8 @@ export default function GamePageClient({
     routeTimerArmed.current = false;
   }, [data]);
 
-  // Slots fill in near-instantly once supabase/realtime.sql has been applied;
-  // refreshInterval above stays as the fallback until then.
+  // Slots fill in near-instantly once the realtime migration and its anon read
+  // policies are applied; refreshInterval above stays as the fallback until then.
   const revalidate = useCallback(() => {
     void mutate();
   }, [mutate]);

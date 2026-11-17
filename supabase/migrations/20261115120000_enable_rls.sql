@@ -21,11 +21,11 @@ alter table public.gameweeks enable row level security;
 alter table public.gameweek_players enable row level security;
 alter table public.potm_votes enable row level security;
 
--- Only needed if supabase/realtime.sql is applied as well. Realtime delivers
+-- Only needed if 20261115130000_realtime_publication.sql is applied as well. Realtime delivers
 -- postgres_changes to the browser as the anon role, so it needs read access to
 -- the tables it streams. Read-only: writes stay denied.
 --
--- alter publication supabase_realtime add table gameweek_players;  -- see realtime.sql
+-- alter publication supabase_realtime add table gameweek_players;  -- see the realtime migration
 --
 -- create policy "anon can read gameweeks"
 --   on public.gameweeks for select to anon using (true);
