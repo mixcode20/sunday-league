@@ -26,13 +26,12 @@ function ChevronIcon({ direction }: { direction: "left" | "right" }) {
   );
 }
 
-// A draw badges both sides rather than neither: previously winner === "draw"
-// matched no team, so both pins rendered transparent and nothing showed.
-const resultPinLabel = (winner: Gameweek["winner"]) =>
-  winner === "draw" ? "Draw" : "Winners";
+// A draw is badged once, centred under the score, rather than on either side.
+const DRAW_PIN =
+  "absolute bottom-0 left-1/2 -translate-x-1/2 inline-flex items-center rounded-full border border-[rgba(15,61,52,0.18)] bg-white px-3 py-1 text-[0.65rem] font-semibold uppercase tracking-[0.18em] text-[var(--color-primary-dark)] shadow-[0_8px_18px_rgba(15,61,52,0.08)]";
 
 const winnerPin = (winner: Gameweek["winner"], team: "darks" | "whites") => {
-  if (winner !== team && winner !== "draw") {
+  if (winner !== team) {
     return "absolute bottom-0 left-0 inline-flex items-center rounded-full border border-transparent bg-transparent px-3 py-1 text-[0.65rem] font-semibold uppercase tracking-[0.18em] text-transparent shadow-none";
   }
 
@@ -197,19 +196,22 @@ export default function ResultsPageClient({
             <div className="text-3xl font-semibold tracking-[-0.04em] text-[var(--color-primary-dark)] sm:text-5xl">
               Darks
             </div>
-            <span className={winnerPin(summary.winner, "darks")}>
-              {resultPinLabel(summary.winner)}
-            </span>
+            <span className={winnerPin(summary.winner, "darks")}>Winners</span>
           </div>
 
-          <div className="flex items-start justify-center gap-3 pt-0.5 text-4xl font-semibold tracking-[-0.05em] text-[var(--color-text-secondary)] sm:gap-5 sm:text-6xl">
-            <span className="inline-block min-w-[1ch] text-center">
-              {summary.darksValue ?? ""}
-            </span>
-            <span>-</span>
-            <span className="inline-block min-w-[1ch] text-center">
-              {summary.whitesValue ?? ""}
-            </span>
+          <div className="relative pb-6">
+            <div className="flex items-start justify-center gap-3 pt-0.5 text-4xl font-semibold tracking-[-0.05em] text-[var(--color-text-secondary)] sm:gap-5 sm:text-6xl">
+              <span className="inline-block min-w-[1ch] text-center">
+                {summary.darksValue ?? ""}
+              </span>
+              <span>-</span>
+              <span className="inline-block min-w-[1ch] text-center">
+                {summary.whitesValue ?? ""}
+              </span>
+            </div>
+            {summary.winner === "draw" ? (
+              <span className={DRAW_PIN}>Draw</span>
+            ) : null}
           </div>
 
           <div className="relative pb-6 text-right">
@@ -217,7 +219,7 @@ export default function ResultsPageClient({
               Whites
             </div>
             <span className={`${winnerPin(summary.winner, "whites")} left-auto right-0`}>
-              {resultPinLabel(summary.winner)}
+              Winners
             </span>
           </div>
         </div>
