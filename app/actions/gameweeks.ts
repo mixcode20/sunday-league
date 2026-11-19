@@ -1,6 +1,7 @@
 "use server";
 
-import { revalidatePath } from "next/cache";
+import { revalidatePath, updateTag } from "next/cache";
+import { PLAYER_STATS_TAG } from "@/lib/cacheTags";
 import { isOrganiserPinConfigured, verifyOrganiserPin } from "@/lib/organiser";
 import { supabaseServer } from "@/lib/supabase";
 import type { ActionResult } from "@/app/actions/players";
@@ -119,6 +120,8 @@ export async function deleteGameweek(
     return { ok: false, error: error.message ?? "Failed to delete gameweek." };
   }
 
+  // Deleting a locked gameweek removes it from every participant's history.
+  updateTag(PLAYER_STATS_TAG);
   revalidateGameweekViews();
   return { ok: true };
 }

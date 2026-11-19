@@ -1,4 +1,6 @@
+import { revalidateTag } from "next/cache";
 import { NextRequest, NextResponse } from "next/server";
+import { PLAYER_STATS_TAG } from "@/lib/cacheTags";
 import { supabaseServer } from "@/lib/supabase";
 import { isOrganiserPinConfigured, verifyOrganiserPin } from "@/lib/organiser";
 import { deriveWinnerFromScores } from "@/lib/utils";
@@ -109,6 +111,9 @@ export async function POST(
       { status: 500 }
     );
   }
+
+  // Locking a gameweek adds it to every participant's history.
+  revalidateTag(PLAYER_STATS_TAG, { expire: 0 });
 
   return NextResponse.json({ ok: true });
 }

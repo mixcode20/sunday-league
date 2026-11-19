@@ -1,4 +1,6 @@
+import { unstable_cache } from "next/cache";
 import { NextResponse } from "next/server";
+import { PLAYER_STATS_TAG } from "@/lib/cacheTags";
 import { supabaseServer } from "@/lib/supabase";
 import { formatPlayerName, getGameweekWinner } from "@/lib/utils";
 import type {
@@ -9,11 +11,12 @@ import type {
   PlayerTeammate,
 } from "@/lib/types";
 
-export async function GET(
-  _request: Request,
-  { params }: { params: Promise<{ id: string }> }
-) {
-  const { id } = await params;
+// These stats read locked gameweeks only, and team assignment is rejected
+// unless a gameweek is open, so the result cannot change until a gameweek is
+// locked or deleted. Both invalidate PLAYER_STATS_TAG.
+const loadPlayerStats = (id: string) =>
+  unstable_cache(
+    async (): Promise<PlayerStats> => {
   const supabase = supabaseServer();
 
   const [gameweeksResult, entriesResult] = await Promise.all([
@@ -294,7 +297,7 @@ export async function GET(
     }))
       .sort((a, b) => b.losses - a.losses || a.winRate - b.winRate)[0] ?? null;
 
-  return NextResponse.json({
+  return {
     form,
     teamPicks,
     ppgTrend,
@@ -321,5 +324,23 @@ export async function GET(
     whitesWinRate,
     bestTeammates,
     toughestOpponent,
-  } satisfies PlayerStats);
+  } satisfies PlayerStats;
+    },
+    ["player-stats", id],
+    {
+      tags: [PLAYER_STATS_TAG],
+      // Safety net. Tag invalidation covers mutations made through the app,
+      // but a direct edit in the Supabase SQL editor bypasses it entirely, so
+      // bound how long such a change can stay invisible. Stats only move when
+      // a gameweek is locked, so an hour costs essentially nothing.
+      revalidate: 3600,
+    }
+  )();
+
+export async function GET(
+  _request: Request,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  const { id } = await params;
+  return NextResponse.json(await loadPlayerStats(id));
 }

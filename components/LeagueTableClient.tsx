@@ -7,18 +7,21 @@ import { preload, useSWRConfig } from "swr";
 import { fetcher } from "@/lib/swr";
 import { archivePlayer } from "@/app/actions/players";
 import Modal from "@/components/Modal";
-const PlayerDrawer = dynamic(() => import("@/components/PlayerDrawer"), {
-  ssr: false,
-});
+// One import site shared by the lazy component and the preloader. A separate
+// import() expression is a different site and warms a different chunk, which
+// left the one dynamic() actually awaits still downloading after the tap.
+const loadPlayerDrawer = () => import("@/components/PlayerDrawer");
+const PlayerDrawer = dynamic(loadPlayerDrawer, { ssr: false });
 import { useOrganiserMode } from "@/components/OrganiserModeProvider";
 import type { LeagueSortDirection, LeagueStatRow } from "@/lib/types";
 
-// Start the drawer's stats request as the pointer lands rather than on click.
-// The request takes ~126ms, so this usually lands before the drawer mounts and
-// it opens with data already in SWR's cache instead of a skeleton. Repeat
-// hovers dedupe through that cache.
+// Warm both halves of a drawer open as the pointer lands rather than on click:
+// the stats request (~165-280ms, scaling with games played) and the lazily
+// imported PlayerDrawer chunk (21.5KB, fetched only on first open). Both
+// dedupe - SWR through its cache, the import through the module registry.
 const preloadPlayerStats = (playerId: string) => {
   void preload(`/api/players/${playerId}/stats`, fetcher);
+  void loadPlayerDrawer();
 };
 
 type SortKey = "gp" | "w" | "l" | "winPct" | "goalDifference";
