@@ -6,7 +6,13 @@ import { fetcher } from "@/lib/swr";
 import Modal from "@/components/Modal";
 import TeamsReadOnly from "@/components/TeamsReadOnly";
 import { formatGameweekDate, formatShortGameDate, getGameweekWinner } from "@/lib/utils";
-import type { Gameweek, GameweekPlayer, PlayerFormEntry, PlayerStats } from "@/lib/types";
+import type {
+  Gameweek,
+  GameweekPlayer,
+  LeagueStatRow,
+  PlayerFormEntry,
+  PlayerStats,
+} from "@/lib/types";
 
 const BAR_W = 270;
 const DARK_FULL_PX = 66;
@@ -325,6 +331,63 @@ function Stat({
   );
 }
 
+// The league row already holds this player's headline figures when the row is
+// tapped, so the drawer can open showing them instead of a full skeleton. Only
+// the parts that genuinely need the stats request stay as placeholders.
+// Deliberately reuses SectionHeader / Card / RecordBar / Stat so it cannot
+// drift visually from the loaded state below.
+function PlayerDrawerPreview({ row }: { row: LeagueStatRow }) {
+  return (
+    <>
+      <SectionHeader label="Form" meta="oldest → latest" className="mt-4" />
+      <Card>
+        <div className="flex items-stretch gap-3">
+          <div className="flex min-w-0 flex-1 flex-col">
+            <div className="flex gap-1">
+              {Array.from({ length: 5 }).map((_, i) => (
+                <div
+                  key={i}
+                  className="animate-pulse rounded-[3px] bg-[rgba(15,61,52,0.12)]"
+                  style={{ width: 25, height: 38 }}
+                />
+              ))}
+            </div>
+          </div>
+          <div className="w-px shrink-0 bg-[rgba(15,61,52,0.08)]" />
+          <div className="flex min-w-0 flex-1 flex-col">
+            <div className="flex items-baseline justify-between gap-2">
+              <p className={KICKER}>PPG</p>
+              <p className="text-[17px] font-semibold tracking-[-0.03em] text-[var(--color-text)]">
+                {row.ppg.toFixed(2)}
+              </p>
+            </div>
+            <div className="mt-2 h-8 animate-pulse rounded bg-[rgba(15,61,52,0.08)]" />
+          </div>
+        </div>
+      </Card>
+
+      {/* Reserves the height of the "Last played" line so the Record section
+          does not jump down when the stats arrive. */}
+      <p className="mt-3 text-[11px] text-transparent" aria-hidden="true">
+        &nbsp;
+      </p>
+
+      <SectionHeader label="Record" meta={`${row.gp} GP`} className="mt-4" />
+      <Card>
+        <RecordBar w={row.w} d={row.d} l={row.l} />
+        <div className="mt-3 grid grid-cols-3 divide-x divide-[rgba(15,61,52,0.08)]">
+          <Stat
+            value={row.gp > 0 ? `${Math.round(row.winPct)}%` : "-"}
+            label="Win rate"
+          />
+          <Stat value="-" label="Biggest win" />
+          <Stat value="-" label="Heaviest loss" />
+        </div>
+      </Card>
+    </>
+  );
+}
+
 function RecordBar({ w, d, l }: { w: number; d: number; l: number }) {
   const total = w + d + l;
   if (total === 0) {
@@ -390,6 +453,7 @@ const wordRankBadge = (rank?: number, isWorst?: boolean): BadgeProps => {
 
 export default function PlayerDrawer({
   playerId,
+  row,
   avgGoalsRank,
   isWorstAttacker = false,
   avgConcededRank,
@@ -397,6 +461,7 @@ export default function PlayerDrawer({
   totalGdRank,
 }: {
   playerId: string;
+  row?: LeagueStatRow;
   avgGoalsRank?: number;
   isWorstAttacker?: boolean;
   avgConcededRank?: number;
@@ -430,6 +495,8 @@ export default function PlayerDrawer({
   }, [formCount]);
 
   if (isLoading || !data) {
+    // Paint what the league row already knows; the rest streams in behind it.
+    if (row) return <PlayerDrawerPreview row={row} />;
     return (
       <div className="space-y-3">
         <div className="flex gap-3">

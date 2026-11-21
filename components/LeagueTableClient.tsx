@@ -1,7 +1,5 @@
 "use client";
 
-import dynamic from "next/dynamic";
-
 import { Fragment, useMemo, useState } from "react";
 import { preload, useSWRConfig } from "swr";
 import { fetcher } from "@/lib/swr";
@@ -10,18 +8,19 @@ import Modal from "@/components/Modal";
 // One import site shared by the lazy component and the preloader. A separate
 // import() expression is a different site and warms a different chunk, which
 // left the one dynamic() actually awaits still downloading after the tap.
-const loadPlayerDrawer = () => import("@/components/PlayerDrawer");
-const PlayerDrawer = dynamic(loadPlayerDrawer, { ssr: false });
+import PlayerDrawer from "@/components/PlayerDrawer";
 import { useOrganiserMode } from "@/components/OrganiserModeProvider";
 import type { LeagueSortDirection, LeagueStatRow } from "@/lib/types";
 
-// Warm both halves of a drawer open as the pointer lands rather than on click:
-// the stats request (~165-280ms, scaling with games played) and the lazily
-// imported PlayerDrawer chunk (21.5KB, fetched only on first open). Both
-// dedupe - SWR through its cache, the import through the module registry.
+// Warm the stats request as the pointer lands rather than on click, so the
+// drawer usually opens against SWR's cache. Deduped through that cache.
+//
+// PlayerDrawer is imported statically rather than via next/dynamic: the lazy
+// boundary cost ~260ms per expand on a throttled phone (425ms -> 163ms when
+// removed) and only saved ~1.7KB over the wire, since its markup is mostly
+// repeated class strings and compresses heavily.
 const preloadPlayerStats = (playerId: string) => {
   void preload(`/api/players/${playerId}/stats`, fetcher);
-  void loadPlayerDrawer();
 };
 
 type SortKey = "gp" | "w" | "l" | "winPct" | "goalDifference";
@@ -294,6 +293,7 @@ export default function LeagueTableClient({ rows }: { rows: LeagueStatRow[] }) {
                           <div className="pt-3">
                             <PlayerDrawer
                               playerId={row.id}
+                              row={row}
                               avgGoalsRank={avgGoalsRankMap.get(row.id)}
                               isWorstAttacker={worstAttackerSet.has(row.id)}
                               avgConcededRank={avgConcededRankMap.get(row.id)}

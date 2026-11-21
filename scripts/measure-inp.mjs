@@ -36,7 +36,6 @@ const cleanTests = async () => {
 };
 
 const b = await chromium.launch({ channel: 'chrome' });
-let gwId = null;
 
 // INP is driven by interaction latency, so measure the slowest interaction
 // (max) as well as the p75 Google reports on.
@@ -83,8 +82,6 @@ try {
   // --- /: open the slot picker (needs an open gameweek)
   {
     await post('/api/gameweeks/create',{date:'2099-03-01',time:'9:15am',location:'TEST-INP',format:'7s',pin:PIN,playerIds:[]});
-    const ov = await (await fetch(B+'/api/game/overview')).json();
-    gwId = ov.openGameweek?.id;
     const { ctx, p } = await page();
     await p.goto(B+'/', { waitUntil:'load' }); await p.waitForTimeout(3000);
     // Reload between taps: the picker is a modal overlay that intercepts
